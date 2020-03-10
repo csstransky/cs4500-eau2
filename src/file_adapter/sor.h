@@ -7,8 +7,8 @@
 #include <fstream>
 #include <iostream>
 
-#include "helper.h"
-#include "dataframe.h"
+#include "../helpers/helper.h"
+#include "../dataframe/dataframe.h"
 
 using namespace std;
 

@@ -1,7 +1,7 @@
 // Made by Kaylin Devchand and Cristian Stransky
 #include <time.h>
-#include "dataframe.h"
-#include "rowers.h"
+#include "../dataframe/dataframe.h"
+#include "../dataframe/rowers.h"
 #include "sor.h"
 #include <chrono> 
 
@@ -18,9 +18,13 @@ class Benchmark : public Object {
     Rower* encrypt_rower_;
 
     Benchmark(char* filename) {
+        auto start_time = high_resolution_clock::now(); 
         sor_ = new SoR(filename, 0, 110000000); // 110000000 110MB with 700000 row
         df_ = sor_->get_dataframe();
         df_->add_column(new IntColumn(), nullptr);
+        auto stop_time = high_resolution_clock::now(); 
+        double duration = duration_cast<milliseconds>(stop_time - start_time).count(); // Multiply by 1000 to get milliseconds
+        printf("Time of creating dataframe from file: %f\n\n", duration);
 
         average_rower_ = new AverageRower(df_);
         encrypt_rower_ = new EncryptRower(df_);

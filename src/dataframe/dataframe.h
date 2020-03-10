@@ -1,8 +1,8 @@
 // Made by Kaylin Devchand and Cristian Stransky
 #pragma once
 
-#include "object.h"
-#include "string.h"
+#include "../helpers/object.h"
+#include "../helpers/string.h"
 
 #include <stdarg.h>
 #include <assert.h>
