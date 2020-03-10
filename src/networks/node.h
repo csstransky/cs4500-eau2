@@ -13,7 +13,7 @@
 #include "message.h"
 #include <errno.h>
 #include <assert.h>
-#include "string.h"
+#include "../helpers/string.h"
 #include "server.h"
 
 class Node : public Server {

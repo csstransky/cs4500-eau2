@@ -1,8 +1,8 @@
 //lang::CwC
 #pragma once
 
-#include "object.h"
-#include "string.h"
+#include "../helpers/object.h"
+#include "../helpers/string.h"
 #include <assert.h>
 
 /**

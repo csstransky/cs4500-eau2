@@ -13,7 +13,7 @@
 #include "message.h"
 #include <errno.h>
 #include <assert.h>
-#include "string.h"
+#include "../helpers/string.h"
 
 const int PORT = 8080;
 const int MAX_REQUEST_QUEUE = 3;

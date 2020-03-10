@@ -1,13 +1,7 @@
 // Made by Kaylin Devchand and Cristian Stransky
 
 // Client side C/C++ program to demonstrate Socket programming 
-#include <stdio.h> 
-#include <sys/socket.h> 
-#include <arpa/inet.h> 
-#include <unistd.h> 
-#include <string.h> 
-#include "node.h"
-#include "rendezvous_server.h"
+#include "../../src/networks/node.h"
 
 const char* DEFAULT_CLIENT_IP = "127.0.0.2";
 const char* DEFAULT_SERVER_IP = "127.0.0.1";

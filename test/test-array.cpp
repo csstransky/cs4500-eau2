@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "array.h"
-#include "string.h"
+#include "../src/array/array.h"
+#include "../src/helpers/string.h"
 
 void FAIL(const char* m) {
   fprintf(stderr, "test %s failed\n", m);

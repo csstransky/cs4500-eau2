@@ -1,7 +1,7 @@
 #pragma once
-#include "object.h"
+#include "../helpers/object.h"
 #include "pair.h"
-#include "array.h"
+#include "../array/array.h"
 
 // NOTE: based on how much data we will be dealing with in the future, this number can change to
 // accommodate that. I chose this number initially just because I saw it in a Wikipedia article.
