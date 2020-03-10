@@ -551,46 +551,30 @@ class StringColumn : public Column {
 class Schema : public Object {
  public:
   char* types_;
-  String** col_names;
-  String** row_names;
-  size_t num_cols;
-  size_t num_rows;
-  size_t row_array_size;
-  size_t col_array_size;
+  size_t num_cols_;
+  size_t num_rows_;
+  size_t col_array_size_;
 
   /** Copying constructor */
   Schema(Schema& from) {
     // Since these are primitive types, we can get away with this
-    this->num_cols = from.num_cols;
-    this->num_rows = from.num_rows;
-    this->row_array_size = from.row_array_size;
-    this->col_array_size = from.col_array_size;
+    this->num_cols_ = from.num_cols_;
+    this->num_rows_ = from.num_rows_;
+    this->col_array_size_ = from.col_array_size_;
     
-    this->types_ = new char[col_array_size];
-    this->col_names = new String*[col_array_size];
-    this->row_names = new String*[row_array_size];
-    size_t max_size = max_(num_cols, num_rows);
-    for (size_t ii = 0; ii < max_size; ii++) {
-      if (ii < num_cols) {
-        this->types_[ii] = from.types_[ii];
-        this->col_names[ii] = from.col_names[ii];
-      }
-      if (ii < num_rows) {
-        this->row_names[ii] = from.row_names[ii];
-      }
+    this->types_ = new char[col_array_size_];
+    for (size_t ii = 0; ii < num_cols_; ii++) {
+      this->types_[ii] = from.types_[ii];
     }
   }
  
   /** Create an empty schema **/
   Schema() {
-    row_array_size = 1;
-    col_array_size = 1;
-    types_ = new char[col_array_size];
+    col_array_size_ = 1;
+    types_ = new char[col_array_size_];
     types_[0] = '\0';
-    col_names = new String*[col_array_size];
-    row_names = new String*[row_array_size];
-    num_cols = 0;
-    num_rows = 0;
+    num_cols_ = 0;
+    num_rows_ = 0;
   }
  
   /** Create a schema from a string of types. A string that contains
@@ -604,144 +588,65 @@ class Schema : public Object {
       assert(types[ii] == 'I' || types[ii] == 'F' || types[ii] == 'B' || types[ii] == 'S');
     }
 
-    this->types_ = new char[types_length + 1];
+    col_array_size_ = types_length;
+    this->types_ = new char[col_array_size_ + 1];
     strcpy(types_, types);
-    this->types_[types_length] = '\0';
+    this->types_[col_array_size_] = '\0';
     // strlen doesn't include the last '\0' char so this will return the exact number of columns
-    num_cols = types_length; 
-    num_rows = 0;
-    col_array_size = num_cols;
-    row_array_size = 1;
-    col_names = new String*[col_array_size];
-    // All the values inside col_names need to be assigned to a nullptr, or else they'll be assigned
-    // random pointers 
-    for (size_t ii = 0; ii < num_cols; ii++) {
-      col_names[ii] = nullptr;
-    }
-    row_names = new String*[row_array_size];
+    num_cols_ = col_array_size_; 
+    num_rows_ = 0;
   }
 
   ~Schema() {
     delete[] types_;
-    delete[] col_names;
-    delete[] row_names;
-  }
-
-  /**
-   * Helper function that will return a name array at an increased sized (works for rows & columns).
-   * NOTE: The new_array_size MUST be larger than the name_array size being passed in, any
-   * value below than that will be undefined (will probably truncate though).
-   */
-  String** make_new_name_array_(String** name_array, size_t num_elements, size_t new_array_size) {
-      String** new_name_array = new String*[new_array_size];
-      for (size_t ii = 0; ii < num_elements; ii++) {
-        new_name_array[ii] = name_array[ii];
-      }
-      return new_name_array;
   }
 
   /**
    * Helper function that will increase BOTH the types and col_names arrays (as they're both linked)
    */
   void increase_size_column_arrays_() {
-    this->col_array_size = col_array_size * 2;
+    this->col_array_size_ = col_array_size_ * 2;
 
-    char* new_types = new char[col_array_size];
+    char* new_types = new char[col_array_size_];
     strcpy(new_types, types_);
     delete[] types_;
     this->types_ = new_types;
-
-    String** new_column_array = make_new_name_array_(col_names, num_cols, col_array_size);
-    delete[] col_names;
-    this->col_names = new_column_array;
   }
 
-  /** Small helper function that will increase the size of the row_names array */
-  void increase_size_row_array_() {
-    this->row_array_size = row_array_size * 2;
-    String** new_row_array = make_new_name_array_(row_names, num_rows, row_array_size);
-    delete[] row_names;
-    this->row_names = new_row_array;
-  }
- 
   /** Add a column of the given type and name (can be nullptr), name
     * is external. Names are expectd to be unique, duplicates result
     * in undefined behavior. */
-  void add_column(char typ, String* name) {
+  void add_column(char typ) {
     assert(typ == 'I' || typ == 'F' || typ == 'B' || typ == 'S');
-    if (num_cols + 1 >= col_array_size) {
+    if (num_cols_ + 1 >= col_array_size_) {
       increase_size_column_arrays_();
     }
-    this->types_[num_cols] = typ;
-    this->types_[num_cols + 1] = '\0';
-    this->col_names[num_cols] = name;
-    this->num_cols++;
+    this->types_[num_cols_] = typ;
+    this->types_[num_cols_ + 1] = '\0';
+    this->num_cols_++;
   }
 
  
   /** Add a row with a name (possibly nullptr), name is external.  Names are
    *  expectd to be unique, duplicates result in undefined behavior. */
-  void add_row(String* name) {
-    if (num_rows + 1 >= row_array_size) {
-      increase_size_row_array_();
-    }
-    this->row_names[num_rows] = name;
-    this->num_rows++;
+  void add_row() {
+    this->num_rows_++;
   }
- 
-  /** Return name of row at idx; nullptr indicates no name. An idx >= width
-    * is undefined. */
-  String* row_name(size_t idx) {
-    assert(idx < num_rows);
-    return this->row_names[idx];  
-  }
- 
-  /** Return name of column at idx; nullptr indicates no name given.
-    *  An idx >= width is undefined.*/
-  String* col_name(size_t idx) {
-    assert(idx < num_cols);
-    return this->col_names[idx];
-  }
- 
+
   /** Return type of column at idx. An idx >= width is undefined. */
   char col_type(size_t idx) {
-    assert(idx < num_cols);
+    assert(idx < num_cols_);
     return this->types_[idx];
-  }
- 
-  /** Given a column name return its index, or -1. */
-  // NOTE: Our col_idx will return the FIRST INSTANCE, in case of duplicates
-  // NOTE: We also made the assumption that the name being passed in can't be a nullptr
-  int col_idx(const char* name) {
-    assert(name != nullptr);
-    for (size_t ii = 0; ii < num_cols; ii++) {
-      String* col_name = col_names[ii];
-      if (col_name != nullptr && strcmp(col_name->c_str(), name) == 0)  {
-        return ii;
-      }
-    }
-    return -1;
-  }
- 
-  /** Given a row name return its index, or -1. */
-  int row_idx(const char* name) {
-    for (size_t ii = 0; ii < num_rows; ii++) {
-      String* row_name = row_names[ii];
-      if(row_name != nullptr && strcmp(row_name->c_str(), name) == 0) {
-        return ii;
-      }
-    }
-    return -1;
   }
  
   /** The number of columns */
   size_t width() {
-    return num_cols;
+    return num_cols_;
   }
  
   /** The number of rows */
   size_t length() {
-    return num_rows;
+    return num_rows_;
   }
 };
  
@@ -1119,8 +1024,7 @@ class DataFrame : public Object {
     
     for (size_t ii = 0; ii < num_cols; ii++) {
         char col_type = schema.col_type(ii);
-        String* col_name = schema.col_name(ii);
-        this->schema_.add_column(col_type, col_name);
+        this->schema_.add_column(col_type);
         this->cols_[ii] = make_new_column_(col_type);
     }
   }
@@ -1244,7 +1148,7 @@ class DataFrame : public Object {
     * name is optional and external. A nullptr colum is undefined. */
   // NOTE: We are making a NEW copy of the col being passed in, BUT all columns will be deleted 
   // later by the DataFrame deconstructor
-  void add_column(Column* col, String* name) {
+  void add_column(Column* col) {
     assert(col != nullptr);
     size_t num_rows = this->schema_.length();
     size_t num_cols = this->schema_.width();
@@ -1265,7 +1169,7 @@ class DataFrame : public Object {
         fill_rest_of_column_with_empty_values_(this->cols_[ii], col_size - num_rows);
       }
       for (size_t jj = 0; jj < col_size - num_rows; jj++) {
-        this->schema_.add_row(nullptr);
+        this->schema_.add_row();
       }
     }
 
@@ -1274,7 +1178,7 @@ class DataFrame : public Object {
     }
 
     this->cols_[num_cols] = copy_column;
-    this->schema_.add_column(col->get_type(), name);
+    this->schema_.add_column(col->get_type());
   }
 
   /** Gets a specific Column inside of the DataFrame. */
@@ -1299,18 +1203,6 @@ class DataFrame : public Object {
   String* get_string(size_t col, size_t row) {
     StringColumn* string_column = get_string_column_(this->cols_, this->schema_.width(), col);
     return string_column->get(row);
-  }
- 
-  /** Return the offset of the given column name or -1 if no such col. */
-  int get_col(String& col) {
-    const char* name = col.c_str();
-    return this->schema_.col_idx(name);
-  }
- 
-  /** Return the offset of the given row name or -1 if no such row. */
-  int get_row(String& col) {
-    const char* name = col.c_str();
-    return this->schema_.row_idx(name);
   }
 
   /** Set the value at the given column and row to the given value.
@@ -1413,11 +1305,7 @@ class DataFrame : public Object {
           assert(0); // should not reach this
       } 
     }
-    // The interesting thing here is that add_column(Column*, String*) has an argument to name the
-    // added column, but add_row(Row&) doesn't. Investigating further, there is no way to actually
-    // set the name for a Row in its class, so we're stuck assuming every Row's name will be nullptr
-    String* row_name = nullptr;
-    this->schema_.add_row(row_name);
+    this->schema_.add_row();
   }
  
   /** The number of rows in the dataframe. */
