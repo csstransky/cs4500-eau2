@@ -31,6 +31,26 @@ The dataframe layer consists of the Dataframe class and supporting classes. The 
 The Application class contains the KVStore of the node as a field. It also has the ability to retrieve the node id from the KVStore. The Application also contains a run method to run the application. This method is not implemented in Application and is to be implemented by subclasses of Application. To create a specific Application, a subclass of Application is created and the run method and helper methods are implemented. The same application can run on different node or different application can be created. No application runs on the RServer.
 
 ## Use cases
+The use case below creates a dataframe from a SoR file.
+
+```
+class CreateDataframe : public Application {
+    public:
+    char* filename_;
+    Key k("sor", 0);
+
+    CreateDataframe(size_t idx, char* filename): Application(idx) {
+        filename_ = filename;
+    }
+ 
+    void run_() override {
+        SoR* sor = new SoR(filename_);
+        DataFrame* df = sor->get_dataframe();
+        kv.put(k, df);
+    }
+  }
+}
+```
 
 ## Open questions
 
