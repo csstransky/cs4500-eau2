@@ -19,19 +19,21 @@ class Benchmark : public Object {
 
     Benchmark(char* filename) {
         auto start_time = high_resolution_clock::now(); 
+
         sor_ = new SoR(filename, 0, 110000000); // 110000000 110MB with 700000 row
         df_ = sor_->get_dataframe();
-        df_->add_column(new IntColumn(), nullptr);
+        df_->add_column(new IntColumn());
+
         auto stop_time = high_resolution_clock::now(); 
         double duration = duration_cast<milliseconds>(stop_time - start_time).count(); // Multiply by 1000 to get milliseconds
-        printf("Time of creating dataframe from file: %f\n\n", duration);
+        printf("Time of file reading: %f\n", duration);
 
         average_rower_ = new AverageRower(df_);
         encrypt_rower_ = new EncryptRower(df_);
     }
 
     ~Benchmark() {
-        df_->schema_.num_rows = 671444;
+        df_->schema_.num_rows_ = 671444;
         // delete df_ not necessary because sor_ really holds values
         delete sor_;
         delete average_rower_;
@@ -39,7 +41,7 @@ class Benchmark : public Object {
     }
 
     double map_average_rower(size_t num) {
-        df_->schema_.num_rows = num;
+        df_->schema_.num_rows_ = num;
         double total_time = 0;
         for (int ii = 0; ii < ITERATIONS; ii++) {
             auto start = high_resolution_clock::now(); 
@@ -57,7 +59,7 @@ class Benchmark : public Object {
     }
 
     double map_encrypt_rower(size_t num) {
-        df_->schema_.num_rows = num;
+        df_->schema_.num_rows_ = num;
         double total_time = 0;
         for (int ii = 0; ii < ITERATIONS; ii++) {
             auto start = high_resolution_clock::now(); 
@@ -75,7 +77,7 @@ class Benchmark : public Object {
     }
 
     double pmap_average_rower(size_t num) {
-        df_->schema_.num_rows = num;
+        df_->schema_.num_rows_ = num;
         double total_time = 0;
         for (int ii = 0; ii < ITERATIONS; ii++) {
             auto start = high_resolution_clock::now(); 
@@ -93,7 +95,7 @@ class Benchmark : public Object {
     }
 
     double pmap_encrypt_rower(size_t num) {
-        df_->schema_.num_rows = num;
+        df_->schema_.num_rows_ = num;
         double total_time = 0;
         for (int ii = 0; ii < ITERATIONS; ii++) {
             auto start = high_resolution_clock::now(); 
@@ -117,7 +119,7 @@ int main(int argc, char **argv) {
     int sizes[10] = {1000, 50000, 500000,1000000,10000000, 25000000, 50000000, 75000000, 100000000};
     int rows[4] = {50000, 100000, 500000, 671443};
 
-    printf("\nReading file. Will take 5-10 min...\n\n");  
+    printf("\nReading file. Will take roughly 1 minute...\n");  
     Benchmark* b = new Benchmark(filename);
 
     printf("\nStarting benchmarking...\n\n");

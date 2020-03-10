@@ -197,6 +197,64 @@ class SoR {
         return column_types;
     }
 
+    vector<string> get_max_column_strings(ifstream& in_file) {
+        string file_line_string;
+        char file_char;
+        bool is_record = false;
+        bool is_quotes = false;
+        size_t max_column_size = 0;
+        size_t current_column_size = 0;
+        vector<string> max_column_strings;
+        vector<string> current_column_strings;
+        int num_lines = 0;
+
+        while(!in_file.eof() && num_lines < MAX_SCHEMA_READ) {
+            in_file >> noskipws >> file_char;
+            switch (file_char) {
+                case ' ':
+                    if (is_quotes && is_record) {
+                        file_line_string += file_char;
+                    }
+                    break;
+                case '\n':
+                    if (max_column_size < current_column_size) {
+                        max_column_size = current_column_size;
+                        max_column_strings = current_column_strings;
+                    }
+                    current_column_strings.clear();
+                    current_column_size = 0;
+                    num_lines++;
+                    break;
+                case '\"':
+                    if (is_record) {
+                        is_quotes = !is_quotes;
+                        file_line_string += file_char;
+                    }
+                    break;
+                case '<':
+                    is_record = true;
+                    break;
+                case '>':
+                    // I put this check here to make sure we have a pair of <>, to avoid the 
+                    // case of "> dude >", which in our case will completely ignore it
+                    if (is_record) {
+                        current_column_size++;
+                        current_column_strings.push_back(file_line_string);
+
+                        is_record = false;
+                        file_line_string.clear(); 
+                    }
+                    is_quotes = false;
+                    break;
+                default:
+                    if (is_record) {
+                        file_line_string += file_char;
+                    }
+            }
+        }
+        return max_column_strings;
+    }
+
     char* get_column_types(char* file_path) {
         // This function determines the column types by the FIRST INSTANCE of the largest column,
         // example:
@@ -207,60 +265,7 @@ class SoR {
         ifstream in_file;
         in_file.open(file_path);
         if (in_file.is_open()) {
-            string file_line_string;
-            char file_char;
-            bool is_record = false;
-            bool is_quotes = false;
-            size_t max_column_size = 0;
-            size_t current_column_size = 0;
-            vector<string> max_column_strings;
-            vector<string> current_column_strings;
-            int num_lines = 0;
-
-            while(!in_file.eof() && num_lines < MAX_SCHEMA_READ) {
-                in_file >> noskipws >> file_char;
-                switch (file_char) {
-                    case ' ':
-                        if (is_quotes && is_record) {
-                            file_line_string += file_char;
-                        }
-                        break;
-                    case '\n':
-                        if (max_column_size < current_column_size) {
-                            max_column_size = current_column_size;
-                            max_column_strings = current_column_strings;
-                        }
-                        current_column_strings.clear();
-                        current_column_size = 0;
-                        num_lines++;
-                        break;
-                    case '\"':
-                        if (is_record) {
-                            is_quotes = !is_quotes;
-                            file_line_string += file_char;
-                        }
-                        break;
-                    case '<':
-                        is_record = true;
-                        break;
-                    case '>':
-                        // I put this check here to make sure we have a pair of <>, to avoid the 
-                        // case of "> dude >", which in our case will completely ignore it
-                        if (is_record) {
-                            current_column_size++;
-                            current_column_strings.push_back(file_line_string);
-
-                            is_record = false;
-                            file_line_string.clear(); 
-                        }
-                        is_quotes = false;
-                        break;
-                    default:
-                        if (is_record) {
-                            file_line_string += file_char;
-                        }
-                }
-            }
+            vector<string> max_column_strings = get_max_column_strings(in_file);
             column_types = convert_strings_to_column_types(max_column_strings);
             in_file.close(); 
         }
@@ -270,68 +275,77 @@ class SoR {
         return column_types;
     }
 
+    void move_file_index_next_line(ifstream& in_file, size_t from, size_t len) {
+        // move until new line
+        char file_char;
+        size_t end_byte = from + len;
+        while(!in_file.eof() && end_byte > in_file.tellg()) {
+            in_file >> noskipws >> file_char;
+            if (file_char == '\n') {
+                return;
+            }
+        }
+    }
+
+    void parse_and_add_file(ifstream& in_file, size_t from, size_t len) {
+        string file_line_string;
+        char file_char;
+        bool is_record = false;
+        bool is_quotes = false;
+        size_t end_byte = from + len;
+        vector<string> current_line;
+
+        while(!in_file.eof() && end_byte > in_file.tellg()) {
+            in_file >> noskipws >> file_char;
+            switch (file_char) {
+                case ' ':
+                    if (is_quotes && is_record) {
+                        file_line_string += file_char;
+                    }
+                    break;
+                case '\n':
+                    add_line(current_line);
+                    current_line.clear();
+                    break;
+                case '\"':
+                    if (is_record) {
+                        is_quotes = !is_quotes;
+                        file_line_string += file_char;
+                    }
+                    break;
+                case '<':
+                    is_record = true;
+                    break;
+                case '>':
+                    // I put this check here to make sure we have a pair of <>, to avoid the 
+                    // case of "> dude >", which in our case will completely ignore it
+                    if (is_record) {
+                        is_record = false;
+                        current_line.push_back(file_line_string);
+                        file_line_string.clear();
+                    }
+                    is_quotes = false;
+                    break;
+                default:
+                    if (is_record) {
+                        file_line_string += file_char;
+                    }
+            }
+        }
+    }
+
     void parse_and_add(char* file_path, size_t from, size_t len) {
         // Build the data structure using "from" and "len"
         ifstream in_file;
         in_file.open(file_path);
         if (in_file.is_open()) {
-            string file_line_string;
-            char file_char;
-            bool is_record = false;
-            bool is_quotes = false;
-            size_t end_byte = from + len;
-            vector<string> current_line;
-
             // move to from position
             in_file.seekg(from, ios_base::beg);
-
             if (from > 0) {
-                // move until new line
-                while(!in_file.eof() && end_byte > in_file.tellg()) {
-                    in_file >> noskipws >> file_char;
-                    if (file_char == '\n') {
-                        break;
-                    }
-                }
+                move_file_index_next_line(in_file, from, len);
             }
 
-            while(!in_file.eof() && end_byte > in_file.tellg()) {
-                in_file >> noskipws >> file_char;
-                switch (file_char) {
-                    case ' ':
-                        if (is_quotes && is_record) {
-                            file_line_string += file_char;
-                        }
-                        break;
-                    case '\n':
-                        add_line(current_line);
-                        current_line.clear();
-                        break;
-                    case '\"':
-                        if (is_record) {
-                            is_quotes = !is_quotes;
-                            file_line_string += file_char;
-                        }
-                        break;
-                    case '<':
-                        is_record = true;
-                        break;
-                    case '>':
-                        // I put this check here to make sure we have a pair of <>, to avoid the 
-                        // case of "> dude >", which in our case will completely ignore it
-                        if (is_record) {
-                            is_record = false;
-                            current_line.push_back(file_line_string);
-                            file_line_string.clear();
-                        }
-                        is_quotes = false;
-                        break;
-                    default:
-                        if (is_record) {
-                            file_line_string += file_char;
-                        }
-                }
-            }
+            parse_and_add_file(in_file, from, len); 
             in_file.close(); 
         }
         else {
@@ -404,7 +418,7 @@ class SoR {
         for (size_t ii; ii < this->dataframe_->ncols(); ii++) {
             Column* new_column = this->dataframe_->get_column(ii);
             // We don't care about Column names currently, so all Column names are nullptr
-            new_dataframe->add_column(new_column, nullptr);
+            new_dataframe->add_column(new_column);
         }
         return new_dataframe;
     }
