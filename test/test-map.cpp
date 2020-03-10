@@ -1,9 +1,9 @@
-#include "map.h"
+#include "../src/map/map.h"
 #include <iostream>
 #include <stdlib.h>
-#include "object.h"
-#include "string.h"
-#include "array.h"
+#include "../src/helpers/object.h"
+#include "../src/helpers/string.h"
+#include "../src/array/array.h"
 
 void FAIL() { exit(1); }
 void t_true(bool p) { if (!p) FAIL(); }

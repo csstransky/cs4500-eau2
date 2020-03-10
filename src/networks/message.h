@@ -4,8 +4,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "string.h"
-#include "object.h"
+#include "../helpers/string.h"
+#include "../helpers/object.h"
 #include "serial.h"
 
 int MESSAGE_ID = 0;

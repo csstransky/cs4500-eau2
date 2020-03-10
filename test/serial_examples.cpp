@@ -1,6 +1,6 @@
 // Made by Kaylin Devchand and Cristian Stransky
 
-#include "string.h"
+#include "../src/helpers/string.h"
 
 void print_serial_section(char* serial_array, size_t start_index, size_t end_index) {
     for (start_index; start_index < end_index; start_index++) {

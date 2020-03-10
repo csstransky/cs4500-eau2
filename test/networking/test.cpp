@@ -1,7 +1,7 @@
 // Made by Kaylin Devchand and Cristian Stransky
 
-#include "../src/node.h"
-#include "../src/rendezvous_server.h"
+#include "../../src/networks/node.h"
+#include "../../src/networks/rendezvous_server.h"
 
 int main(int argc, char const *argv[]) 
 { 

@@ -1,6 +1,6 @@
 #pragma once                                                                     
 //lang::CwC                                                                      
-#include "object.h"                                                              
+#include "../helpers/object.h"                                                              
 
 /**
  * Represents a key and value pair, to be mainly used for Map

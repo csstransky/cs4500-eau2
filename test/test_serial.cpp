@@ -5,8 +5,8 @@
 #include <arpa/inet.h> 
 #include <unistd.h> 
 #include <string.h> 
-#include "../src/message.h"
-#include "../src/array.h"
+#include "../src/networks/message.h"
+#include "../src/array/array.h"
 
 
 void test_string() {

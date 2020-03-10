@@ -1,7 +1,6 @@
-# Assignment 1 Part 2
+# Array
 
-### Part 2 Overview:
-This directory contains the contents for Assignment 1 Part 2. Included in this directory are `object.h`, `string.h`, `array.h`, and `test-array.cpp`. The Object, String, and Array classes are basic APIs that are to be fully implemented in a later assignment. The test file is a handful of tests that should pass once Object, String, and Array are fully implemented.
+API: https://github.com/chasebish/cs4500_assignment1_part2.git
 
 ### Object:
 Overview:

@@ -1,8 +1,8 @@
 #include <iostream>
 
-#include "object.h"  // Your file with the CwC declaration of Object
-#include "string.h"  // Your file with the String class
-#include "pair.h"
+#include "../src/helpers/object.h"  // Your file with the CwC declaration of Object
+#include "../src/helpers/string.h"  // Your file with the String class
+#include "../src/map/pair.h"
  
 // This test class was added to allow for easier testing
 class Test {
