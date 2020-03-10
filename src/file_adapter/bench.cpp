@@ -7,8 +7,10 @@
 
 using namespace std::chrono;
 
-
 const int ITERATIONS = 100;
+const size_t FILE_SIZE = 110000000; // 110000000 110MB with 700000 row
+const size_t NUM_ROWS = 4;
+const int ROWS[NUM_ROWS] = {50000, 100000, 500000, 671443}; // Make sure last number is total rows
 
 class Benchmark : public Object {
     public:
@@ -20,9 +22,10 @@ class Benchmark : public Object {
     Benchmark(char* filename) {
         auto start_time = high_resolution_clock::now(); 
 
-        sor_ = new SoR(filename, 0, 110000000); // 110000000 110MB with 700000 row
+        sor_ = new SoR(filename, 0, FILE_SIZE);
         df_ = sor_->get_dataframe();
-        df_->add_column(new IntColumn());
+        IntColumn result_column = IntColumn();
+        df_->add_column(&result_column);
 
         auto stop_time = high_resolution_clock::now(); 
         double duration = duration_cast<milliseconds>(stop_time - start_time).count(); // Multiply by 1000 to get milliseconds
@@ -33,7 +36,6 @@ class Benchmark : public Object {
     }
 
     ~Benchmark() {
-        df_->schema_.num_rows_ = 671444;
         // delete df_ not necessary because sor_ really holds values
         delete sor_;
         delete average_rower_;
@@ -52,9 +54,7 @@ class Benchmark : public Object {
             auto stop = high_resolution_clock::now(); 
             auto duration = duration_cast<milliseconds>(stop - start); // Multiply by 1000 to get milliseconds
             total_time += duration.count();
-
         }
-
         return total_time / ITERATIONS;
     }
 
@@ -70,9 +70,7 @@ class Benchmark : public Object {
             auto stop = high_resolution_clock::now(); 
             auto duration = duration_cast<milliseconds>(stop - start); // Multiply by 1000 to get milliseconds
             total_time += duration.count();
-
         }
-
         return total_time / ITERATIONS;
     }
 
@@ -88,9 +86,7 @@ class Benchmark : public Object {
             auto stop = high_resolution_clock::now(); 
             auto duration = duration_cast<milliseconds>(stop - start); // Multiply by 1000 to get milliseconds
             total_time += duration.count();
-
         }
-
         return total_time / ITERATIONS;
     }
 
@@ -107,7 +103,6 @@ class Benchmark : public Object {
             auto duration = duration_cast<milliseconds>(stop - start); // Multiply by 1000 to get milliseconds
             total_time += duration.count();
         }
-
         return total_time / ITERATIONS;
     }
 
@@ -115,26 +110,21 @@ class Benchmark : public Object {
 
 int main(int argc, char **argv) {
     char* filename = (char*)"datafile.txt";
-    // 1KB, 50KB, 100KB, 500KB, 1MB, 10MB, 25MB, 50MB, 75MB, 100MB
-    int sizes[10] = {1000, 50000, 500000,1000000,10000000, 25000000, 50000000, 75000000, 100000000};
-    int rows[4] = {50000, 100000, 500000, 671443};
 
     printf("\nReading file. Will take roughly 1 minute...\n");  
-    Benchmark* b = new Benchmark(filename);
+    Benchmark b(filename);
 
     printf("\nStarting benchmarking...\n\n");
-    for (int ii = 0; ii < 4; ii++) {
-        printf("Benchmarking with file of %d rows\n", rows[ii]);
-        double time_map1 = b->map_average_rower(rows[ii]);
+    for (int ii = 0; ii < NUM_ROWS; ii++) {
+        printf("Benchmarking with file of %d rows\n", ROWS[ii]);
+        double time_map1 = b.map_average_rower(ROWS[ii]);
         printf("Time of map with AverageRower: %f\n", time_map1);
-        double time_map2 = b->map_encrypt_rower(rows[ii]);
+        double time_map2 = b.map_encrypt_rower(ROWS[ii]);
         printf("Time of map with encrypt rower: %f\n", time_map2);
-        double time_pmap1 = b->pmap_average_rower(rows[ii]);
+        double time_pmap1 = b.pmap_average_rower(ROWS[ii]);
         printf("Time of pmap with average_rower: %f\n", time_pmap1);
-        double time_pmap2 = b->pmap_encrypt_rower(rows[ii]);
+        double time_pmap2 = b.pmap_encrypt_rower(ROWS[ii]);
         printf("Time of pmap with encrypt rower: %f\n\n", time_pmap2);
     } 
-
     return 0;
-
 }

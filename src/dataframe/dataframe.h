@@ -1367,7 +1367,7 @@ class DataFrame : public Object {
 
   /** This method clones the Rower and executes the map in parallel. Join is
   * used at the end to merge the results. */
-  void pmap(Rower& r) {
+  void pmap(Rower& rower) {
     std::thread* threads[NUM_THREADS];
     Rower* clones[NUM_THREADS];
 
@@ -1380,21 +1380,18 @@ class DataFrame : public Object {
 
     // For each thread, clone rower and create thread
     for (size_t i = 0; i < NUM_THREADS; i++) {
-      clones[i] = (Rower*)r.clone();
+      clones[i] = static_cast<Rower*>(rower.clone());
       size_t start = rows_per_thread * i;
       // Minimum of the rows_per_thread and the leftover
       size_t end = min_(rows_per_thread * (i + 1), num_rows);
       threads[i] = new std::thread(&DataFrame::thread_map_, this, start, end, std::ref(*clones[i]));
     } 
 
-    // join threads
+    // join threads and delete rower clones
     for (size_t i = 0; i < NUM_THREADS; i++) {
       threads[i]->join();
-    }
-
-    // Join and delete rower clones
-    for (size_t i = 0; i < NUM_THREADS; i++) {
-      r.join_delete(clones[i]);
+      delete threads[i];
+      rower.join_delete(clones[i]);
     }
   }
 };
