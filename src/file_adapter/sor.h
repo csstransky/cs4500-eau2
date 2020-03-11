@@ -54,7 +54,6 @@ class SoR {
         return element.front() != '0' && element.front() != 0;
     }
 
-
     bool get_bool_from_line(vector<string> line, size_t index) {
         if (index < line.size()) {
             string element = line.at(index);
@@ -64,7 +63,6 @@ class SoR {
             return (bool)DEFAULT_BOOL_VALUE;
         }
     }
-
 
     void add_line(vector<string> line) {
         Schema schema = dataframe_->get_schema();
@@ -82,6 +80,7 @@ class SoR {
                 case 'S': {
                     String* string_value = get_string_from_line(line, i);
                     row.set(i, string_value);
+                    if (string_value) { delete string_value; }
                     break;
                 }
                 case 'F': {

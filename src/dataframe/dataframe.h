@@ -470,16 +470,23 @@ class StringColumn : public Column {
       size_t array = i / ELEMENT_ARRAY_SIZE;
       size_t index = i % ELEMENT_ARRAY_SIZE;
 
-      elements_[array][index] = va_arg(args, String*);
+      String* temp_string = va_arg(args, String*);
+      elements_[array][index] = temp_string ? temp_string->clone() : nullptr;
     }
     va_end(args);
   }
 
   ~StringColumn() {
+    size_t count = 0;
     for (size_t i = 0; i < num_arrays_; i++) {
+      for (size_t j = 0; j < ELEMENT_ARRAY_SIZE && count >= size_; j++) {
+        if (elements_[i][j]) {
+          delete elements_[i][j];
+        }
+        count++;
+      }
       delete[] elements_[i];
     }
-
     delete[] elements_;
   }
 
@@ -500,7 +507,7 @@ class StringColumn : public Column {
     size_t array = idx / ELEMENT_ARRAY_SIZE;
     size_t index = idx % ELEMENT_ARRAY_SIZE;
 
-    elements_[array][index] = val;
+    elements_[array][index] = val ? val->clone() : nullptr;
   }
 
   size_t size() {
@@ -535,7 +542,7 @@ class StringColumn : public Column {
     size_t array = size_ / ELEMENT_ARRAY_SIZE;
     size_t index = size_ % ELEMENT_ARRAY_SIZE;
 
-    elements_[array][index] = val;
+    elements_[array][index] = val ? val->clone() : nullptr;
     size_++;
   }
 };
