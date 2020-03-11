@@ -1055,7 +1055,6 @@ class DataFrame : public Object {
    */
   void fill_rest_of_column_with_empty_values_(Column* column, size_t num_rows_to_fill) {
     char column_type = column->get_type();
-    size_t column_size = column->size();
     // The for loops are inside the switch cases instead of just having 1 for loop outside the 
     // switch case for a little more efficiency by avoiding unnecessary checks every iteration
     switch (column_type) {
@@ -1132,7 +1131,7 @@ class DataFrame : public Object {
   /** 
    * Helper function that will increase the size of the cols_ and col_array_size_
    */
-  Column** increase_size_column_array_() {
+  void increase_size_column_array_() {
     this->col_array_size_ = this->col_array_size_ * 2;
     size_t num_cols = this->schema_.width();
     Column** new_cols = new Column*[this->col_array_size_];
@@ -1367,7 +1366,7 @@ class DataFrame : public Object {
 
   /** This method clones the Rower and executes the map in parallel. Join is
   * used at the end to merge the results. */
-  void pmap(Rower& r) {
+  void pmap(Rower& rower) {
     std::thread* threads[NUM_THREADS];
     Rower* clones[NUM_THREADS];
 
@@ -1380,21 +1379,18 @@ class DataFrame : public Object {
 
     // For each thread, clone rower and create thread
     for (size_t i = 0; i < NUM_THREADS; i++) {
-      clones[i] = (Rower*)r.clone();
+      clones[i] = static_cast<Rower*>(rower.clone());
       size_t start = rows_per_thread * i;
       // Minimum of the rows_per_thread and the leftover
       size_t end = min_(rows_per_thread * (i + 1), num_rows);
       threads[i] = new std::thread(&DataFrame::thread_map_, this, start, end, std::ref(*clones[i]));
     } 
 
-    // join threads
+    // join threads and delete rower clones
     for (size_t i = 0; i < NUM_THREADS; i++) {
       threads[i]->join();
-    }
-
-    // Join and delete rower clones
-    for (size_t i = 0; i < NUM_THREADS; i++) {
-      r.join_delete(clones[i]);
+      delete threads[i];
+      rower.join_delete(clones[i]);
     }
   }
 };

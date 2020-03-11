@@ -264,6 +264,8 @@ class SoR {
         char* column_types;
         ifstream in_file;
         in_file.open(file_path);
+        column_types = nullptr;
+        
         if (in_file.is_open()) {
             vector<string> max_column_strings = get_max_column_strings(in_file);
             column_types = convert_strings_to_column_types(max_column_strings);
@@ -415,7 +417,7 @@ class SoR {
     DataFrame* get_dataframe_clone() {
         Schema new_schema("");
         DataFrame* new_dataframe = new DataFrame(new_schema);
-        for (size_t ii; ii < this->dataframe_->ncols(); ii++) {
+        for (size_t ii = 0; ii < this->dataframe_->ncols(); ii++) {
             Column* new_column = this->dataframe_->get_column(ii);
             // We don't care about Column names currently, so all Column names are nullptr
             new_dataframe->add_column(new_column);

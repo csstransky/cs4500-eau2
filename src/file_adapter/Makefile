@@ -1,7 +1,6 @@
-all: build run
-
 build:
 	g++ -O3 -pthread -std=c++11 -o bench bench.cpp
+	clang++ -std=c++11 -Wall -g -o sorer main.cpp -v
 
 run:
 ifeq ("$(wildcard ./datafile.txt)","")
@@ -12,4 +11,4 @@ endif
 	./bench
 
 clean:
-	rm -rf bench datafile.txt
+	rm -rf bench datafile.txt sorer
