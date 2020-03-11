@@ -370,11 +370,7 @@ class SoR {
 
     DataFrame* dataframe_;
 
-    SoR(char* file_path) {
-        size_t from = 0;
-        size_t len = get_file_size(file_path);
-        SoR(file_path, from, len);
-    }
+    SoR(char* file_path) : SoR(file_path, 0, get_file_size(file_path)) { }
 
     SoR(char* file_path, size_t from, size_t len) {
         // get column types of the first 500 lines (using max column)
