@@ -26,7 +26,8 @@ class Map: public Object {
             // We want a little more speed, so we're going to initialize all the bucket arrays by 
             // 1 element, just to avoid an initialization check every time we get and set
             for(size_t ii = 0; ii < buckets_size_; ii++) {
-                buckets_->push(new ObjectArray(1));
+                ObjectArray temp_array(1);
+                buckets_->push(&temp_array);
             }
         }
 
@@ -165,14 +166,14 @@ class Map: public Object {
             for (size_t ii = 0; ii < bucket_array->length(); ii++) {
                 Pair* old_pair = dynamic_cast<Pair*>(bucket_array->get(ii));
                 if (key->equals(old_pair->get_key())) {
-                    Object* old_value = old_pair->get_value();
+                    Object* old_value = old_pair->get_value()->clone();
                     old_pair->set_value(value);
                     return old_value;
                 }
             }
 
-            Pair* new_pair = new Pair(key, value);
-            bucket_array->push(new_pair);
+            Pair new_pair(key, value);
+            bucket_array->push(&new_pair);
             count_++;
             return nullptr;
         }
@@ -191,7 +192,7 @@ class Map: public Object {
             for (size_t ii = 0; ii < bucket_array->length(); ii++) {
                 Pair* pair = dynamic_cast<Pair*>(bucket_array->get(ii));
                 if (key->equals(pair->get_key())) {
-                    Object* old_value = pair->get_value();
+                    Object* old_value = pair->get_value()->clone();
                     bucket_array->remove(ii);
                     delete pair;
                     count_--;
@@ -213,6 +214,7 @@ class Map: public Object {
                 Object* value = other->get(key);
                 this->put(key, value);
             }
+            delete other_keys;
         }
 
         /**
@@ -265,27 +267,6 @@ class Map: public Object {
                 }
             }
             return values;
-        }
-
-        /**
-         * @brief - Does this map equal other?
-         *  
-         * @param other - the object to compare this map to
-         * @return true - if this map equals other
-         * @return false - if this map does not equal other
-         */
-        virtual bool equals(Object* other) {
-            Map* other_map = dynamic_cast<Map*>(other);
-            if (other_map == nullptr || other_map->size() != this->size()) { return false; }
-
-            ObjectArray* other_keys = dynamic_cast<ObjectArray*>(other_map->keySet());
-            for (size_t ii = 0; ii < other_keys->length(); ii++) {
-                Object* other_key = other_keys->get(ii);
-                Object* other_value = other_map->get(other_key);
-                Object* this_value = this->get(other_key);
-                if (!other_value->equals(this_value)) { return false; }
-            }
-            return true;
         }
 
         /**

@@ -651,7 +651,7 @@ public:
   }
 
   /* Copies the contents of an already existing Array */
-  ObjectArray(ObjectArray* const arr) : ObjectArray(arr->length()) {
+  ObjectArray(ObjectArray* const arr) : ObjectArray(arr->size_) {
     for (size_t i = 0; i < arr->length(); i++) {
       elements_[i] = arr->get(i)->clone();
     }
