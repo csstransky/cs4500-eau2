@@ -19,6 +19,11 @@ class Pair : public Object {
             this->value = value;
         }
 
+        Pair(Pair* p) {
+            this->key = p->get_key()->clone();
+            this->value = p->get_value()->clone();
+        }
+
         ~Pair() {}
 
         Object* get_key() { return key; }
@@ -32,6 +37,10 @@ class Pair : public Object {
             if (other_pair == nullptr) return false;
             return this->key->equals(other_pair->get_key()) 
                 && this->value->equals(other_pair->get_value());
+        }
+
+        Object* clone() {
+            return new Pair(this);
         }
 
         /**

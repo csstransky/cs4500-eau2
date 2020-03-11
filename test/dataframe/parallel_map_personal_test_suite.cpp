@@ -534,33 +534,26 @@ void schema_constructor_tests() {
     Schema* schema1 = new Schema();
     GT_EQUALS(schema1->width(), 0);
     GT_EQUALS(schema1->length(), 0);
-    GT_EQUALS(schema1->col_idx(""), -1);
-    GT_EQUALS(schema1->row_idx(""), -1);
 
     const char* types = "ISBFFBS";
     Schema* schema2 = new Schema(types);
     GT_EQUALS(schema2->width(), 7);
     GT_EQUALS(schema2->length(), 0);
-    GT_EQUALS(schema2->col_idx(""), -1);
-    GT_EQUALS(schema2->row_idx(""), -1);
     for (size_t ii = 0; ii < schema2->width(); ii++) {
-        GT_EQUALS(schema2->col_name(ii), nullptr);
         GT_EQUALS(schema2->col_type(ii), types[ii]);
     }
     
     Schema* schema3 = new Schema(*schema2);
     GT_EQUALS(schema3->width(), 7);
     GT_EQUALS(schema3->length(), 0);
-    GT_EQUALS(schema3->col_idx(""), -1);
-    GT_EQUALS(schema3->row_idx(""), -1);
+
     for (size_t ii = 0; ii < schema3->width(); ii++) {
-        GT_EQUALS(schema3->col_name(ii), nullptr);
         GT_EQUALS(schema3->col_type(ii), types[ii]);
     }
 
     // Testing to see that the copied Schema is not linked to its original
-    schema3->add_column('S', nullptr);
-    schema3->add_row(nullptr);
+    schema3->add_column('S');
+    schema3->add_row();
     GT_EQUALS(schema3->col_type(7), 'S');
     GT_EQUALS(schema3->width(), 8);
     GT_EQUALS(schema2->width(), 7);
@@ -576,17 +569,16 @@ void schema_constructor_tests() {
 void schema_add_column_tests() {
     Schema* schema1 = new Schema();
     for (size_t ii = 0; ii < 100; ii++) {
-        schema1->add_column('S', nullptr);
+        schema1->add_column('S');
     }
     GT_EQUALS(schema1->width(), 100);
     GT_EQUALS(schema1->col_type(47), 'S');
     
     String* name = new String("hi");
-    schema1->add_column('F', name);
+    schema1->add_column('F');
     GT_EQUALS(schema1->width(), 101);
     GT_EQUALS(schema1->length(), 0);
     GT_EQUALS(schema1->col_type(100), 'F');
-    GT_EQUALS(schema1->col_idx("hi"), 100);
 
     delete schema1;
     delete name;
@@ -596,87 +588,17 @@ void schema_add_column_tests() {
 void schema_add_row_tests() {
     Schema* schema1 = new Schema();
     for (size_t ii = 0; ii < 100; ii++) {
-        schema1->add_row(nullptr);
+        schema1->add_row();
     }
     GT_EQUALS(schema1->length(), 100);
     
     String* name = new String("hi");
-    schema1->add_row(name);
+    schema1->add_row();
     GT_EQUALS(schema1->length(), 101);
     GT_EQUALS(schema1->width(), 0);
-    GT_EQUALS(schema1->row_idx("hi"), 100);
 
     delete schema1;
     delete name;
-    exit(0);
-}
-
-void schema_row_name_tests() {
-    Schema* schema1 = new Schema();
-    String* name1 = new String("lolp");
-    String* name2 = new String("jojo");
-    schema1->add_row(name1);
-    schema1->add_row(name2);
-    schema1->add_row(nullptr);
-    GT_EQUALS(schema1->row_name(0), name1);
-    GT_EQUALS(schema1->row_name(1), name2);
-    GT_EQUALS(schema1->row_name(2), nullptr);
-    delete name1;
-    delete name2;
-    delete schema1;
-    exit(0);
-}
-
-void schema_col_name_tests() {
-    Schema* schema1 = new Schema("I");
-    String* name1 = new String("lolp");
-    String* name2 = new String("jojo");
-    schema1->add_column('F', name1);
-    schema1->add_column('S', name2);
-    schema1->add_column('B', nullptr);
-    GT_EQUALS(schema1->col_name(0), nullptr);
-    GT_EQUALS(schema1->col_name(1), name1);
-    GT_EQUALS(schema1->col_name(2), name2);
-    GT_EQUALS(schema1->col_name(3), nullptr);
-    delete name1;
-    delete name2;
-    delete schema1;
-    exit(0);
-}
-
-void schema_col_idx_tests() {
-    Schema* schema1 = new Schema("FBSFB");
-    String* name1 = new String("lolp");
-    String* name2 = new String("jojo");
-    schema1->add_column('F', nullptr);
-    schema1->add_column('F', name1);
-    schema1->add_column('S', name2);
-    schema1->add_column('S', name2);
-    schema1->add_column('B', name1);
-    GT_EQUALS(schema1->col_idx("lolp"), 6);
-    GT_EQUALS(schema1->col_idx("jojo"), 7);
-    GT_EQUALS(schema1->col_idx("dodo"), -1);
-    delete name1;
-    delete name2;
-    delete schema1;
-    exit(0);
-}
-
-void schema_row_idx_tests() {
-    Schema* schema1 = new Schema("FBSFB");
-    String* name1 = new String("lolp");
-    String* name2 = new String("jojo");
-    schema1->add_row(nullptr);
-    schema1->add_row(name1);
-    schema1->add_row(name2);
-    schema1->add_row(name2);
-    schema1->add_row(name1);
-    GT_EQUALS(schema1->row_idx("lolp"), 1);
-    GT_EQUALS(schema1->row_idx("jojo"), 2);
-    GT_EQUALS(schema1->row_idx("dodo"), -1);
-    delete name1;
-    delete name2;
-    delete schema1;
     exit(0);
 }
 
@@ -895,18 +817,10 @@ void test_add_column() {
   Column* c_string = new StringColumn(4, hi, hi, hi, hi);
   Column* c_bool = new BoolColumn(4, (bool)0, (bool)1, (bool)1, (bool)1);
 
-  df.add_column(c_int, hi);
-  df.add_column(c_float, hello);
-  df.add_column(c_string, hi);
-  df.add_column(c_bool, nullptr);
-
-  GT_EQUALS(df.get_schema().col_name(4)->equals(hi), 1);
-  GT_EQUALS(df.get_schema().col_name(5)->equals(hello), 1);
-  GT_EQUALS(df.get_schema().col_name(6)->equals(hi), 1);
-
-  GT_EQUALS(df.get_col(*hi), 4);
-  GT_EQUALS(df.get_col(*hello), 5);
-  GT_EQUALS(df.get_col(*h), -1);
+  df.add_column(c_int);
+  df.add_column(c_float);
+  df.add_column(c_string);
+  df.add_column(c_bool);
 
   GT_EQUALS(df.ncols(), 8);
   GT_EQUALS(df.nrows(), 4);
@@ -919,7 +833,7 @@ void test_add_column() {
   }
   
   for (int i = 0; i < 100; i++) {
-    df.add_column(c_bool, nullptr);
+    df.add_column(c_bool);
   }
 
   GT_EQUALS(df.ncols(), 108);
@@ -949,7 +863,7 @@ void dataframe_constructor_tests() {
   GT_EQUALS(dataframe2->nrows(), 0);
   
   // Testing to see that the copy is not linked to the original
-  dataframe2->add_column(int_column, nullptr);
+  dataframe2->add_column(int_column);
   GT_EQUALS(dataframe1->ncols(), 6);
   GT_EQUALS(dataframe1->nrows(), 0);
   GT_EQUALS(dataframe2->ncols(), 7);
@@ -976,10 +890,10 @@ void dataframe_getters_tests() {
   Column* c_string = new StringColumn(5, hi, hello, nullptr, hi, h);
   Column* c_bool = new BoolColumn(3, (bool)0, (bool)1, (bool)1);
 
-  df.add_column(c_int, hi);
-  df.add_column(c_float, hello);
-  df.add_column(c_string, hi);
-  df.add_column(c_bool, nullptr);
+  df.add_column(c_int);
+  df.add_column(c_float);
+  df.add_column(c_string);
+  df.add_column(c_bool);
 
   GT_EQUALS(df.get_int(0, 0), 1);
   GT_EQUALS(df.get_int(0, 1), 3);
@@ -1035,10 +949,10 @@ void dataframe_setters_tests() {
   Column* c_string = new StringColumn(17, hi, hello, nullptr, hi, h);
   Column* c_bool = new BoolColumn(3, (bool)0, (bool)1, (bool)1);
 
-  df.add_column(c_int, hi);
-  df.add_column(c_float, hello);
-  df.add_column(c_string, hi);
-  df.add_column(c_bool, nullptr);
+  df.add_column(c_int);
+  df.add_column(c_float);
+  df.add_column(c_string);
+  df.add_column(c_bool);
 
   for (size_t ii = 0; ii < df.nrows(); ii++) {
     df.set(0, ii, 14);
@@ -1080,10 +994,10 @@ void dataframe_fill_row_tests() {
   Column* c_string = new StringColumn(5, hi, hello, nullptr, hi, h);
   Column* c_bool = new BoolColumn(3, (bool)0, (bool)1, (bool)1);
 
-  df.add_column(c_int, hi);
-  df.add_column(c_float, hello);
-  df.add_column(c_string, hi);
-  df.add_column(c_bool, nullptr);
+  df.add_column(c_int);
+  df.add_column(c_float);
+  df.add_column(c_string);
+  df.add_column(c_bool);
 
   Row* row1 = new Row(df.get_schema());
   Row* row2 = new Row(df.get_schema());
@@ -1152,10 +1066,10 @@ void dataframe_add_row_tests() {
   Column* c_string = new StringColumn(5, hi, hello, nullptr, hi, h);
   Column* c_bool = new BoolColumn(3, (bool)0, (bool)1, (bool)1);
 
-  df.add_column(c_int, hi);
-  df.add_column(c_float, hello);
-  df.add_column(c_string, hi);
-  df.add_column(c_bool, nullptr);
+  df.add_column(c_int);
+  df.add_column(c_float);
+  df.add_column(c_string);
+  df.add_column(c_bool);
 
   Row* row1 = new Row(df.get_schema());
   Row* row2 = new Row(df.get_schema());
@@ -1310,10 +1224,6 @@ TEST(StringColumn, string_column_set_tests){ ASSERT_EXIT_ZERO(string_column_set_
 TEST(Schema, schema_constructor_tests){ ASSERT_EXIT_ZERO(schema_constructor_tests); }
 TEST(Schema, schema_add_column_tests){ ASSERT_EXIT_ZERO(schema_add_column_tests); }
 TEST(Schema, schema_add_row_tests){ ASSERT_EXIT_ZERO(schema_add_row_tests); }
-TEST(Schema, schema_row_name_tests){ ASSERT_EXIT_ZERO(schema_row_name_tests); }
-TEST(Schema, schema_col_name_tests){ ASSERT_EXIT_ZERO(schema_col_name_tests); }
-TEST(Schema, schema_col_idx_tests){ ASSERT_EXIT_ZERO(schema_col_idx_tests); }
-TEST(Schema, schema_row_idx_tests){ ASSERT_EXIT_ZERO(schema_row_idx_tests); }
 
 // Row tests
 TEST(Row, test_row_idx){ ASSERT_EXIT_ZERO(test_row_idx); }

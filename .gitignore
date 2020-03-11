@@ -35,4 +35,5 @@ settings.json
 bench
 map
 datafile.txt
+test/build/*
 sorer

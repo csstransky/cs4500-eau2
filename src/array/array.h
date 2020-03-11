@@ -653,7 +653,7 @@ public:
   /* Copies the contents of an already existing Array */
   ObjectArray(ObjectArray* const arr) : ObjectArray(arr->length()) {
     for (size_t i = 0; i < arr->length(); i++) {
-      elements_[i] = arr->get(i);
+      elements_[i] = arr->get(i)->clone();
     }
     count_ = arr->length();
   }
@@ -776,6 +776,10 @@ public:
     elements_[index] = to_add;
 
     return e;
+  }
+
+  Object* clone() {
+    return new ObjectArray(this);
   }
 
   size_t serial_len() {
