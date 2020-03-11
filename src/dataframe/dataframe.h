@@ -1055,7 +1055,6 @@ class DataFrame : public Object {
    */
   void fill_rest_of_column_with_empty_values_(Column* column, size_t num_rows_to_fill) {
     char column_type = column->get_type();
-    size_t column_size = column->size();
     // The for loops are inside the switch cases instead of just having 1 for loop outside the 
     // switch case for a little more efficiency by avoiding unnecessary checks every iteration
     switch (column_type) {
@@ -1132,7 +1131,7 @@ class DataFrame : public Object {
   /** 
    * Helper function that will increase the size of the cols_ and col_array_size_
    */
-  Column** increase_size_column_array_() {
+  void increase_size_column_array_() {
     this->col_array_size_ = this->col_array_size_ * 2;
     size_t num_cols = this->schema_.width();
     Column** new_cols = new Column*[this->col_array_size_];
