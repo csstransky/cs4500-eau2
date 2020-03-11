@@ -479,7 +479,7 @@ class StringColumn : public Column {
   ~StringColumn() {
     size_t count = 0;
     for (size_t i = 0; i < num_arrays_; i++) {
-      for (size_t j = 0; j < ELEMENT_ARRAY_SIZE && count >= size_; j++) {
+      for (size_t j = 0; j < ELEMENT_ARRAY_SIZE && count < size_; j++) {
         if (elements_[i][j]) {
           delete elements_[i][j];
         }

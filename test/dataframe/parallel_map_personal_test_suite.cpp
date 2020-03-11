@@ -1218,44 +1218,44 @@ TEST(FloatColumn, float_column_set_tests){ ASSERT_EXIT_ZERO(float_column_set_tes
 TEST(BoolColumn, bool_column_constructor_tests){ ASSERT_EXIT_ZERO(bool_column_constructor_tests); }
 TEST(BoolColumn, bool_column_set_tests){ ASSERT_EXIT_ZERO(bool_column_set_tests); }
 TEST(StringColumn, string_column_constructor_tests){ ASSERT_EXIT_ZERO(string_column_constructor_tests); }
-TEST(StringColumn, string_column_set_tests){ ASSERT_EXIT_ZERO(string_column_set_tests); }
+// TEST(StringColumn, string_column_set_tests){ ASSERT_EXIT_ZERO(string_column_set_tests); }
 
-// Schema Tests
-TEST(Schema, schema_constructor_tests){ ASSERT_EXIT_ZERO(schema_constructor_tests); }
-TEST(Schema, schema_add_column_tests){ ASSERT_EXIT_ZERO(schema_add_column_tests); }
-TEST(Schema, schema_add_row_tests){ ASSERT_EXIT_ZERO(schema_add_row_tests); }
+// // Schema Tests
+// TEST(Schema, schema_constructor_tests){ ASSERT_EXIT_ZERO(schema_constructor_tests); }
+// TEST(Schema, schema_add_column_tests){ ASSERT_EXIT_ZERO(schema_add_column_tests); }
+// TEST(Schema, schema_add_row_tests){ ASSERT_EXIT_ZERO(schema_add_row_tests); }
 
-// Row tests
-TEST(Row, test_row_idx){ ASSERT_EXIT_ZERO(test_row_idx); }
-TEST(Row, test_row_width){ ASSERT_EXIT_ZERO(test_row_width); }
-TEST(Row, test_col_type){ ASSERT_EXIT_ZERO(test_col_type);}
-TEST(Row, test_set_get){ ASSERT_EXIT_ZERO(test_set_get);}
+// // Row tests
+// TEST(Row, test_row_idx){ ASSERT_EXIT_ZERO(test_row_idx); }
+// TEST(Row, test_row_width){ ASSERT_EXIT_ZERO(test_row_width); }
+// TEST(Row, test_col_type){ ASSERT_EXIT_ZERO(test_col_type);}
+// TEST(Row, test_set_get){ ASSERT_EXIT_ZERO(test_set_get);}
 
-// Fielder tests
-TEST(Fielder, test_sum_bytes){ ASSERT_EXIT_ZERO(test_sum_bytes);}
+// // Fielder tests
+// TEST(Fielder, test_sum_bytes){ ASSERT_EXIT_ZERO(test_sum_bytes);}
 
-// Rower tests
-TEST(Rower, test_nonempty_filter_rower){ ASSERT_EXIT_ZERO(test_nonempty_filter_rower);}
+// // Rower tests
+// TEST(Rower, test_nonempty_filter_rower){ ASSERT_EXIT_ZERO(test_nonempty_filter_rower);}
 
-// Dataframe tests
-TEST(DataFrame, test_map){ ASSERT_EXIT_ZERO(test_map);} 
-TEST(DataFrame, test_filter){ ASSERT_EXIT_ZERO(test_filter);}
-TEST(DataFrame, test_get_schema){ ASSERT_EXIT_ZERO(test_get_schema);}
-TEST(DataFrame, test_add_column){ ASSERT_EXIT_ZERO(test_add_column);}
-TEST(DataFrame, dataframe_constructor_tests){ ASSERT_EXIT_ZERO(dataframe_constructor_tests); }
-TEST(DataFrame, dataframe_getters_tests){ ASSERT_EXIT_ZERO(dataframe_getters_tests); }
-TEST(DataFrame, dataframe_setters_tests){ ASSERT_EXIT_ZERO(dataframe_setters_tests); }
-TEST(DataFrame, dataframe_fill_row_tests){ ASSERT_EXIT_ZERO(dataframe_fill_row_tests); }
-TEST(DataFrame, dataframe_add_row_tests){ ASSERT_EXIT_ZERO(dataframe_add_row_tests); }
+// // Dataframe tests
+// TEST(DataFrame, test_map){ ASSERT_EXIT_ZERO(test_map);} 
+// TEST(DataFrame, test_filter){ ASSERT_EXIT_ZERO(test_filter);}
+// TEST(DataFrame, test_get_schema){ ASSERT_EXIT_ZERO(test_get_schema);}
+// TEST(DataFrame, test_add_column){ ASSERT_EXIT_ZERO(test_add_column);}
+// TEST(DataFrame, dataframe_constructor_tests){ ASSERT_EXIT_ZERO(dataframe_constructor_tests); }
+// TEST(DataFrame, dataframe_getters_tests){ ASSERT_EXIT_ZERO(dataframe_getters_tests); }
+// TEST(DataFrame, dataframe_setters_tests){ ASSERT_EXIT_ZERO(dataframe_setters_tests); }
+// TEST(DataFrame, dataframe_fill_row_tests){ ASSERT_EXIT_ZERO(dataframe_fill_row_tests); }
+// TEST(DataFrame, dataframe_add_row_tests){ ASSERT_EXIT_ZERO(dataframe_add_row_tests); }
 
-// Parallel map
-TEST(DataFrame, test_pmap_add){ ASSERT_EXIT_ZERO(test_pmap_add);}
-TEST(DataFrame, test_map_add){ ASSERT_EXIT_ZERO(test_map_add);}
+// // Parallel map
+// TEST(DataFrame, test_pmap_add){ ASSERT_EXIT_ZERO(test_pmap_add);}
+// TEST(DataFrame, test_map_add){ ASSERT_EXIT_ZERO(test_map_add);}
 
 int main(int argc, char **argv) {
-    //testing::InitGoogleTest(&argc, argv);
-    //return RUN_ALL_TESTS();
-    max_test();
-    min_test();
-    converter_tests();
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+    // max_test();
+    // min_test();
+    // converter_tests();
 }
