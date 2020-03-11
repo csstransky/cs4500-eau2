@@ -39,8 +39,8 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
                  EXCLUDE_FROM_ALL
                  )
 
-add_executable(parallel_map_examples parallel_map_examples.cpp)
-target_link_libraries(parallel_map_examples gtest)
+add_executable(basic_example basic_example.cpp)
+target_link_libraries(basic_example gtest)
 
 add_executable(parallel_map_personal_test_suite parallel_map_personal_test_suite.cpp)
 target_link_libraries(parallel_map_personal_test_suite gtest)
