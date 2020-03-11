@@ -15,8 +15,8 @@ class Pair : public Object {
         Object* value;
 
         Pair(Object* key, Object* value) {
-            this->key = key;
-            this->value = value;
+            this->key = key->clone();
+            this->value = value->clone();
         }
 
         Pair(Pair* p) {
@@ -24,13 +24,19 @@ class Pair : public Object {
             this->value = p->get_value()->clone();
         }
 
-        ~Pair() {}
+        ~Pair() {
+            delete key;
+            delete value;
+        }
 
         Object* get_key() { return key; }
 
         Object* get_value() { return value; }
 
-        void set_value(Object* value) { this->value = value; }
+        void set_value(Object* value) { 
+            delete this->value;
+            this->value = value->clone(); 
+        }
 
         bool equals(Object* other) {
             Pair* other_pair = dynamic_cast<Pair*>(other);                                  

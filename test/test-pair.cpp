@@ -26,8 +26,9 @@ public:
   void t_false(bool p) { if (p) FAIL(); }
 
   void test_pair() {
-    Object* a = new Object();
-    Object* b = new Object();
+    String* a = new String("a");
+    String* b = new String("b");
+    String* c = new String("c");
     Pair * pair1 = new Pair(a, b);
 
     t_true(pair1->get_key()->equals(a));
@@ -36,8 +37,8 @@ public:
     Pair * pair2 = new Pair(a, b);
     t_true(pair1->equals(pair2));
 
-    pair1->set_value(s);
-    t_true(pair1->get_value()->equals(s));
+    pair1->set_value(c);
+    t_true(pair1->get_value()->equals(c));
     t_false(pair1->equals(pair2));
     t_false(pair1->hash() == pair2->hash());
 
@@ -45,6 +46,7 @@ public:
     delete b;
     delete pair1;
     delete pair2;
+    delete c;
     
     OK("test_pair");
   }

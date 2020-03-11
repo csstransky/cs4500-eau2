@@ -1,10 +1,13 @@
-all: build run
+all: test
 
-build:
-	clang++ -std=c++11 -Wall -g -o test_sor.out test_sor.cpp -v
-
-run:
-	./test_sor.out
-
-clean:
-	rm -rf bench.out test_sor.out datafile.txt sorer.out
+test:
+	mkdir -p build
+	cd build && cmake .. && make
+	build/serial_examples
+	build/test_serial
+	build/test_sorer
+	build/test-array
+	build/test-map
+	build/test-pair
+	build/dataframe/basic_example
+	build/dataframe/parallel_map_personal_test_suite

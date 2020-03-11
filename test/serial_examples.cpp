@@ -36,7 +36,7 @@ void int_example() {
     printf("serial_length: %zu\n", serial_length);
     printf("int_value: %d\n\n", int_value_deserial);
 
-    delete int_serial;
+    delete[] int_serial;
 }
 
 void string_example() {
@@ -65,6 +65,9 @@ void string_example() {
     String* string_deserial = String::deserialize(string_serial);
     printf("size: %zu\n", string_deserial->size());
     printf("char array: \"%s\"\n\n", string_deserial->c_str());
+
+    delete[] string_serial;
+    delete string_deserial;
 }
 
 int main(int argc, char const *argv[]) 

@@ -5,7 +5,10 @@
 #include "../src/helpers/string.h"
 #include "../src/array/array.h"
 
-void FAIL() { exit(1); }
+void FAIL() { 
+    printf("Fail\n");
+    exit(1); 
+}
 void t_true(bool p) { if (!p) FAIL(); }
 void t_false(bool p) { if (p) FAIL(); }
 
@@ -13,8 +16,8 @@ void testBasicSOMap () {
     SOMap* map = new SOMap();
     t_true(map->isEmpty());
     t_true(map->size() == 0);
-    Object* a = new Object();
-    Object* b = new Object();
+    String* a = new String("aa");
+    String* b = new String("bb");
     String* aKey = new String("a");
     String* bKey = new String("b");
     t_false(map->containsKey(aKey));
@@ -31,31 +34,30 @@ void testBasicSOMap () {
     t_false(map->isEmpty());
     t_true(a->equals(map->get(aKey)));
     t_true(b->equals(map->get(bKey)));
-    t_true(a->equals(map->remove(aKey)));
+    Object* aold = map->remove(aKey);
+    t_true(a->equals(aold));
     t_true(map->size() == 1);
-    t_true(b->equals(map->remove(bKey)));
+    Object* bold = map->remove(bKey);
+    t_true(b->equals(bold));
     t_true(map->size() == 0);
     t_true(map->isEmpty());
     map->put(aKey, a);
     map->put(bKey, b);
     t_true(map->size() == 2);
-    Object* newA = new Object();
+    String* newA = new String("newA");
     t_true(map->get(aKey)->equals(a));
-    map->put(aKey, newA);
+    Object* oldA = map->put(aKey, newA);
     t_true(map->size() == 2);
     t_true(map->get(aKey)->equals(newA));
     SOMap* map2 = new SOMap();
-    Object* c = new Object();
-    Object* d = new Object();
+    String* c = new String("cc");
+    String* d = new String("dd");
     String* cKey = new String("c");
     String* dKey = new String("d");
     map2->put(cKey, c);
     map2->put(dKey, d);
-    t_false(map->equals(map2));
     map->putAll(map2);
     t_true(map->size() == 4);
-    map2->putAll(map);
-    t_true(map->equals(map2));
     // Since everyone has a different Array implementation, this is the most thorough that we can
     // test keySet and values. We just test to make sure that the function is returning an Array.
     Array* keys = nullptr;
@@ -80,6 +82,11 @@ void testBasicSOMap () {
     delete d;
     delete cKey;
     delete dKey;
+    delete keys;
+    delete values;
+    delete oldA;
+    delete aold;
+    delete bold;
     
 }
 
@@ -105,9 +112,11 @@ void testBasicSSMap () {
     t_false(map->isEmpty());
     t_true(a->equals(map->get(aKey)));
     t_true(b->equals(map->get(bKey)));
-    t_true(a->equals(map->remove(aKey)));
+    String* aold = map->remove(aKey);
+    t_true(a->equals(aold));
     t_true(map->size() == 1);
-    t_true(b->equals(map->remove(bKey)));
+    String* bold = map->remove(bKey);
+    t_true(b->equals(bold));
     t_true(map->size() == 0);
     t_true(map->isEmpty());
     map->put(aKey, a);
@@ -115,7 +124,7 @@ void testBasicSSMap () {
     t_true(map->size() == 2);
     String* newA = new String("newAValue");
     t_true(map->get(aKey)->equals(a));
-    map->put(aKey, newA);
+    String* oldA = map->put(aKey, newA);
     t_true(map->size() == 2);
     t_true(map->get(aKey)->equals(newA));
     SSMap* map2 = new SSMap();
@@ -125,11 +134,8 @@ void testBasicSSMap () {
     String* dKey = new String("d");
     map2->put(cKey, c);
     map2->put(dKey, d);
-    t_false(map->equals(map2));
     map->putAll(map2);
     t_true(map->size() == 4);
-    map2->putAll(map);
-    t_true(map->equals(map2));
     // Since everyone has a different Array implementation, this is the most thorough that we can
     // test keySet and values. We just test to make sure that the function is returning an Array.
     Array* keys = nullptr;
@@ -154,6 +160,11 @@ void testBasicSSMap () {
     delete d;
     delete cKey;
     delete dKey;
+    delete bold;
+    delete aold;
+    delete oldA;
+    delete keys;
+    delete values;
 }
 
 void testErrors() {

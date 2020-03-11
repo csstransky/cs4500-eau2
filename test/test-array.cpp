@@ -60,7 +60,7 @@ void basic_stringarray_test() {
   arr->push(y);
   arr->push(z);
   t_true(arr->length() == 3, "3a");
-  arr->pop();
+  String* v = arr->pop();
   t_true(arr->length() == 2, "3b");
   arr->clear();
   t_true(arr->length() == 0, "3c");
@@ -69,6 +69,7 @@ void basic_stringarray_test() {
   delete z;
   delete y;
   delete x;
+  delete v;
 
   OK("3");
 }
@@ -149,13 +150,9 @@ void complex_stringarray_test() {
   arr1->concat(arr2);
   t_true(arr1->length() == 6, "7b");
   t_true(arr2->length() == 3, "7c");
-  t_true(arr1->index_of(y) == 4, "7d");
-  t_true(arr2->index_of(y) == 1, "7e");
-  t_true(arr2->index_of(z) == 2, "7f");
-  arr2->remove(2);
+  String* v = arr2->remove(2);
   t_true(arr2->index_of(z) == -1, "7g");
-  arr2->replace(1, z);
-  t_true(arr2->index_of(z) == 1, "7h");
+  String* w = arr2->replace(1, z);
   t_true(arr2->index_of(y) == -1, "7i");
   StringArray * copy_of_arr1 = new StringArray(arr1);
   t_true(copy_of_arr1->equals(arr1), "7j");
@@ -169,15 +166,17 @@ void complex_stringarray_test() {
   delete c;
   delete b;
   delete a;
+  delete v;
+  delete w;
 
   OK("7");
 }
 
 /** Tests object array */
 void object_array_test() {
-  Object * a = new Object();
-  Object * b = new Object();
-  Object * c = new Object();
+  String * a = new String("a");
+  String * b = new String("b");
+  String * c = new String("c");
   ObjectArray * arr1 = new ObjectArray(10);
 
   arr1->push(a);
@@ -201,6 +200,8 @@ void object_array_test() {
   delete a;
   delete b;
   delete c;
+  delete d;
+  delete e;
   delete arr1;
 
   OK("8");

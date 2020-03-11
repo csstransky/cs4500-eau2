@@ -41,7 +41,7 @@ void test_ack() {
     delete ip1;
     delete ip2;
     delete ack_message;
-    delete serial;
+    delete[] serial;
     delete ack_deserial;
     printf("Ack serialization passed!\n");
 }
@@ -62,7 +62,7 @@ void test_kill() {
     assert(kill_deserial->get_target()->equals(&ip1));
     assert(kill_deserial->get_kind() == MsgKind::Kill);
 
-    delete kill_serial;
+    delete[] kill_serial;
     delete kill_deserial;
     printf("Kill serialization passed!\n");   
 }
@@ -83,7 +83,7 @@ void test_register() {
     assert(register_deserial->get_target()->equals(&ip1));
     assert(register_deserial->get_kind() == MsgKind::Register);
 
-    delete register_serial;
+    delete[] register_serial;
     delete register_deserial;
     printf("Register serialization passed!\n");   
 }
@@ -105,7 +105,7 @@ void test_put() {
     assert(put_deserial->get_target()->equals(&ip2));
     assert(put_deserial->get_message()->equals(&msg));
 
-    delete put_serial;
+    delete[] put_serial;
     delete put_deserial;
     printf("Put serialization passed!\n");
 }
@@ -165,9 +165,9 @@ void test_directory() {
     assert(directory_deserial2->get_addresses()[3]->equals(&ip4));
     assert(directory_deserial2->get_num() == addresses_len);
 
-    delete directory_serial;
+    delete[] directory_serial;
     delete directory_deserial;
-    delete directory_serial2;
+    delete[] directory_serial2;
     delete directory_deserial2;
     printf("Directory serialization passed!\n");
 }
@@ -211,8 +211,8 @@ void test_bool_array() {
     assert(bool_array3->get(4) == bool3);
     assert(bool_array3->get(5) == bool1);
 
-    delete array_serial;
-    delete array_serial2;
+    delete[] array_serial;
+    delete[] array_serial2;
     delete bool_array2;
     delete bool_array3;
     printf("BoolArray serialization passed!\n");
@@ -257,8 +257,8 @@ void test_float_array() {
     assert(float_array3->get(4) == float3);
     assert(float_array3->get(5) == float1);
 
-    delete array_serial;
-    delete array_serial2;
+    delete[] array_serial;
+    delete[] array_serial2;
     delete float_array2;
     delete float_array3;
     printf("FloatArray serialization passed!\n");
@@ -303,8 +303,8 @@ void test_int_array() {
     assert(int_array3->get(4) == int3);
     assert(int_array3->get(5) == int1);
 
-    delete array_serial;
-    delete array_serial2;
+    delete[] array_serial;
+    delete[] array_serial2;
     delete int_array2;
     delete int_array3;
     printf("IntArray serialization passed!\n");
@@ -345,8 +345,8 @@ void test_string_array() {
     assert(string_array3->get(4)->equals(&string1));
     assert(string_array3->get(5)->equals(&string2));
 
-    delete array_serial;
-    delete array_serial2;
+    delete[] array_serial;
+    delete[] array_serial2;
     delete string_array2;
     delete string_array3;
     printf("StringArray serialization passed!\n");
