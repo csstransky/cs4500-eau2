@@ -35,14 +35,6 @@ class Map: public Object {
          * NOTE: Objects inside the Map will NOT be freed
          */
         ~Map() {
-            for (size_t ii = 0; ii < buckets_size_; ii++) {
-                ObjectArray* old_bucket_array = dynamic_cast<ObjectArray*>(buckets_->get(ii));
-                for (size_t jj = 0; jj < old_bucket_array->length(); jj++) {
-                    Pair* pair = dynamic_cast<Pair*>(old_bucket_array->get(jj));
-                    delete pair;
-                }
-                delete old_bucket_array;
-            }
             delete buckets_;
         }
 

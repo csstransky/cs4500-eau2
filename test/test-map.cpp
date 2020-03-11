@@ -5,7 +5,10 @@
 #include "../src/helpers/string.h"
 #include "../src/array/array.h"
 
-void FAIL() { exit(1); }
+void FAIL() { 
+    printf("Fail\n");
+    exit(1); 
+}
 void t_true(bool p) { if (!p) FAIL(); }
 void t_false(bool p) { if (p) FAIL(); }
 
@@ -13,8 +16,8 @@ void testBasicSOMap () {
     SOMap* map = new SOMap();
     t_true(map->isEmpty());
     t_true(map->size() == 0);
-    Object* a = new Object();
-    Object* b = new Object();
+    String* a = new String("aa");
+    String* b = new String("bb");
     String* aKey = new String("a");
     String* bKey = new String("b");
     t_false(map->containsKey(aKey));
@@ -39,14 +42,14 @@ void testBasicSOMap () {
     map->put(aKey, a);
     map->put(bKey, b);
     t_true(map->size() == 2);
-    Object* newA = new Object();
+    String* newA = new String("newA");
     t_true(map->get(aKey)->equals(a));
     map->put(aKey, newA);
     t_true(map->size() == 2);
     t_true(map->get(aKey)->equals(newA));
     SOMap* map2 = new SOMap();
-    Object* c = new Object();
-    Object* d = new Object();
+    String* c = new String("cc");
+    String* d = new String("dd");
     String* cKey = new String("c");
     String* dKey = new String("d");
     map2->put(cKey, c);

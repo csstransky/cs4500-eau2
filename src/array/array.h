@@ -41,7 +41,7 @@ public:
   /** ARRAY METHODS **/
   
   /* Removes all elements from the Array */
-  void clear() {
+  virtual void clear() {
     count_ = 0;
   }
 
@@ -666,6 +666,13 @@ public:
     delete[] elements_;
   }
 
+  void clear() {
+    for (size_t ii = 0; ii < count_; ii++) {
+      delete elements_[ii];
+    }
+    count_ = 0;
+  }
+
   /** INHERITED METHODS **/
 
   /* Inherited from Object, checks equality between an Array and an Object */
@@ -709,7 +716,7 @@ public:
     }
     
     for (size_t i = 0; i < arr->length(); i++) {
-      elements_[count_ + i] = arr->get(i);
+      elements_[count_ + i] = arr->get(i)->clone();
     }
 
     count_ = count_ + arr->length();
@@ -773,7 +780,7 @@ public:
     assert(count_ > 0 && index < count_);
 
     Object* e = elements_[index];
-    elements_[index] = to_add;
+    elements_[index] = to_add->clone();
 
     return e;
   }
