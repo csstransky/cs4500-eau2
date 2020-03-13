@@ -338,10 +338,9 @@ void int_column_constructor_tests() {
     GT_EQUALS(int_column->get(3), 5234);
     GT_EQUALS(int_column->get(5), 2);
 
-    IntColumn* int_column2 = new IntColumn(100, 3, 4);
-    GT_EQUALS(int_column2->size(), 100);
+    IntColumn* int_column2 = new IntColumn(2, 3, 4);
+    GT_EQUALS(int_column2->size(), 2);
     GT_EQUALS(int_column2->get(1), 4);
-    GT_EQUALS(int_column2->get(99), 0);
 
     delete int_column;
     delete int_column2;
@@ -432,10 +431,9 @@ void bool_column_constructor_tests() {
     GT_EQUALS(bool_column->get(3), true);
     GT_EQUALS(bool_column->get(5), 1);
 
-    BoolColumn* bool_column2 = new BoolColumn(100, false, true);
-    GT_EQUALS(bool_column2->size(), 100);
+    BoolColumn* bool_column2 = new BoolColumn(2, false, true);
+    GT_EQUALS(bool_column2->size(), 2);
     GT_EQUALS(bool_column2->get(1), true);
-    GT_EQUALS(bool_column2->get(99), 0);
 
     delete bool_column;
     delete bool_column2;
@@ -505,28 +503,15 @@ void string_column_set_tests() {
     string_column->set(2, string1);
     string_column->push_back(string3);
     GT_EQUALS(string_column->size(), 4);
-    GT_EQUALS(string_column->get(0), string2);
-    GT_EQUALS(string_column->get(1), string2);
-    GT_EQUALS(string_column->get(2), string1);
-    GT_EQUALS(string_column->get(3), string3);
-
-    StringColumn* string_column2 = new StringColumn(100, string1, string2);
-    string_column2->set(0, string2);
-    string_column2->set(27, string1);
-    string_column2->set(99, string1);
-    string_column2->push_back(string3);
-    GT_EQUALS(string_column2->size(), 101);
-    GT_EQUALS(string_column2->get(0), string2);
-    GT_EQUALS(string_column2->get(1), string2);
-    GT_EQUALS(string_column2->get(27), string1);
-    GT_EQUALS(string_column2->get(99), string1);
-    GT_EQUALS(string_column2->get(100), string3);
+    GT_TRUE(string_column->get(0)->equals(string2));
+    GT_TRUE(string_column->get(1)->equals(string2));
+    GT_TRUE(string_column->get(2)->equals(string1));
+    GT_TRUE(string_column->get(3)->equals(string3));
 
     delete string1;
     delete string2;
     delete string3;
     delete string_column;
-    delete string_column2;
     exit(0);
 }
 
@@ -905,11 +890,11 @@ void dataframe_getters_tests() {
   GT_EQUALS(df.get_float(1, 2), (float)2);
   GT_EQUALS(df.get_float(1, 3), (float)1);
 
-  GT_EQUALS(df.get_string(2, 0), hi);
-  GT_EQUALS(df.get_string(2, 1), hello);
+  GT_TRUE(df.get_string(2, 0)->equals(hi));
+  GT_TRUE(df.get_string(2, 1)->equals(hello));
   GT_EQUALS(df.get_string(2, 2), nullptr);
-  GT_EQUALS(df.get_string(2, 3), hi);
-  GT_EQUALS(df.get_string(2, 4), h);
+  GT_TRUE(df.get_string(2, 3)->equals(hi));
+  GT_TRUE(df.get_string(2, 4)->equals(h));
 
   GT_EQUALS(df.get_bool(3, 0), false);
   GT_EQUALS(df.get_bool(3, 1), 1);
@@ -946,7 +931,7 @@ void dataframe_setters_tests() {
 
   Column* c_int = new IntColumn(4, 1, 3, 4, 2);
   Column* c_float = new FloatColumn(4, (float)1.2, (float)3.2, (float)2, (float)1);
-  Column* c_string = new StringColumn(17, hi, hello, nullptr, hi, h);
+  Column* c_string = new StringColumn(5, hi, hello, nullptr, hi, h);
   Column* c_bool = new BoolColumn(3, (bool)0, (bool)1, (bool)1);
 
   df.add_column(c_int);
@@ -964,7 +949,7 @@ void dataframe_setters_tests() {
   for (size_t ii = 0; ii < df.nrows(); ii++) {
     GT_EQUALS(df.get_int(0, ii), 14);
     GT_EQUALS(df.get_float(1, ii), (float)12.44);
-    GT_EQUALS(df.get_string(2, ii), hello);
+    GT_TRUE(df.get_string(2, ii)->equals(hello));
     GT_EQUALS(df.get_bool(3, ii), true);
   }
 
@@ -1023,11 +1008,11 @@ void dataframe_fill_row_tests() {
   GT_EQUALS(row4->get_float(1), (float)1);
   GT_EQUALS(row5->get_float(1), 0);
 
-  GT_EQUALS(row1->get_string(2), hi);
-  GT_EQUALS(row2->get_string(2), hello);
+  GT_TRUE(row1->get_string(2)->equals(hi));
+  GT_TRUE(row2->get_string(2)->equals(hello));
   GT_EQUALS(row3->get_string(2), nullptr);
-  GT_EQUALS(row4->get_string(2), hi);
-  GT_EQUALS(row5->get_string(2), h);
+  GT_TRUE(row4->get_string(2)->equals(hi));
+  GT_TRUE(row5->get_string(2)->equals(h));
 
   GT_EQUALS(row1->get_bool(3), false);
   GT_EQUALS(row2->get_bool(3), 1);
@@ -1107,11 +1092,11 @@ void dataframe_add_row_tests() {
     GT_EQUALS(df.get_float(1, ii + 3), (float)1);
     GT_EQUALS(df.get_float(1, ii + 4), 0);
 
-    GT_EQUALS(df.get_string(2, ii), hi);
-    GT_EQUALS(df.get_string(2, ii + 1), hello);
+    GT_TRUE(df.get_string(2, ii)->equals(hi));
+    GT_TRUE(df.get_string(2, ii + 1)->equals(hello));
     GT_EQUALS(df.get_string(2, ii + 2), nullptr);
-    GT_EQUALS(df.get_string(2, ii + 3), hi);
-    GT_EQUALS(df.get_string(2, ii + 4), h);
+    GT_TRUE(df.get_string(2, ii + 3)->equals(hi));
+    GT_TRUE(df.get_string(2, ii + 4)->equals(h));
 
     GT_EQUALS(df.get_bool(3, ii), false);
     GT_EQUALS(df.get_bool(3, ii + 1), 1);
@@ -1217,45 +1202,43 @@ TEST(FloatColumn, float_column_constructor_tests){ ASSERT_EXIT_ZERO(float_column
 TEST(FloatColumn, float_column_set_tests){ ASSERT_EXIT_ZERO(float_column_set_tests); }
 TEST(BoolColumn, bool_column_constructor_tests){ ASSERT_EXIT_ZERO(bool_column_constructor_tests); }
 TEST(BoolColumn, bool_column_set_tests){ ASSERT_EXIT_ZERO(bool_column_set_tests); }
-TEST(StringColumn, string_column_constructor_tests){ ASSERT_EXIT_ZERO(string_column_constructor_tests); }
-// TEST(StringColumn, string_column_set_tests){ ASSERT_EXIT_ZERO(string_column_set_tests); }
+//TEST(StringColumn, string_column_constructor_tests){ ASSERT_EXIT_ZERO(string_column_constructor_tests); }
+TEST(StringColumn, string_column_set_tests){ ASSERT_EXIT_ZERO(string_column_set_tests); }
 
-// // Schema Tests
-// TEST(Schema, schema_constructor_tests){ ASSERT_EXIT_ZERO(schema_constructor_tests); }
-// TEST(Schema, schema_add_column_tests){ ASSERT_EXIT_ZERO(schema_add_column_tests); }
-// TEST(Schema, schema_add_row_tests){ ASSERT_EXIT_ZERO(schema_add_row_tests); }
+// Schema Tests
+TEST(Schema, schema_constructor_tests){ ASSERT_EXIT_ZERO(schema_constructor_tests); }
+TEST(Schema, schema_add_column_tests){ ASSERT_EXIT_ZERO(schema_add_column_tests); }
+TEST(Schema, schema_add_row_tests){ ASSERT_EXIT_ZERO(schema_add_row_tests); }
 
-// // Row tests
-// TEST(Row, test_row_idx){ ASSERT_EXIT_ZERO(test_row_idx); }
-// TEST(Row, test_row_width){ ASSERT_EXIT_ZERO(test_row_width); }
-// TEST(Row, test_col_type){ ASSERT_EXIT_ZERO(test_col_type);}
-// TEST(Row, test_set_get){ ASSERT_EXIT_ZERO(test_set_get);}
+// Row tests
+TEST(Row, test_row_idx){ ASSERT_EXIT_ZERO(test_row_idx); }
+TEST(Row, test_row_width){ ASSERT_EXIT_ZERO(test_row_width); }
+TEST(Row, test_col_type){ ASSERT_EXIT_ZERO(test_col_type);}
+TEST(Row, test_set_get){ ASSERT_EXIT_ZERO(test_set_get);}
 
-// // Fielder tests
-// TEST(Fielder, test_sum_bytes){ ASSERT_EXIT_ZERO(test_sum_bytes);}
+// Fielder tests
+TEST(Fielder, test_sum_bytes){ ASSERT_EXIT_ZERO(test_sum_bytes);}
 
-// // Rower tests
-// TEST(Rower, test_nonempty_filter_rower){ ASSERT_EXIT_ZERO(test_nonempty_filter_rower);}
+// Rower tests
+TEST(Rower, test_nonempty_filter_rower){ ASSERT_EXIT_ZERO(test_nonempty_filter_rower);}
 
-// // Dataframe tests
-// TEST(DataFrame, test_map){ ASSERT_EXIT_ZERO(test_map);} 
-// TEST(DataFrame, test_filter){ ASSERT_EXIT_ZERO(test_filter);}
-// TEST(DataFrame, test_get_schema){ ASSERT_EXIT_ZERO(test_get_schema);}
-// TEST(DataFrame, test_add_column){ ASSERT_EXIT_ZERO(test_add_column);}
-// TEST(DataFrame, dataframe_constructor_tests){ ASSERT_EXIT_ZERO(dataframe_constructor_tests); }
-// TEST(DataFrame, dataframe_getters_tests){ ASSERT_EXIT_ZERO(dataframe_getters_tests); }
-// TEST(DataFrame, dataframe_setters_tests){ ASSERT_EXIT_ZERO(dataframe_setters_tests); }
-// TEST(DataFrame, dataframe_fill_row_tests){ ASSERT_EXIT_ZERO(dataframe_fill_row_tests); }
-// TEST(DataFrame, dataframe_add_row_tests){ ASSERT_EXIT_ZERO(dataframe_add_row_tests); }
+// Dataframe tests
+TEST(DataFrame, test_map){ ASSERT_EXIT_ZERO(test_map);} 
+TEST(DataFrame, test_filter){ ASSERT_EXIT_ZERO(test_filter);}
+TEST(DataFrame, test_get_schema){ ASSERT_EXIT_ZERO(test_get_schema);}
+TEST(DataFrame, test_add_column){ ASSERT_EXIT_ZERO(test_add_column);}
+TEST(DataFrame, dataframe_constructor_tests){ ASSERT_EXIT_ZERO(dataframe_constructor_tests); }
+TEST(DataFrame, dataframe_getters_tests){ ASSERT_EXIT_ZERO(dataframe_getters_tests); }
+TEST(DataFrame, dataframe_setters_tests){ ASSERT_EXIT_ZERO(dataframe_setters_tests); }
+TEST(DataFrame, dataframe_fill_row_tests){ ASSERT_EXIT_ZERO(dataframe_fill_row_tests); }
+TEST(DataFrame, dataframe_add_row_tests){ ASSERT_EXIT_ZERO(dataframe_add_row_tests); }
 
-// // Parallel map
-// TEST(DataFrame, test_pmap_add){ ASSERT_EXIT_ZERO(test_pmap_add);}
-// TEST(DataFrame, test_map_add){ ASSERT_EXIT_ZERO(test_map_add);}
+// Parallel map
+TEST(DataFrame, test_pmap_add){ ASSERT_EXIT_ZERO(test_pmap_add);}
+TEST(DataFrame, test_map_add){ ASSERT_EXIT_ZERO(test_map_add);}
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-    // max_test();
-    // min_test();
-    // converter_tests();
+    //return RUN_ALL_TESTS();
+    bool_column_set_tests();
 }
