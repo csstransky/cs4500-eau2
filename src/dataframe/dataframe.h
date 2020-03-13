@@ -507,6 +507,10 @@ class StringColumn : public Column {
     size_t array = idx / ELEMENT_ARRAY_SIZE;
     size_t index = idx % ELEMENT_ARRAY_SIZE;
 
+    if (elements_[array][index]) {
+      delete elements_[array][index];
+    }
+    
     elements_[array][index] = val ? val->clone() : nullptr;
   }
 
@@ -563,16 +567,9 @@ class Schema : public Object {
   size_t col_array_size_;
 
   /** Copying constructor */
-  Schema(Schema& from) {
+  Schema(Schema& from) : Schema(from.types_) {
     // Since these are primitive types, we can get away with this
-    this->num_cols_ = from.num_cols_;
     this->num_rows_ = from.num_rows_;
-    this->col_array_size_ = from.col_array_size_;
-    
-    this->types_ = new char[col_array_size_];
-    for (size_t ii = 0; ii < num_cols_; ii++) {
-      this->types_[ii] = from.types_[ii];
-    }
   }
  
   /** Create an empty schema **/
@@ -595,12 +592,12 @@ class Schema : public Object {
       assert(types[ii] == 'I' || types[ii] == 'F' || types[ii] == 'B' || types[ii] == 'S');
     }
 
-    col_array_size_ = types_length;
-    this->types_ = new char[col_array_size_ + 1];
+    col_array_size_ = types_length + 1;
+    this->types_ = new char[col_array_size_];
     strcpy(types_, types);
-    this->types_[col_array_size_] = '\0';
+    this->types_[types_length] = '\0';
     // strlen doesn't include the last '\0' char so this will return the exact number of columns
-    num_cols_ = col_array_size_; 
+    num_cols_ = types_length; 
     num_rows_ = 0;
   }
 
@@ -616,6 +613,7 @@ class Schema : public Object {
 
     char* new_types = new char[col_array_size_];
     strcpy(new_types, types_);
+    new_types[num_cols_ + 1] = '\0';
     delete[] types_;
     this->types_ = new_types;
   }
