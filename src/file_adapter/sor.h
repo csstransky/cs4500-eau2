@@ -384,16 +384,6 @@ class SoR {
     }
 
     ~SoR() {
-        // New Strings are made for each STRING in the file, so they must all be deleted now
-        for (size_t ii = 0; ii < dataframe_->ncols(); ii++) {
-            Column* column = dataframe_->get_column(ii);
-            if (column->get_type() == 'S') {
-                for (size_t jj = 0; jj < dataframe_->nrows(); jj++) {
-                    String* string_value = column->as_string()->get(jj);
-                    delete string_value;
-                }
-            } 
-        }
         delete dataframe_;
     }
 
