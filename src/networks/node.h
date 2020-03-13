@@ -31,7 +31,9 @@ class Node : public Server {
         server_address_ = get_new_sockaddr_(server_ip_address, PORT);  
         server_socket_ = 0; 
         server_ip_ = new String(server_ip_address);  
-        kill_ = false;   
+        kill_ = false;  
+        num_other_nodes_ = 0;
+        other_nodes_ = new String*[num_other_nodes_]; 
     }
 
     ~Node() {
@@ -93,8 +95,17 @@ class Node : public Server {
             case MsgKind::Directory: {
                 printf("Received Directory Message\n\n");
                 Directory* dir_message = dynamic_cast<Directory*>(message);
+                for (int i = 0; i < num_other_nodes_; i++) {
+                    delete other_nodes_[i];
+                }
+                delete[] other_nodes_;
                 num_other_nodes_ = dir_message->get_num();
-                other_nodes_ = dir_message->get_addresses();
+                String** temp_addresses = dir_message->get_addresses();
+                other_nodes_ = new String*[num_other_nodes_];
+                for (int i = 0; i < num_other_nodes_; i++) {
+                    other_nodes_[i] = temp_addresses[i]->clone();
+                }
+
                 break;
             }
             case MsgKind::Kill: {
@@ -160,6 +171,7 @@ class Node : public Server {
 
             if (m) {
                 decode_message_(m, -1);
+                delete m;
             } else {
                 printf("Server disconnected\n");
                 // TODO: In the future, add a client reconnect attempt method
