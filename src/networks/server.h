@@ -275,6 +275,8 @@ class Server {
         send(fd, &length, sizeof(int), 0);
         
         send(fd, serial_message, length, 0);
+
+        delete[] serial_message;
     }
 
     void send_message(String* ip, Message* message) {

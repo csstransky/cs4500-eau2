@@ -476,21 +476,14 @@ void string_column_constructor_tests() {
     String* string3 = new String("Someone end this alreayd");
     StringColumn* string_column = new StringColumn(3, string1, string2, string3);
     GT_EQUALS(string_column->size(), 3);
-    GT_EQUALS(string_column->get(0), string1);
-    GT_EQUALS(string_column->get(1), string2);
-    GT_EQUALS(string_column->get(2), string3);
-
-    StringColumn* string_column2 = new StringColumn(100, string1, string2);
-    GT_EQUALS(string_column2->size(), 100);
-    GT_EQUALS(string_column2->get(0), string1);
-    GT_EQUALS(string_column2->get(1), string2);
-    GT_EQUALS(string_column2->get(99), nullptr);
+    GT_TRUE(string_column->get(0)->equals(string1));
+    GT_TRUE(string_column->get(1)->equals(string2));
+    GT_TRUE(string_column->get(2)->equals(string3));
 
     delete string1;
     delete string2;
     delete string3;
     delete string_column;
-    delete string_column2;
     exit(0);
 }
 
@@ -588,34 +581,37 @@ void schema_add_row_tests() {
 }
 
 void test_row_idx() {
-  Schema s("II");
-  Row* row = new Row(s);
+  Schema* s = new Schema("II");
+  Row* row = new Row(*s);
   GT_EQUALS(row->get_idx(), SIZE_MAX);
   row->set_idx(2);
   GT_EQUALS(row->get_idx(), 2);
 
   delete row;
+  delete s;
   exit(0);
 }
 
 void test_row_width() {
-  Schema s("II");
-  Row* row = new Row(s);
+  Schema* s = new Schema("II");
+  Row* row = new Row(*s);
   GT_EQUALS(row->width(), 2);
 
   delete row;
+  delete s;
   exit(0);
 }
 
 void test_col_type() {
-  Schema s("IFSB");
-  Row* row = new Row(s);
+  Schema* s = new Schema("IFSB");
+  Row* row = new Row(*s);
   GT_EQUALS(row->col_type(0), 'I');
   GT_EQUALS(row->col_type(1), 'F');
   GT_EQUALS(row->col_type(2), 'S');
   GT_EQUALS(row->col_type(3), 'B');
 
   delete row;
+  delete s;
   exit(0);
 }
 
@@ -639,8 +635,8 @@ void test_set_get() {
 }
 
 void test_sum_bytes() {
-  Schema s("IFSB");
-  Row* row = new Row(s);
+  Schema* s = new Schema("IFSB");
+  Row* row = new Row(*s);
   String* hi = new String("hi");
   size_t sum_actual = 0;
   SumBytesFielder* f = new SumBytesFielder(&sum_actual);
@@ -657,13 +653,14 @@ void test_sum_bytes() {
   delete row;
   delete hi;
   delete f;
+  delete s;
   exit(0);
 }
 
 void test_nonempty_filter_rower() {
-  Schema s("IFSB");
+  Schema* s = new Schema("IFSB");
   Rower* rower = new NonEmptyFilterRower();
-  Row* row = new Row(s);
+  Row* row = new Row(*s);
   String* hi = new String("hi");
   String* empty = nullptr;
 
@@ -689,39 +686,44 @@ void test_nonempty_filter_rower() {
 }
 
 void test_map() {
-  Schema s("IIFI");
-  DataFrame df(s);
-  Row  r(df.get_schema());
-  AddRower rower(&df);
+  Schema* s = new Schema("IIFI");
+  DataFrame* df = new DataFrame(*s);
+  Row* r = new Row(df->get_schema());
+  AddRower* rower = new AddRower(df);
 
   for (size_t i = 0; i <  10; i++) {
-    r.set(0,(int)i);
-    r.set(1,(int)i+1);
-    r.set(2, (float)i);
-    df.add_row(r);
+    r->set(0,(int)i);
+    r->set(1,(int)i+1);
+    r->set(2, (float)i);
+    df->add_row(*r);
   }
 
-  df.map(rower);
-
-  for (size_t i = 0; i < 10; i++) {
-    GT_EQUALS(df.get_int(3,i), i+i+1);
-  }
+  df->map(*rower);
 
   for (size_t i = 0; i < 10; i++) {
-    GT_EQUALS(df.get_int((size_t)0,i), i);
-    GT_EQUALS(df.get_int((size_t)1,i), i+1);
-    GT_EQUALS(df.get_float((size_t)2,i), (float)i);
+    GT_EQUALS(df->get_int(3,i), i+i+1);
   }
+
+  for (size_t i = 0; i < 10; i++) {
+    GT_EQUALS(df->get_int((size_t)0,i), i);
+    GT_EQUALS(df->get_int((size_t)1,i), i+1);
+    GT_EQUALS(df->get_float((size_t)2,i), (float)i);
+  }
+
+  delete s;
+  delete df;
+  delete r;
+  delete rower;
   
   exit(0);
 }
 
 void test_filter() {
-  Schema s("IFSB");
-  DataFrame df(s);
+  Schema* s = new Schema("IFSB");
+  DataFrame* df = new DataFrame(*s);
   
   Rower* rower = new NonEmptyFilterRower();
-  Row* row = new Row(s);
+  Row* row = new Row(*s);
   String* hi = new String("hi");
   String* empty = nullptr;
 
@@ -730,32 +732,32 @@ void test_filter() {
   row->set(1, (float)3.2);
   row->set(2, hi);
   row->set(3, (bool)0);
-  df.add_row(*row);
+  df->add_row(*row);
 
   // Empty row
   row->set(0, (int)0);
   row->set(1, (float)0);
   row->set(2, empty);
   row->set(3, (bool)0);
-  df.add_row(*row);
+  df->add_row(*row);
 
   // Empty row
   row->set(0, (int)0);
   row->set(1, (float)0);
   row->set(2, empty);
   row->set(3, (bool)0);
-  df.add_row(*row);
+  df->add_row(*row);
 
   // Non empty row
   row->set(0, 4);
   row->set(1, (float)3.2);
   row->set(2, hi);
   row->set(3, (bool)0);
-  df.add_row(*row);
+  df->add_row(*row);
 
-  GT_EQUALS(df.nrows(), 4);
+  GT_EQUALS(df->nrows(), 4);
 
-  DataFrame* df_new = df.filter(*rower);
+  DataFrame* df_new = df->filter(*rower);
 
   GT_EQUALS(df_new->nrows(), 2);
 
@@ -771,18 +773,23 @@ void test_filter() {
   delete hi;
   delete empty;
   delete df_new;
+  delete df;
+  delete s;
   exit(0);
 }
 
 void test_get_schema() {
-  Schema s1("IFSB");
-  DataFrame df(s1);
+  Schema* s1 = new Schema("IFSB");
+  DataFrame* df = new DataFrame(*s1);
 
-  Schema s2 = df.get_schema();
+  Schema s2 = df->get_schema();
 
   for (int i = 0; i < 4; i++) {
-    GT_EQUALS(s1.col_type(i), s2.col_type(i));
+    GT_EQUALS(s1->col_type(i), s2.col_type(i));
   }
+
+  delete s1;
+  delete df;
 
   exit(0);
 }
@@ -1202,7 +1209,7 @@ TEST(FloatColumn, float_column_constructor_tests){ ASSERT_EXIT_ZERO(float_column
 TEST(FloatColumn, float_column_set_tests){ ASSERT_EXIT_ZERO(float_column_set_tests); }
 TEST(BoolColumn, bool_column_constructor_tests){ ASSERT_EXIT_ZERO(bool_column_constructor_tests); }
 TEST(BoolColumn, bool_column_set_tests){ ASSERT_EXIT_ZERO(bool_column_set_tests); }
-//TEST(StringColumn, string_column_constructor_tests){ ASSERT_EXIT_ZERO(string_column_constructor_tests); }
+TEST(StringColumn, string_column_constructor_tests){ ASSERT_EXIT_ZERO(string_column_constructor_tests); }
 TEST(StringColumn, string_column_set_tests){ ASSERT_EXIT_ZERO(string_column_set_tests); }
 
 // Schema Tests
@@ -1239,6 +1246,5 @@ TEST(DataFrame, test_map_add){ ASSERT_EXIT_ZERO(test_map_add);}
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
-    //return RUN_ALL_TESTS();
-    bool_column_set_tests();
+    return RUN_ALL_TESTS();
 }
