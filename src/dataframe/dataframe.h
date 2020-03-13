@@ -452,6 +452,8 @@ class StringColumn : public Column {
   // actual number of arguments (ex: StringColumn(12, str)) then everything will be filled up to 'n' 
   // elements, but those extra elements will be completely random values. What's worse is that
   // there's basically no way to error check because those values are completely random.
+  // DANGER: Because of the above behavior, this WILL NOT WORK if n is larger than the actual 
+  // elemnents because each String that's passed in is cloned.
   StringColumn(int n, ...) {
     type_ = 'S';
     size_ = n;
