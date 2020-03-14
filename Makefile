@@ -8,3 +8,6 @@ test:
 
 valgrind:
 	cd tests && make valgrind
+
+clean:
+	rm -rf tests/build

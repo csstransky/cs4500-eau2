@@ -21,3 +21,6 @@ valgrind: build
 	valgrind build/test-array
 	valgrind build/test-map
 	valgrind build/test-pair
+
+clean:
+	rm -rf build/
