@@ -1,3 +1,5 @@
+// Made by Kaylin Devchand and Cristian Stransky
+
 #include <iostream>
 
 #include "../src/helpers/object.h"  // Your file with the CwC declaration of Object

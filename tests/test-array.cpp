@@ -1,3 +1,6 @@
+// Interface for Array and Tests made by @chasebish & @oriasm
+// https://github.com/chasebish/cs4500_assignment1_part2
+
 #include <stdlib.h>
 #include <stdio.h>
 #include "../src/array/array.h"
