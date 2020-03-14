@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+settings.json
+datafile.txt
+test/build/*
+*.out
+
