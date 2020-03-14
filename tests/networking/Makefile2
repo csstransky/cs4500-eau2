@@ -1,8 +1,0 @@
-build:
-	g++ -g test.cpp -o test
-
-run:
-	./test
-
-clean:
-	rm -rf test
