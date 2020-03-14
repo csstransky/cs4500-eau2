@@ -1,7 +1,7 @@
 all: build test valgrind
 
 build:
-	# Don't have anything to build yet
+	cd tests && make build
 
 test:
 	cd tests && make
