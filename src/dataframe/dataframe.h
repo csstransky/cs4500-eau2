@@ -3,6 +3,7 @@
 
 #include "../helpers/object.h"
 #include "../helpers/string.h"
+#include "../kv_store/kv_store.h"
 
 #include <stdarg.h>
 #include <assert.h>
@@ -52,6 +53,9 @@ class Column : public Object {
   char type_;
   size_t size_;
   size_t num_arrays_;
+  KV_Store* kv_; // not owned by Column
+  String* dataframe_name_; // not owned by Column
+  size_t index_;
  
   /** Type converters: Return same column under its actual type, or
    *  nullptr if of the wrong type.  */
@@ -78,6 +82,20 @@ class Column : public Object {
   virtual void push_back(String* val) {
     assert(0);
   }
+
+  void set_parent_values_(size_t size) { // TODO: Use this for every column instead
+    size_ = size;
+    num_arrays_ = size / ELEMENT_ARRAY_SIZE + 1;
+    kv_ = nullptr;
+    dataframe_name_ = nullptr;
+    index_ = SIZE_MAX;
+  }
+
+  virtual void set_kv_values_(KV_Store* kv, String* dataframe_name, size_t col_index) {
+    kv_ = kv;
+    dataframe_name_ = dataframe_name;
+    index_ = col_index;
+  }
  
  /** Returns the number of elements in the column. */
   virtual size_t size() {
@@ -99,7 +117,7 @@ class IntColumn : public Column {
 
   // Elements are stored as an array of int arrays where each int array holds ELEMENT_ARRAY_SIZE 
   // number of elements.
-  int** elements_;
+  int** elements_;  
 
   IntColumn() {
     type_ = 'I';
@@ -111,11 +129,24 @@ class IntColumn : public Column {
     elements_[0] = new int[ELEMENT_ARRAY_SIZE];
   }
 
+  // TODO: Example for Kaylin
+  // IntColumn col1 = new IntColumn(200, 1, 2, 3);
+  // DataFrame* df = thing;
+  // DataFrame* df2 = new DataFrame();
+  // df->add_column(col1)
+  // add_column(col1) {
+  //   col.set_kv_values_(this->kv)
+  //   copy_column = copy_sontructor
+  //   copy_column.generate_kv_pairs_() // set local array, make list of keys, put values
+  // }
+
   // NOTE: It seems that there's no offical comments about this, but if you give 'n' below the 
   // actual number of arguments (ex: IntColumn(12, 1)) then everything will be filled up to 'n' 
   // elements, but those extra elements will be completely random values. What's worse is that
   // there's basically no way to error check because those values are completely random.
   IntColumn(int n, ...) {
+    // TODO: Add documentation about this
+    assert(n <= ELEMENT_ARRAY_SIZE);
     type_ = 'I';
     size_ = n;
 
@@ -1034,6 +1065,10 @@ class DataFrame : public Object {
         this->schema_.add_column(col_type);
         this->cols_[ii] = make_new_column_(col_type);
     }
+  }
+
+  DataFrame(Schema& schema, KV_Store& kv_store) : DataFrame(schema) {
+    // TODO : stuff
   }
 
   /** Create a data frame with the same columns as the given df but with no rows or rownmaes */
