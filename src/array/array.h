@@ -911,3 +911,81 @@ public:
       return new_array;
   }
 };
+
+/**
+ * An Array class to which Strings can be added to and removed from.
+ * author: chasebish */
+class KeyArray : public ObjectArray {
+public:
+  /** CONSTRUCTORS & DESTRUCTORS **/
+
+  /* Creates an Array of desired size */
+  KeyArray(const size_t size) : ObjectArray(size) {
+    
+  }
+
+  /* Copies the contents of an already existing Array */
+  KeyArray(StringArray* arr) : ObjectArray(arr) {
+    
+  }
+
+  /* Clears Array from memory */
+  ~KeyArray() {
+
+  }
+
+  /** ARRAY METHODS **/
+
+    /* Adds an StringArray to existing contents */
+  void concat(KeyArray* const arr) {
+    ObjectArray::concat(arr);
+  }
+
+  /* Gets a String at the given index */
+  /* Throws an error if not found or out of range or no elements in array*/
+  Key* get(size_t index) {
+    return dynamic_cast<Key*>(ObjectArray::get(index));
+  }
+
+  /* Removes the last String of the Array, returns the removed String */
+  /* Throws an error if not found or out of range or no elements in array*/
+  Key* pop() {
+    return dynamic_cast<Key*>(ObjectArray::pop());
+  }
+
+  /* Adds an String to the end of the Array, returns the new length */
+  size_t push(Key* const to_add) {
+    return ObjectArray::push(to_add);
+  }
+
+  /* Removes a String at the given index, returns removed String */
+  /* Throws an error if not found or out of range or no elements in array*/
+  Key* remove(size_t index) {
+    return dynamic_cast<Key*>(ObjectArray::remove(index));
+  }
+
+  /* Replaces a String at the given index with the given String, returns the replaced String */
+  /* Throws an error if not found or out of range or no elements in array*/
+  Key* replace(size_t index, Key* const to_add) {
+    return dynamic_cast<Key*>(ObjectArray::replace(index, to_add));
+  }
+
+  static KeyArray* deserialize(char* serial) {
+      Deserializer deserializer(serial);
+      return deserialize(deserializer);
+  }
+
+  static KeyArray* deserialize(Deserializer& deserializer) {
+      // Don't need serial size, so we skip it
+      deserializer.deserialize_size_t();
+      size_t size = deserializer.deserialize_size_t();
+      size_t count = deserializer.deserialize_size_t();
+      KeyArray* new_array = new KeyArray(size);
+      for (size_t ii = 0; ii < count; ii++) {
+        Key* new_object = Key::deserialize(deserializer);
+        new_array->push(new_object);
+        delete new_object;
+      }
+      return new_array;
+  }
+};
