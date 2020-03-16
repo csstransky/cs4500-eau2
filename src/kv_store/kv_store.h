@@ -39,6 +39,7 @@ class KV_Store : public Object {
 
     } 
 
+    // TODO: also need to get arrays. Either have multiple gets or return Object*
     DataFrame* get(Key key) {
 
     }
