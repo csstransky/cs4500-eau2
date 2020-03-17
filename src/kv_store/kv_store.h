@@ -43,4 +43,20 @@ class KV_Store : public Object {
     DataFrame* get(Key key) {
 
     }
+
+    IntArray get_int_array(Key key) {
+
+    }
+
+    BoolArray get_bool_array(Key key) {
+
+    }
+
+    FloatArray get_float_array(Key key) {
+
+    }
+
+    StringArray get_string_array(Key key) {
+        
+    }
 };
