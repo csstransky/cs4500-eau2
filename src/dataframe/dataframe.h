@@ -56,7 +56,7 @@ class Column : public Object {
   KV_Store* kv_; // not owned by Column
   String* dataframe_name_; // not owned by Column
   size_t index_;
-  KeyArray blocks_; // owned
+  KeyArray keys_; // owned
  
   /** Type converters: Return same column under its actual type, or
    *  nullptr if of the wrong type.  */
@@ -91,11 +91,23 @@ class Column : public Object {
     kv_ = nullptr;
     dataframe_name_ = nullptr;
     index_ = SIZE_MAX;
-    blocks_ = new KeyArray(num_arrays_);
+    keys_ = new KeyArray(num_arrays_);
   }
 
   Key* generate_key_(size_t array_index) {
-    // TODO
+    // TODO: CHECK THIS
+    char c[dataframe_name_->size()+16]; // TODO: Is 16 big enough for two integers and two _
+    strcpy(c, dataframe_name_->c_str());
+    strcat(c, "_");
+    char str[10];
+    snprintf(str, sizeof(str), "%zu", index_);
+    strcat(c, str);
+    strcat(c, "_");
+    snprintf(str, sizeof(str), "%zu", array_index);
+    strcat(c, str);
+    String s(c); 
+
+    return new Key(s, 0); // TODO: change 0 to node index
     
   }
 
@@ -148,7 +160,8 @@ class IntColumn : public Column {
   // elements, but those extra elements will be completely random values. What's worse is that
   // there's basically no way to error check because those values are completely random.
   IntColumn(int n, ...) {
-    // TODO: Add documentation about this
+    // This constructor can only be used when the number of elements being added is less than the
+    // ELEMENT_ARRAY_SIZE this is because the KVStore is not set up yet
     assert(n <= ELEMENT_ARRAY_SIZE);
     set_parent_values_(n, 'I');
 
@@ -166,7 +179,7 @@ class IntColumn : public Column {
 
   ~IntColumn() {
     delete buffered_elements_;
-    delete blocks_;
+    delete keys_;
   }
 
   int get(size_t idx) {
@@ -179,7 +192,7 @@ class IntColumn : public Column {
     if (last_array == array) {
       return buffered_elements_->get(index);
     } else {
-      Key* k = blocks_->get(array);
+      Key* k = keys_->get(array);
       IntArray* data = kv_->get(k);
       int i = data->get(index);
       delete data;
@@ -201,7 +214,7 @@ class IntColumn : public Column {
     if (last_array == array) {
       buffered_elements_->replace(index, val);
     } else {
-      Key* k = blocks_->get(array);
+      Key* k = keys_->get(array);
       IntArray* data = kv_->get(k);
       data->replace(index, val);
       kv->put(k, data);
@@ -224,7 +237,7 @@ class IntColumn : public Column {
     // If buffered elements is full, create key and add to kvstore
     if (index == ELEMENT_ARRAY_SIZE - 1) {
       Key* k = generate_key_(array);
-      blocks_->push(k);
+      keys_->push(k);
       delete k;
 
       kv_->put(k, buffered_elements_); 
@@ -244,16 +257,11 @@ class FloatColumn : public Column {
   public:
   // Elements are stored as an array of int arrays where each int array holds ELEMENT_ARRAY_SIZE 
   // number of elements.
-  float** elements_;
+  FloatArray* buffered_elements_;
 
   FloatColumn() {
-    type_ = 'F';
-    size_ = 0;
-    num_arrays_ = 1;
-
-    // Initialize elements to consist of one array even if there are no elements in it.
-    elements_ = new float*[1];
-    elements_[0] = new float[ELEMENT_ARRAY_SIZE];
+    set_parent_values_(0, 'F');
+    buffered_elements_ = new FloatArray(ELEMENT_ARRAY_SIZE);
   }
 
   // NOTE: It seems that there's no offical comments about this, but if you give 'n' below the 
@@ -261,42 +269,44 @@ class FloatColumn : public Column {
   // elements, but those extra elements will be completely random values. What's worse is that
   // there's basically no way to error check because those values are completely random.
   FloatColumn(int n, ...) {
-    type_ = 'F';
-    size_ = n;
+    // This constructor can only be used when the number of elements being added is less than the
+    // ELEMENT_ARRAY_SIZE this is because the KVStore is not set up yet
+    assert(n <= ELEMENT_ARRAY_SIZE);
+    set_parent_values_(n, 'F');
 
     // Determine the number of arrays needed and construct them
-    num_arrays_ = n / ELEMENT_ARRAY_SIZE + 1;
-    elements_ = new float*[num_arrays_];
-    for (size_t i = 0; i < num_arrays_; i++) {
-      elements_[i] = new float[ELEMENT_ARRAY_SIZE];
-    }
+    buffered_elements_ = new FloatArray(ELEMENT_ARRAY_SIZE);
 
     // Fill the arrays with the arguments passed in
     va_list args;
     va_start(args, n);
     for (size_t i = 0; i < n; i++) {
-      size_t array = i / ELEMENT_ARRAY_SIZE;
-      size_t index = i % ELEMENT_ARRAY_SIZE;
-
-      elements_[array][index] = va_arg(args, double);
+      buffered_elements_->push(va_arg(args, int));
     }
     va_end(args);
   }
 
   ~FloatColumn() {
-    for (size_t i = 0; i < num_arrays_; i++) {
-      delete[] elements_[i];
-    }
-
-    delete[] elements_;
+    delete buffered_elements_;
+    delete keys_;
   }
 
   float get(size_t idx) {
     assert(idx < size_);
     size_t array = idx / ELEMENT_ARRAY_SIZE;
     size_t index = idx % ELEMENT_ARRAY_SIZE;
+    size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
 
-    return elements_[array][index];
+    // if element is in last array, get buffered_elements_ ow get blocks
+    if (last_array == array) {
+      return buffered_elements_->get(index);
+    } else {
+      Key* k = keys_->get(array);
+      FloatArray* data = kv_->get(k);
+      int i = data->get(index);
+      delete data;
+      return i;
+    }
   }
 
   FloatColumn* as_float() { return this; }
@@ -307,8 +317,18 @@ class FloatColumn : public Column {
     assert(idx < size_);
     size_t array = idx / ELEMENT_ARRAY_SIZE;
     size_t index = idx % ELEMENT_ARRAY_SIZE;
+    size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
 
-    elements_[array][index] = val;
+    // if element is to be place in last array, update buffered_elements, else get from kvstore
+    if (last_array == array) {
+      buffered_elements_->replace(index, val);
+    } else {
+      Key* k = keys_->get(array);
+      FloatArray* data = kv_->get(k);
+      data->replace(index, val);
+      kv->put(k, data);
+      delete data;
+    }
   }
 
   size_t size() {
@@ -316,34 +336,23 @@ class FloatColumn : public Column {
     return Column::size();
   }
 
-  // Private method to increase the number of arrays
-  void increase_array_() {
-    // Allocate new array
-    float** new_elements = new float*[num_arrays_ * 2];
-    // Copy existing arrays to new arrays
-    for (size_t i = 0; i < num_arrays_; i++) {
-      new_elements[i] = elements_[i];
-    }
-
-    // Allocate new arrays for the rest of the newly created arrays
-    for (size_t i = num_arrays_; i < num_arrays_ * 2; i++) {
-      new_elements[i] = new float[ELEMENT_ARRAY_SIZE];
-    }
-
-    delete[] elements_;
-    elements_ = new_elements;
-    num_arrays_ *= 2;
-  }
-
   void push_back(float val) {
-    if (num_arrays_ * ELEMENT_ARRAY_SIZE <= size_) {
-      increase_array_();
-    }
-
     size_t array = size_ / ELEMENT_ARRAY_SIZE;
     size_t index = size_ % ELEMENT_ARRAY_SIZE;
 
-    elements_[array][index] = val;
+    buffered_elements_->push(val);
+    
+    // If buffered elements is full, create key and add to kvstore
+    if (index == ELEMENT_ARRAY_SIZE - 1) {
+      Key* k = generate_key_(array);
+      keys_->push(k);
+      delete k;
+
+      kv_->put(k, buffered_elements_); 
+      delete buffered_elements_;
+      buffered_elements_ = new FloatArray(ELEMENT_ARRAY_SIZE);
+    }
+
     size_++;
   }
 };
@@ -356,16 +365,11 @@ class BoolColumn : public Column {
  public:
    // Elements are stored as an array of bool arrays where each bool array holds ELEMENT_ARRAY_SIZE 
   // number of elements.
-  bool** elements_;
+  BoolArray* buffered_elements_;
 
   BoolColumn() {
-    type_ = 'B';
-    size_ = 0;
-    num_arrays_ = 1;
-
-    // Initialize elements to consist of one array even if there are no elements in it.
-    elements_ = new bool*[1];
-    elements_[0] = new bool[ELEMENT_ARRAY_SIZE];
+    set_parent_values_(0, 'B');
+    buffered_elements_ = new BoolArray(ELEMENT_ARRAY_SIZE);
   }
 
   // NOTE: It seems that there's no offical comments about this, but if you give 'n' below the 
@@ -373,42 +377,44 @@ class BoolColumn : public Column {
   // elements, but those extra elements will be completely random values. What's worse is that
   // there's basically no way to error check because those values are completely random.
   BoolColumn(int n, ...) {
-    type_ = 'B';
-    size_ = n;
+    // This constructor can only be used when the number of elements being added is less than the
+    // ELEMENT_ARRAY_SIZE this is because the KVStore is not set up yet
+    assert(n <= ELEMENT_ARRAY_SIZE);
+    set_parent_values_(n, 'B');
 
     // Determine the number of arrays needed and construct them
-    num_arrays_ = n / ELEMENT_ARRAY_SIZE + 1;
-    elements_ = new bool*[num_arrays_];
-    for (size_t i = 0; i < num_arrays_; i++) {
-      elements_[i] = new bool[ELEMENT_ARRAY_SIZE];
-    }
+    buffered_elements_ = new BoolArray(ELEMENT_ARRAY_SIZE);
 
     // Fill the arrays with the arguments passed in
     va_list args;
     va_start(args, n);
     for (size_t i = 0; i < n; i++) {
-      size_t array = i / ELEMENT_ARRAY_SIZE;
-      size_t index = i % ELEMENT_ARRAY_SIZE;
-
-      elements_[array][index] = va_arg(args, int);
+      buffered_elements_->push(va_arg(args, int));
     }
     va_end(args);
   }
 
   ~BoolColumn() {
-    for (size_t i = 0; i < num_arrays_; i++) {
-      delete[] elements_[i];
-    }
-
-    delete[] elements_;
+    delete buffered_elements_;
+    delete keys_;
   }
 
   bool get(size_t idx) {
     assert(idx < size_);
     size_t array = idx / ELEMENT_ARRAY_SIZE;
     size_t index = idx % ELEMENT_ARRAY_SIZE;
+    size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
 
-    return elements_[array][index];
+    // if element is in last array, get buffered_elements_ ow get blocks
+    if (last_array == array) {
+      return buffered_elements_->get(index);
+    } else {
+      Key* k = keys_->get(array);
+      BoolArray* data = kv_->get(k);
+      int i = data->get(index);
+      delete data;
+      return i;
+    }
   }
 
   BoolColumn* as_bool() { return this; }
@@ -419,8 +425,18 @@ class BoolColumn : public Column {
     assert(idx < size_);
     size_t array = idx / ELEMENT_ARRAY_SIZE;
     size_t index = idx % ELEMENT_ARRAY_SIZE;
+    size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
 
-    elements_[array][index] = val;
+    // if element is to be place in last array, update buffered_elements, else get from kvstore
+    if (last_array == array) {
+      buffered_elements_->replace(index, val);
+    } else {
+      Key* k = keys_->get(array);
+      BoolArray* data = kv_->get(k);
+      data->replace(index, val);
+      kv->put(k, data);
+      delete data;
+    }
   }
 
   size_t size() {
@@ -428,34 +444,23 @@ class BoolColumn : public Column {
     return Column::size();
   }
 
-  // Private method to increase the number of arrays
-  void increase_array_() {
-    // Allocate new array
-    bool** new_elements = new bool*[num_arrays_ * 2];
-    // Copy existing arrays to new arrays
-    for (size_t i = 0; i < num_arrays_; i++) {
-      new_elements[i] = elements_[i];
-    }
-
-    // Allocate new arrays for the rest of the newly created arrays
-    for (size_t i = num_arrays_; i < num_arrays_ * 2; i++) {
-      new_elements[i] = new bool[ELEMENT_ARRAY_SIZE];
-    }
-
-    delete[] elements_;
-    elements_ = new_elements;
-    num_arrays_ *= 2;
-  }
-
   void push_back(bool val) {
-    if (num_arrays_ * ELEMENT_ARRAY_SIZE <= size_) {
-      increase_array_();
-    }
-
     size_t array = size_ / ELEMENT_ARRAY_SIZE;
     size_t index = size_ % ELEMENT_ARRAY_SIZE;
 
-    elements_[array][index] = val;
+    buffered_elements_->push(val);
+    
+    // If buffered elements is full, create key and add to kvstore
+    if (index == ELEMENT_ARRAY_SIZE - 1) {
+      Key* k = generate_key_(array);
+      keys_->push(k);
+      delete k;
+
+      kv_->put(k, buffered_elements_); 
+      delete buffered_elements_;
+      buffered_elements_ = new BoolArray(ELEMENT_ARRAY_SIZE);
+    }
+
     size_++;
   }
 };
@@ -469,16 +474,11 @@ class StringColumn : public Column {
  public:
    // Elements are stored as an array of int arrays where each int array holds ELEMENT_ARRAY_SIZE 
   // number of elements.
-  String*** elements_;
+  StringArray* buffered_elements_;
 
   StringColumn() {
-    type_ = 'S';
-    size_ = 0;
-    num_arrays_ = 1;
-
-    // Initialize elements to consist of one array even if there are no elements in it.
-    elements_ = new String**[1];
-    elements_[0] = new String*[ELEMENT_ARRAY_SIZE];
+    set_parent_values_(0, 'S');
+    buffered_elements_ = new StringArray(ELEMENT_ARRAY_SIZE);
   }
 
   // NOTE: It seems that there's no offical comments about this, but if you give 'n' below the 
@@ -488,49 +488,44 @@ class StringColumn : public Column {
   // DANGER: Because of the above behavior, this WILL NOT WORK if n is larger than the actual 
   // elemnents because each String that's passed in is cloned.
   StringColumn(int n, ...) {
-    type_ = 'S';
-    size_ = n;
+    // This constructor can only be used when the number of elements being added is less than the
+    // ELEMENT_ARRAY_SIZE this is because the KVStore is not set up yet
+    assert(n <= ELEMENT_ARRAY_SIZE);
+    set_parent_values_(n, 'S');
 
     // Determine the number of arrays needed and construct them
-    num_arrays_ = n / ELEMENT_ARRAY_SIZE + 1;
-    elements_ = new String**[num_arrays_];
-    for (size_t i = 0; i < num_arrays_; i++) {
-      elements_[i] = new String*[ELEMENT_ARRAY_SIZE];
-    }
+    buffered_elements_ = new StringArray(ELEMENT_ARRAY_SIZE);
 
     // Fill the arrays with the arguments passed in
     va_list args;
     va_start(args, n);
     for (size_t i = 0; i < n; i++) {
-      size_t array = i / ELEMENT_ARRAY_SIZE;
-      size_t index = i % ELEMENT_ARRAY_SIZE;
-
-      String* temp_string = va_arg(args, String*);
-      elements_[array][index] = temp_string ? temp_string->clone() : nullptr;
+      buffered_elements_->push(va_arg(args, int));
     }
     va_end(args);
   }
 
   ~StringColumn() {
-    size_t count = 0;
-    for (size_t i = 0; i < num_arrays_; i++) {
-      for (size_t j = 0; j < ELEMENT_ARRAY_SIZE && count < size_; j++) {
-        if (elements_[i][j]) {
-          delete elements_[i][j];
-        }
-        count++;
-      }
-      delete[] elements_[i];
-    }
-    delete[] elements_;
+    delete buffered_elements_;
+    delete keys_;
   }
 
   String* get(size_t idx) {
     assert(idx < size_);
     size_t array = idx / ELEMENT_ARRAY_SIZE;
     size_t index = idx % ELEMENT_ARRAY_SIZE;
+    size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
 
-    return elements_[array][index];
+    // if element is in last array, get buffered_elements_ ow get blocks
+    if (last_array == array) {
+      return buffered_elements_->get(index);
+    } else {
+      Key* k = keys_->get(array);
+      StringArray* data = kv_->get(k);
+      int i = data->get(index);
+      delete data;
+      return i;
+    }
   }
 
   StringColumn* as_string() { return this; }
@@ -541,12 +536,18 @@ class StringColumn : public Column {
     assert(idx < size_);
     size_t array = idx / ELEMENT_ARRAY_SIZE;
     size_t index = idx % ELEMENT_ARRAY_SIZE;
+    size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
 
-    if (elements_[array][index]) {
-      delete elements_[array][index];
+    // if element is to be place in last array, update buffered_elements, else get from kvstore
+    if (last_array == array) {
+      buffered_elements_->replace(index, val);
+    } else {
+      Key* k = keys_->get(array);
+      StringArray* data = kv_->get(k);
+      data->replace(index, val);
+      kv->put(k, data);
+      delete data;
     }
-    
-    elements_[array][index] = val ? val->clone() : nullptr;
   }
 
   size_t size() {
@@ -554,34 +555,23 @@ class StringColumn : public Column {
     return Column::size();
   }
 
-  // Private method to increase the number of arrays
-  void increase_array_() {
-    // Allocate new array
-    String*** new_elements = new String**[num_arrays_ * 2];
-    // Copy existing arrays to new arrays
-    for (size_t i = 0; i < num_arrays_; i++) {
-      new_elements[i] = elements_[i];
-    }
-
-    // Allocate new arrays for the rest of the newly created arrays
-    for (size_t i = num_arrays_; i < num_arrays_ * 2; i++) {
-      new_elements[i] = new String*[ELEMENT_ARRAY_SIZE];
-    }
-
-    delete[] elements_;
-    elements_ = new_elements;
-    num_arrays_ *= 2;
-  }
-
   void push_back(String* val) {
-    if (num_arrays_ * ELEMENT_ARRAY_SIZE <= size_) {
-      increase_array_();
-    }
-
     size_t array = size_ / ELEMENT_ARRAY_SIZE;
     size_t index = size_ % ELEMENT_ARRAY_SIZE;
 
-    elements_[array][index] = val ? val->clone() : nullptr;
+    buffered_elements_->push(val);
+    
+    // If buffered elements is full, create key and add to kvstore
+    if (index == ELEMENT_ARRAY_SIZE - 1) {
+      Key* k = generate_key_(array);
+      keys_->push(k);
+      delete k;
+
+      kv_->put(k, buffered_elements_); 
+      delete buffered_elements_;
+      buffered_elements_ = new StringArray(ELEMENT_ARRAY_SIZE);
+    }
+
     size_++;
   }
 };
