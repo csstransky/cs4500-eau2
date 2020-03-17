@@ -3,7 +3,7 @@
 #pragma once
 #include <stdlib.h> 
 #include <string.h> 
-#include "../helpers/object.h"
+#include "object.h"
 
 class Serializer {
     public:
@@ -65,6 +65,16 @@ class Serializer {
      */
     char* get_serial() {
         return serial_;
+    }
+
+    /** Subclasses should redefine */
+    bool equals(Object  * other) {
+        // TODO
+    }
+
+    /** Return a copy of the object; nullptr is considered an error */
+    Object* clone() {
+        // TODO
     }
 };
 
