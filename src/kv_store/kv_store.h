@@ -19,44 +19,44 @@ class KV_Store : public Object {
     }
 
     // TODO: The put will happen inside DataFrame::from_array(&key, &kv, SZ, vals);
-    void put(Key key, DataFrame* dataframe) {
+    void put(Key* key, DataFrame* dataframe) {
 
     }
 
-    void put(Key key, IntArray int_array) {
+    void put(Key* key, IntArray* int_array) {
 
     }
 
-    void put(Key key, BoolArray bool_array) {
+    void put(Key* key, BoolArray* bool_array) {
 
     }
 
-    void put(Key key, FloatArray float_array) {
+    void put(Key* key, FloatArray* float_array) {
 
     }
 
-    void put(Key key, StringArray string_array) {
+    void put(Key* key, StringArray* string_array) {
 
     } 
 
     // TODO: also need to get arrays. Either have multiple gets or return Object*
-    DataFrame* get(Key key) {
+    DataFrame* get(Key* key) {
 
     }
 
-    IntArray get_int_array(Key key) {
+    IntArray* get_int_array(Key* key) {
 
     }
 
-    BoolArray get_bool_array(Key key) {
+    BoolArray* get_bool_array(Key* key) {
 
     }
 
-    FloatArray get_float_array(Key key) {
+    FloatArray* get_float_array(Key* key) {
 
     }
 
-    StringArray get_string_array(Key key) {
-        
+    StringArray* get_string_array(Key* key) {
+
     }
 };

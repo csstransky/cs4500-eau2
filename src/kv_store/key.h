@@ -22,4 +22,14 @@ class Key : public Object {
     size_t get_node_index() {
         return node_index_;
     }
+
+    /** Subclasses should redefine */
+    bool equals(Object  * other) {
+        // TODO
+    }
+
+    /** Return a copy of the object; nullptr is considered an error */
+    Object* clone() {
+        // TODO
+    }
 };
