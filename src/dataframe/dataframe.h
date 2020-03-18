@@ -111,7 +111,7 @@ class Column : public Object {
     strcat(c, str);
     String s(c); 
 
-    return new Key(s, 0); // TODO: change 0 to node index
+    return new Key(&s, 0); // TODO: change 0 to node index
     
   }
  
@@ -142,6 +142,10 @@ class IntColumn : public Column {
     buffered_elements_ = new IntArray(ELEMENT_ARRAY_SIZE);
   }
 
+  IntColumn() : IntColumn(0, 0, 0) {
+
+  }
+
   ~IntColumn() {
     delete buffered_elements_;
     delete keys_;
@@ -158,7 +162,7 @@ class IntColumn : public Column {
       return buffered_elements_->get(index);
     } else {
       Key* k = keys_->get(array);
-      IntArray* data = kv_->get(k);
+      IntArray* data = kv_->get_int_array(k);
       int i = data->get(index);
       delete data;
       return i;
@@ -180,7 +184,7 @@ class IntColumn : public Column {
       buffered_elements_->replace(index, val);
     } else {
       Key* k = keys_->get(array);
-      IntArray* data = kv_->get(k);
+      IntArray* data = kv_->get_int_array(k);
       data->replace(index, val);
       kv_->put(k, data);
       delete data;
@@ -229,6 +233,10 @@ class FloatColumn : public Column {
     buffered_elements_ = new FloatArray(ELEMENT_ARRAY_SIZE);
   }
 
+  FloatColumn() : FloatColumn(0, 0, 0) {
+    
+  }
+
   ~FloatColumn() {
     delete buffered_elements_;
     delete keys_;
@@ -245,7 +253,7 @@ class FloatColumn : public Column {
       return buffered_elements_->get(index);
     } else {
       Key* k = keys_->get(array);
-      FloatArray* data = kv_->get(k);
+      FloatArray* data = kv_->get_float_array(k);
       float i = data->get(index);
       delete data;
       return i;
@@ -267,7 +275,7 @@ class FloatColumn : public Column {
       buffered_elements_->replace(index, val);
     } else {
       Key* k = keys_->get(array);
-      FloatArray* data = kv_->get(k);
+      FloatArray* data = kv_->get_float_array(k);
       data->replace(index, val);
       kv_->put(k, data);
       delete data;
@@ -315,6 +323,10 @@ class BoolColumn : public Column {
     buffered_elements_ = new BoolArray(ELEMENT_ARRAY_SIZE);
   }
 
+  BoolColumn() : BoolColumn(0, 0, 0) {
+    
+  }
+
   ~BoolColumn() {
     delete buffered_elements_;
     delete keys_;
@@ -331,7 +343,7 @@ class BoolColumn : public Column {
       return buffered_elements_->get(index);
     } else {
       Key* k = keys_->get(array);
-      BoolArray* data = kv_->get(k);
+      BoolArray* data = kv_->get_bool_array(k);
       bool i = data->get(index);
       delete data;
       return i;
@@ -353,7 +365,7 @@ class BoolColumn : public Column {
       buffered_elements_->replace(index, val);
     } else {
       Key* k = keys_->get(array);
-      BoolArray* data = kv_->get(k);
+      BoolArray* data = kv_->get_bool_array(k);
       data->replace(index, val);
       kv_->put(k, data);
       delete data;
@@ -402,6 +414,10 @@ class StringColumn : public Column {
     buffered_elements_ = new StringArray(ELEMENT_ARRAY_SIZE);
   }
 
+  StringColumn() : StringColumn(0, 0, 0) {
+    
+  }
+
   ~StringColumn() {
     delete buffered_elements_;
     delete keys_;
@@ -418,7 +434,7 @@ class StringColumn : public Column {
       return buffered_elements_->get(index);
     } else {
       Key* k = keys_->get(array);
-      StringArray* data = kv_->get(k);
+      StringArray* data = kv_->get_string_array(k);
       String* i = data->get(index);
       delete data;
       return i;
@@ -440,7 +456,7 @@ class StringColumn : public Column {
       buffered_elements_->replace(index, val);
     } else {
       Key* k = keys_->get(array);
-      StringArray* data = kv_->get(k);
+      StringArray* data = kv_->get_string_array(k);
       data->replace(index, val);
       kv_->put(k, data);
       delete data;
@@ -670,16 +686,22 @@ class Row : public Object {
     for (size_t i = 0; i < width_; i++) {
       switch (scm.col_type(i)) {
         case 'I':
-          cols_[i] = new IntColumn(1, DEFAULT_INT_VALUE);
+          cols_[i] = new IntColumn();
+          cols_[i]->push_back(DEFAULT_INT_VALUE);
           break;
         case 'F':
-          cols_[i] = new FloatColumn(1, DEFAULT_FLOAT_VALUE);
+          cols_[i] = new FloatColumn();
+          cols_[i]->push_back(DEFAULT_FLOAT_VALUE);
           break;
         case 'B':
-          cols_[i] = new BoolColumn(1, DEFAULT_BOOL_VALUE);
+          cols_[i] = new BoolColumn();
+          cols_[i]->push_back(DEFAULT_BOOL_VALUE);
+
           break;
         case 'S':
-          cols_[i] = new StringColumn(1, (String*)DEFAULT_STRING_VALUE);
+          cols_[i] = new StringColumn();
+          cols_[i]->push_back((String*)DEFAULT_STRING_VALUE);
+
           break;
         default:
           // Shoulld never reach here 
@@ -991,41 +1013,45 @@ class DataFrame : public Object {
     return new_dataframe;
   }
 
-  static DataFrame* from_array(Key* key, KV_Store* kv, IntArray* array) {
+  static DataFrame* from_array(Key* key, KV_Store* kv, size_t num, int* array) {
     Schema s("I");
-    Dataframe* d = new Dataframe(s, key->get_key(), kv);
-    for (size_t i = 0; i < array->length(), i++) {
-      d->push_back(array->get(i));
+    DataFrame* d = new DataFrame(s, key->get_key(), kv);
+    for (size_t i = 0; i < num; i++) {
+      IntColumn* col = d->get_column(0)->as_int();
+      col->push_back(array[i]);
     }
 
     return d;
   }
 
-  static DataFrame* from_array(Key* key, KV_Store* kv, FloatArray* array) {
+  static DataFrame* from_array(Key* key, KV_Store* kv, size_t num, float* array) {
     Schema s("F");
-    Dataframe* d = new Dataframe(s, key->get_key(), kv);
-    for (size_t i = 0; i < array->length(), i++) {
-      d->push_back(array->get(i));
+    DataFrame* d = new DataFrame(s, key->get_key(), kv);
+    for (size_t i = 0; i < num; i++) {
+      FloatColumn* col = d->get_column(0)->as_float();
+      col->push_back(array[i]);
     }
 
     return d;
   }
 
-  static DataFrame* from_array(Key* key, KV_Store* kv, BoolArray* array) {
+  static DataFrame* from_array(Key* key, KV_Store* kv, size_t num, bool* array) {
     Schema s("B");
-    Dataframe* d = new Dataframe(s, key->get_key(), kv);
-    for (size_t i = 0; i < array->length(), i++) {
-      d->push_back(array->get(i));
+    DataFrame* d = new DataFrame(s, key->get_key(), kv);
+    for (size_t i = 0; i < num; i++) {
+      BoolColumn* col = d->get_column(0)->as_bool();
+      col->push_back(array[i]);
     }
 
     return d;
   }  
 
-  static DataFrame* from_array(Key* key, KV_Store* kv, StringArray* array) {
+  static DataFrame* from_array(Key* key, KV_Store* kv, size_t num, String** array) {
     Schema s("S");
-    Dataframe* d = new Dataframe(s, key->get_key(), kv);
-    for (size_t i = 0; i < array->length(), i++) {
-      d->push_back(array->get(i));
+    DataFrame* d = new DataFrame(s, key->get_key(), kv);
+    for (size_t i = 0; i < num; i++) {
+      StringColumn* col = d->get_column(0)->as_string();
+      col->push_back(array[i]);
     }
 
     return d;
