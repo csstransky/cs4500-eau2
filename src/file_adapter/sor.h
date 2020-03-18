@@ -369,15 +369,15 @@ class SoR {
 
     DataFrame* dataframe_;
 
-    SoR(char* file_path) : SoR(file_path, 0, get_file_size(file_path)) { }
+    SoR(char* file_path, String* name, KV_Store* kv) : SoR(file_path, 0, get_file_size(file_path), name, kv) { }
 
-    SoR(char* file_path, size_t from, size_t len) {
+    SoR(char* file_path, size_t from, size_t len, String* name, KV_Store* kv) {
         // get column types of the first 500 lines (using max column)
         char* cols_types = get_column_types(file_path);
         Schema schema_(cols_types);
         delete[] cols_types;
 
-        dataframe_ = new DataFrame(schema_);
+        dataframe_ = new DataFrame(schema_, name, kv);
 
         // parse again to add each element
         parse_and_add(file_path, from, len);
