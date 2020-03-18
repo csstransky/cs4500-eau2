@@ -181,7 +181,7 @@ class IntColumn : public Column {
       Key* k = keys_->get(array);
       IntArray* data = kv_->get(k);
       data->replace(index, val);
-      kv->put(k, data);
+      kv_->put(k, data);
       delete data;
     }
 
@@ -268,7 +268,7 @@ class FloatColumn : public Column {
       Key* k = keys_->get(array);
       FloatArray* data = kv_->get(k);
       data->replace(index, val);
-      kv->put(k, data);
+      kv_->put(k, data);
       delete data;
     }
   }
@@ -354,7 +354,7 @@ class BoolColumn : public Column {
       Key* k = keys_->get(array);
       BoolArray* data = kv_->get(k);
       data->replace(index, val);
-      kv->put(k, data);
+      kv_->put(k, data);
       delete data;
     }
   }
@@ -441,7 +441,7 @@ class StringColumn : public Column {
       Key* k = keys_->get(array);
       StringArray* data = kv_->get(k);
       data->replace(index, val);
-      kv->put(k, data);
+      kv_->put(k, data);
       delete data;
     }
   }
