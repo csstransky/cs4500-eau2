@@ -33,6 +33,6 @@
 
 settings.json
 datafile.txt
-test/build/*
+tests/build/*
 *.out
 

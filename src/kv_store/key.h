@@ -3,6 +3,7 @@
 #include "../helpers/string.h"
 
 class Key : public Object {
+    public:
     String* key_;
     size_t node_index_;
 

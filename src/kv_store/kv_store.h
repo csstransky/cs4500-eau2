@@ -6,6 +6,7 @@
 #include "key.h"
 
 class KV_Store : public Object {
+    public:
     SOMap* kv_map_; // Key.key -> Serializer
     size_t local_node_index_;
 

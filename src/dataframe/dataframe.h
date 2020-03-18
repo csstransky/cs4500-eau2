@@ -245,7 +245,7 @@ class FloatColumn : public Column {
     } else {
       Key* k = keys_->get(array);
       FloatArray* data = kv_->get(k);
-      int i = data->get(index);
+      float i = data->get(index);
       delete data;
       return i;
     }
@@ -331,7 +331,7 @@ class BoolColumn : public Column {
     } else {
       Key* k = keys_->get(array);
       BoolArray* data = kv_->get(k);
-      int i = data->get(index);
+      bool i = data->get(index);
       delete data;
       return i;
     }
@@ -418,7 +418,7 @@ class StringColumn : public Column {
     } else {
       Key* k = keys_->get(array);
       StringArray* data = kv_->get(k);
-      int i = data->get(index);
+      String* i = data->get(index);
       delete data;
       return i;
     }
@@ -918,24 +918,24 @@ class DataFrame : public Object {
   Schema schema_;
   Column** cols_;
   size_t col_array_size_;
-  String* name_;
-  KV_Store kv_;
+  String* name_; // owned
+  KV_Store* kv_; // not owned
 
   /**
    * Helper function that will make a NEW Column of a specific type. This is mainly used for
    * our constructors to abstract away our switch case.
    * NOTE: Make sure to properly delete these guys later as you are making NEW Columns
    */
-  Column* make_new_column_(char col_type) {
+  Column* make_new_column_(char col_type, size_t index) {
     switch (col_type) {
       case 'I': 
-        return new IntColumn();
+        return new IntColumn(kv_, name_, index);
       case 'F': 
-        return new FloatColumn();
+        return new FloatColumn(kv_, name_, index);
       case 'B': 
-        return new BoolColumn();
+        return new BoolColumn(kv_, name_, index);
       case 'S': 
-        return new StringColumn();
+        return new StringColumn(kv_, name_, index);
       default:
         assert(0); // should never reach here
     }
@@ -943,7 +943,9 @@ class DataFrame : public Object {
  
   /** Create a data frame from a schema and columns. All columns are created
     * empty. */
-  DataFrame(Schema& schema) {
+  DataFrame(Schema& schema, String* name, KV_Store* kv) {
+    name_ = name->clone();
+    kv_ = kv;
     size_t num_cols = schema.width();
     // It's possible to make a schema with 0 columns, so we want to make sure we have atleast an 
     // array size of 1, or else our doubling in size arthimetic won't work correctly
@@ -953,16 +955,12 @@ class DataFrame : public Object {
     for (size_t ii = 0; ii < num_cols; ii++) {
         char col_type = schema.col_type(ii);
         this->schema_.add_column(col_type);
-        this->cols_[ii] = make_new_column_(col_type);
+        this->cols_[ii] = make_new_column_(col_type, ii);
     }
   }
 
-  DataFrame(Schema& schema, KV_Store& kv_store) : DataFrame(schema) {
-    // TODO : stuff
-  }
-
   /** Create a data frame with the same columns as the given df but with no rows or rownmaes */
-  DataFrame(DataFrame& df) : DataFrame(df.get_schema()) {
+  DataFrame(DataFrame& df, String* name) : DataFrame(df.get_schema(), name, df.kv_) {
  
   }
   
@@ -972,31 +970,47 @@ class DataFrame : public Object {
       delete column;
     }
     delete[] this->cols_;
-  }
-
-  static DataFrame* from_file(Key* key, KV_Store* kv, char* file_name) {
-    SoR sor(file_path);
-    return dataframe = sor.get_dataframe();
+    delete name_;
   }
 
   static DataFrame* from_array(Key* key, KV_Store* kv, IntArray* array) {
     Schema s("I");
-    Dataframe* d = new Dataframe(s);
+    Dataframe* d = new Dataframe(s, key->get_key(), kv);
+    for (size_t i = 0; i < array->length(), i++) {
+      d->push_back(array->get(i));
+    }
+
+    return d;
   }
 
   static DataFrame* from_array(Key* key, KV_Store* kv, FloatArray* array) {
     Schema s("F");
-    Dataframe* d = new Dataframe(s);
+    Dataframe* d = new Dataframe(s, key->get_key(), kv);
+    for (size_t i = 0; i < array->length(), i++) {
+      d->push_back(array->get(i));
+    }
+
+    return d;
   }
 
   static DataFrame* from_array(Key* key, KV_Store* kv, BoolArray* array) {
     Schema s("B");
-    Dataframe* d = new Dataframe(s);
+    Dataframe* d = new Dataframe(s, key->get_key(), kv);
+    for (size_t i = 0; i < array->length(), i++) {
+      d->push_back(array->get(i));
+    }
+
+    return d;
   }  
 
   static DataFrame* from_array(Key* key, KV_Store* kv, StringArray* array) {
     Schema s("S");
-    Dataframe* d = new Dataframe(s);
+    Dataframe* d = new Dataframe(s, key->get_key(), kv);
+    for (size_t i = 0; i < array->length(), i++) {
+      d->push_back(array->get(i));
+    }
+
+    return d;
   }
  
   /** Returns the dataframe's schema. Modifying the schema after a dataframe
@@ -1050,30 +1064,31 @@ class DataFrame : public Object {
     Column* copy_column;
     char col_type = col->get_type();
     size_t col_size = col->size();
+    size_t index = this->schema_.width();
     switch (col_type) {
       case 'I': {
-        copy_column = new IntColumn();
+        copy_column = new IntColumn(kv_, name_, index);
         for (size_t ii = 0; ii < col_size; ii++) {
           copy_column->push_back(col->as_int()->get(ii));
         }
         break;
       }
       case 'F': {
-        copy_column = new FloatColumn();
+        copy_column = new FloatColumn(kv_, name_, index);
         for (size_t ii = 0; ii < col_size; ii++) {
           copy_column->push_back(col->as_float()->get(ii));
         }
         break;
       }
       case 'B': {
-        copy_column = new BoolColumn();
+        copy_column = new BoolColumn(kv_, name_, index);
         for (size_t ii = 0; ii < col_size; ii++) {
           copy_column->push_back(col->as_bool()->get(ii));
         }
         break;
       }
       case 'S': {
-        copy_column = new StringColumn();
+        copy_column = new StringColumn(kv_, name_, index);
         for (size_t ii = 0; ii < col_size; ii++) {
           copy_column->push_back(col->as_string()->get(ii));
         }
