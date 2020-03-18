@@ -84,7 +84,10 @@ class Column : public Object {
     assert(0);
   }
 
-  void set_parent_values_(size_t size, char type) { // TODO: Use this for every column instead
+  void set_parent_values_(size_t size, char type, KV_Store* kv, String* dataframe_name, size_t col_index) { // TODO: Use this for every column instead
+    kv_ = kv;
+    dataframe_name_ = dataframe_name;
+    index_ = col_index;
     type_ = type;
     size_ = size;
     num_arrays_ = size / ELEMENT_ARRAY_SIZE + 1;
@@ -110,12 +113,6 @@ class Column : public Object {
     return new Key(s, 0); // TODO: change 0 to node index
     
   }
-
-  virtual void set_kv_values_(KV_Store* kv, String* dataframe_name, size_t col_index) {
-    kv_ = kv;
-    dataframe_name_ = dataframe_name;
-    index_ = col_index;
-  }
  
  /** Returns the number of elements in the column. */
   virtual size_t size() {
@@ -139,42 +136,9 @@ class IntColumn : public Column {
   // number of elements.
   IntArray* buffered_elements_;  
 
-  IntColumn() {
-    set_parent_values_(0, 'I');
+  IntColumn(KV_Store* kv, String* name, size_t index) {
+    set_parent_values_(0, 'I', kv, name, index);
     buffered_elements_ = new IntArray(ELEMENT_ARRAY_SIZE);
-  }
-
-  // TODO: Example for Kaylin
-  // IntColumn col1 = new IntColumn(200, 1, 2, 3);
-  // DataFrame* df = thing;
-  // DataFrame* df2 = new DataFrame();
-  // df->add_column(col1)
-  // add_column(col1) {
-  //   col.set_kv_values_(this->kv)
-  //   copy_column = copy_sontructor
-  //   copy_column.generate_kv_pairs_() // set local array, make list of keys, put values
-  // }
-
-  // NOTE: It seems that there's no offical comments about this, but if you give 'n' below the 
-  // actual number of arguments (ex: IntColumn(12, 1)) then everything will be filled up to 'n' 
-  // elements, but those extra elements will be completely random values. What's worse is that
-  // there's basically no way to error check because those values are completely random.
-  IntColumn(int n, ...) {
-    // This constructor can only be used when the number of elements being added is less than the
-    // ELEMENT_ARRAY_SIZE this is because the KVStore is not set up yet
-    assert(n <= ELEMENT_ARRAY_SIZE);
-    set_parent_values_(n, 'I');
-
-    // Determine the number of arrays needed and construct them
-    buffered_elements_ = new IntArray(ELEMENT_ARRAY_SIZE);
-
-    // Fill the arrays with the arguments passed in
-    va_list args;
-    va_start(args, n);
-    for (size_t i = 0; i < n; i++) {
-      buffered_elements_->push(va_arg(args, int));
-    }
-    va_end(args);
   }
 
   ~IntColumn() {
@@ -236,8 +200,6 @@ class IntColumn : public Column {
     
     // If buffered elements is full, create key and add to kvstore
     if (index == ELEMENT_ARRAY_SIZE - 1) {
-      // Assert that the kv store has been set
-      assert(kv_);
       Key* k = generate_key_(array);
       keys_->push(k);
       delete k;
@@ -261,31 +223,9 @@ class FloatColumn : public Column {
   // number of elements.
   FloatArray* buffered_elements_;
 
-  FloatColumn() {
-    set_parent_values_(0, 'F');
+  FloatColumn(KV_Store* kv, String* name, size_t index) {
+    set_parent_values_(0, 'F', kv, name, index);
     buffered_elements_ = new FloatArray(ELEMENT_ARRAY_SIZE);
-  }
-
-  // NOTE: It seems that there's no offical comments about this, but if you give 'n' below the 
-  // actual number of arguments (ex: FloatColumn(12, 1.0)) then everything will be filled up to 'n' 
-  // elements, but those extra elements will be completely random values. What's worse is that
-  // there's basically no way to error check because those values are completely random.
-  FloatColumn(int n, ...) {
-    // This constructor can only be used when the number of elements being added is less than the
-    // ELEMENT_ARRAY_SIZE this is because the KVStore is not set up yet
-    assert(n <= ELEMENT_ARRAY_SIZE);
-    set_parent_values_(n, 'F');
-
-    // Determine the number of arrays needed and construct them
-    buffered_elements_ = new FloatArray(ELEMENT_ARRAY_SIZE);
-
-    // Fill the arrays with the arguments passed in
-    va_list args;
-    va_start(args, n);
-    for (size_t i = 0; i < n; i++) {
-      buffered_elements_->push(va_arg(args, int));
-    }
-    va_end(args);
   }
 
   ~FloatColumn() {
@@ -346,8 +286,6 @@ class FloatColumn : public Column {
     
     // If buffered elements is full, create key and add to kvstore
     if (index == ELEMENT_ARRAY_SIZE - 1) {
-      // Assert that the kv store has been set
-      assert(kv_);
       Key* k = generate_key_(array);
       keys_->push(k);
       delete k;
@@ -371,31 +309,9 @@ class BoolColumn : public Column {
   // number of elements.
   BoolArray* buffered_elements_;
 
-  BoolColumn() {
-    set_parent_values_(0, 'B');
+  BoolColumn(KV_Store* kv, String* name, size_t index) {
+    set_parent_values_(0, 'B', kv, name, index);
     buffered_elements_ = new BoolArray(ELEMENT_ARRAY_SIZE);
-  }
-
-  // NOTE: It seems that there's no offical comments about this, but if you give 'n' below the 
-  // actual number of arguments (ex: BoolColumn(12, 1)) then everything will be filled up to 'n' 
-  // elements, but those extra elements will be completely random values. What's worse is that
-  // there's basically no way to error check because those values are completely random.
-  BoolColumn(int n, ...) {
-    // This constructor can only be used when the number of elements being added is less than the
-    // ELEMENT_ARRAY_SIZE this is because the KVStore is not set up yet
-    assert(n <= ELEMENT_ARRAY_SIZE);
-    set_parent_values_(n, 'B');
-
-    // Determine the number of arrays needed and construct them
-    buffered_elements_ = new BoolArray(ELEMENT_ARRAY_SIZE);
-
-    // Fill the arrays with the arguments passed in
-    va_list args;
-    va_start(args, n);
-    for (size_t i = 0; i < n; i++) {
-      buffered_elements_->push(va_arg(args, int));
-    }
-    va_end(args);
   }
 
   ~BoolColumn() {
@@ -456,8 +372,6 @@ class BoolColumn : public Column {
     
     // If buffered elements is full, create key and add to kvstore
     if (index == ELEMENT_ARRAY_SIZE - 1) {
-      // Assert that the kv store has been set
-      assert(kv_);
       Key* k = generate_key_(array);
       keys_->push(k);
       delete k;
@@ -482,33 +396,9 @@ class StringColumn : public Column {
   // number of elements.
   StringArray* buffered_elements_;
 
-  StringColumn() {
-    set_parent_values_(0, 'S');
+  StringColumn(KV_Store* kv, String* name, size_t index) {
+    set_parent_values_(0, 'S', kv, name, index);
     buffered_elements_ = new StringArray(ELEMENT_ARRAY_SIZE);
-  }
-
-  // NOTE: It seems that there's no offical comments about this, but if you give 'n' below the 
-  // actual number of arguments (ex: StringColumn(12, str)) then everything will be filled up to 'n' 
-  // elements, but those extra elements will be completely random values. What's worse is that
-  // there's basically no way to error check because those values are completely random.
-  // DANGER: Because of the above behavior, this WILL NOT WORK if n is larger than the actual 
-  // elemnents because each String that's passed in is cloned.
-  StringColumn(int n, ...) {
-    // This constructor can only be used when the number of elements being added is less than the
-    // ELEMENT_ARRAY_SIZE this is because the KVStore is not set up yet
-    assert(n <= ELEMENT_ARRAY_SIZE);
-    set_parent_values_(n, 'S');
-
-    // Determine the number of arrays needed and construct them
-    buffered_elements_ = new StringArray(ELEMENT_ARRAY_SIZE);
-
-    // Fill the arrays with the arguments passed in
-    va_list args;
-    va_start(args, n);
-    for (size_t i = 0; i < n; i++) {
-      buffered_elements_->push(va_arg(args, int));
-    }
-    va_end(args);
   }
 
   ~StringColumn() {
@@ -569,8 +459,6 @@ class StringColumn : public Column {
     
     // If buffered elements is full, create key and add to kvstore
     if (index == ELEMENT_ARRAY_SIZE - 1) {
-      // Assert that the kv store has been set
-      assert(kv_);
       Key* k = generate_key_(array);
       keys_->push(k);
       delete k;
