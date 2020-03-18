@@ -5,6 +5,7 @@
 #include <arpa/inet.h> 
 #include <unistd.h> 
 #include <string.h> 
+#include "../src/dataframe/dataframe.h"
 #include "../src/networks/message.h"
 #include "../src/array/array.h"
 #include "../src/kv_store/key.h"
@@ -367,6 +368,31 @@ void test_key() {
     printf("Key serialization passed!\n");
 }
 
+void test_schema() {
+    char* schema_type = const_cast<char*>("IFSBFISIBFSIBFFSSIBF");
+    size_t num_cols = 20;
+    size_t num_rows = 34;
+    Schema schema(schema_type);
+    for (size_t ii = 0; ii < num_rows; ii++) {
+        schema.add_row();
+    }
+    assert(schema.num_cols_ == num_cols);
+    assert(schema.num_rows_ == num_rows);
+    assert(strcmp(schema.types_, schema_type) == 0);
+
+    char* schema_serial = schema.serialize();
+    Schema* deserial_schema = Schema::deserialize(schema_serial);
+    assert(deserial_schema->num_cols_ == num_cols);
+    assert(deserial_schema->num_rows_ == num_rows);
+    assert(strcmp(deserial_schema->types_, schema_type) == 0);
+    assert(deserial_schema->col_array_size_ == schema.col_array_size_);
+    assert(schema.equals(deserial_schema));
+
+    delete schema_serial;
+    delete deserial_schema;
+    printf("Schema serialization passed!\n");
+}
+
 void serializing_test() {
     size_t size_t_value = 55;
     String* string_value = new String("hhihihi");
@@ -464,6 +490,7 @@ int main(int argc, char const *argv[])
     test_int_array();
     test_string_array();
     test_key();
+    test_schema();
     serialize_equals_test();
     serialize_clone_test();
     printf("All tests passed!\n");

@@ -543,6 +543,59 @@ class Schema : public Object {
     delete[] types_;
   }
 
+  /** Subclasses should redefine */
+  bool equals(Object* other) {
+      if (other == this) return true;
+      Schema* other_schema = dynamic_cast<Schema*>(other);
+      return other_schema != nullptr 
+          && this->num_cols_ == other_schema->num_cols_
+          && this->num_rows_ == other_schema->num_rows_
+          && this->col_array_size_ == other_schema->col_array_size_ // TODO: Do we want this parameter?
+          && strncmp(this->types_, other_schema->types_, this->col_array_size_) == 0;
+  }
+
+  /** Return a copy of the object; nullptr is considered an error */
+  Object* clone() {
+    // TODO Do we need this?
+    assert(0);
+  }
+
+  size_t serial_len() {
+      return sizeof(size_t) // serial_length
+        + sizeof(size_t) // num_cols_
+        + sizeof(size_t) // num_rows_
+        + sizeof(size_t) // col_array_size_
+        + sizeof(char) * col_array_size_; // types_
+  }
+
+  char* serialize() {
+      size_t serial_size = serial_len();
+      Serializer serializer(serial_size);
+      serializer.serialize_size_t(serial_size);
+      serializer.serialize_size_t(num_cols_);
+      serializer.serialize_size_t(num_rows_);
+      serializer.serialize_size_t(col_array_size_);
+      serializer.serialize_chars(types_, col_array_size_);
+      return serializer.get_serial();
+  }
+
+  static Schema* deserialize(char* serial) {
+      Deserializer deserializer(serial);
+      return deserialize(deserializer);
+  }
+
+  static Schema* deserialize(Deserializer& deserializer) {
+      deserializer.deserialize_size_t();
+      deserializer.deserialize_size_t();
+      size_t num_rows = deserializer.deserialize_size_t();
+      size_t col_array_size = deserializer.deserialize_size_t();
+      char* types = deserializer.deserialize_char_array(col_array_size);
+      Schema* new_schema = new Schema(types);
+      new_schema->num_rows_ = num_rows;
+      delete types;
+      return new_schema;
+  }  
+
   /**
    * Helper function that will increase BOTH the types and col_names arrays (as they're both linked)
    */
