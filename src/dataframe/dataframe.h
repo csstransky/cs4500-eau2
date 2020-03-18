@@ -57,7 +57,7 @@ class Column : public Object {
   KV_Store* kv_; // not owned by Column, simply used for kv methods // TODO: Do not add in serial
   String* dataframe_name_; // not owned by Column
   size_t index_;
-  KeyArray keys_; // owned
+  KeyArray* keys_; // owned
  
   /** Type converters: Return same column under its actual type, or
    *  nullptr if of the wrong type.  */
@@ -237,6 +237,8 @@ class IntColumn : public Column {
     
     // If buffered elements is full, create key and add to kvstore
     if (index == ELEMENT_ARRAY_SIZE - 1) {
+      // Assert that the kv store has been set
+      assert(kv_);
       Key* k = generate_key_(array);
       keys_->push(k);
       delete k;
@@ -345,6 +347,8 @@ class FloatColumn : public Column {
     
     // If buffered elements is full, create key and add to kvstore
     if (index == ELEMENT_ARRAY_SIZE - 1) {
+      // Assert that the kv store has been set
+      assert(kv_);
       Key* k = generate_key_(array);
       keys_->push(k);
       delete k;
@@ -453,6 +457,8 @@ class BoolColumn : public Column {
     
     // If buffered elements is full, create key and add to kvstore
     if (index == ELEMENT_ARRAY_SIZE - 1) {
+      // Assert that the kv store has been set
+      assert(kv_);
       Key* k = generate_key_(array);
       keys_->push(k);
       delete k;
@@ -564,6 +570,8 @@ class StringColumn : public Column {
     
     // If buffered elements is full, create key and add to kvstore
     if (index == ELEMENT_ARRAY_SIZE - 1) {
+      // Assert that the kv store has been set
+      assert(kv_);
       Key* k = generate_key_(array);
       keys_->push(k);
       delete k;
@@ -1023,6 +1031,8 @@ class DataFrame : public Object {
   Schema schema_;
   Column** cols_;
   size_t col_array_size_;
+  String* name_;
+  KV_Store kv_;
 
   /**
    * Helper function that will make a NEW Column of a specific type. This is mainly used for
@@ -1064,7 +1074,7 @@ class DataFrame : public Object {
     // TODO : stuff
   }
 
-  /** Create a data frame with the same columns as the given df but with no rows or rownmaes */
+  /** Create a data frame with the same columns as the given df but with no rows */
   DataFrame(DataFrame& df) : DataFrame(df.get_schema()) {
  
   }
@@ -1086,7 +1096,42 @@ class DataFrame : public Object {
   /** Return a copy of the object; nullptr is considered an error */
   Object* clone() {
     // TODO: do we even need this?
-    return new DataFrame(*this);
+    DataFrame* new_dataframe = new DataFrame(*this);
+    for (size_t ii = 0; ii < this->ncols(); ii++) {
+        Column* original_column = this->get_column(ii);
+        new_dataframe->add_column(original_column);
+    }
+    return new_dataframe;
+  }
+
+  static DataFrame* from_file(Key* key, KV_Store* kv, char* file_name) {
+    SoR sor(file_path);
+    return dataframe = sor.get_dataframe();
+    // TODO: is this even needed?
+  }
+
+  static DataFrame* from_array(Key* key, KV_Store* kv, IntArray* array) {
+    Schema s("I");
+    Dataframe* d = new Dataframe(s);
+    // TODO
+  }
+
+  static DataFrame* from_array(Key* key, KV_Store* kv, FloatArray* array) {
+    Schema s("F");
+    Dataframe* d = new Dataframe(s);
+    // TODO
+  }
+
+  static DataFrame* from_array(Key* key, KV_Store* kv, BoolArray* array) {
+    Schema s("B");
+    Dataframe* d = new Dataframe(s);
+    // TODO
+  }  
+
+  static DataFrame* from_array(Key* key, KV_Store* kv, StringArray* array) {
+    Schema s("S");
+    Dataframe* d = new Dataframe(s);
+    // TODO
   }
  
   /** Returns the dataframe's schema. Modifying the schema after a dataframe
