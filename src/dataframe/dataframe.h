@@ -56,7 +56,7 @@ class Column : public Object {
   KV_Store* kv_; // not owned by Column
   String* dataframe_name_; // not owned by Column
   size_t index_;
-  KeyArray keys_; // owned
+  KeyArray* keys_; // owned
  
   /** Type converters: Return same column under its actual type, or
    *  nullptr if of the wrong type.  */
@@ -236,6 +236,8 @@ class IntColumn : public Column {
     
     // If buffered elements is full, create key and add to kvstore
     if (index == ELEMENT_ARRAY_SIZE - 1) {
+      // Assert that the kv store has been set
+      assert(kv_);
       Key* k = generate_key_(array);
       keys_->push(k);
       delete k;
@@ -344,6 +346,8 @@ class FloatColumn : public Column {
     
     // If buffered elements is full, create key and add to kvstore
     if (index == ELEMENT_ARRAY_SIZE - 1) {
+      // Assert that the kv store has been set
+      assert(kv_);
       Key* k = generate_key_(array);
       keys_->push(k);
       delete k;
@@ -452,6 +456,8 @@ class BoolColumn : public Column {
     
     // If buffered elements is full, create key and add to kvstore
     if (index == ELEMENT_ARRAY_SIZE - 1) {
+      // Assert that the kv store has been set
+      assert(kv_);
       Key* k = generate_key_(array);
       keys_->push(k);
       delete k;
@@ -563,6 +569,8 @@ class StringColumn : public Column {
     
     // If buffered elements is full, create key and add to kvstore
     if (index == ELEMENT_ARRAY_SIZE - 1) {
+      // Assert that the kv store has been set
+      assert(kv_);
       Key* k = generate_key_(array);
       keys_->push(k);
       delete k;
@@ -1022,6 +1030,8 @@ class DataFrame : public Object {
   Schema schema_;
   Column** cols_;
   size_t col_array_size_;
+  String* name_;
+  KV_Store kv_;
 
   /**
    * Helper function that will make a NEW Column of a specific type. This is mainly used for
@@ -1074,6 +1084,31 @@ class DataFrame : public Object {
       delete column;
     }
     delete[] this->cols_;
+  }
+
+  static DataFrame* from_file(Key* key, KV_Store* kv, char* file_name) {
+    SoR sor(file_path);
+    return dataframe = sor.get_dataframe();
+  }
+
+  static DataFrame* from_array(Key* key, KV_Store* kv, IntArray* array) {
+    Schema s("I");
+    Dataframe* d = new Dataframe(s);
+  }
+
+  static DataFrame* from_array(Key* key, KV_Store* kv, FloatArray* array) {
+    Schema s("F");
+    Dataframe* d = new Dataframe(s);
+  }
+
+  static DataFrame* from_array(Key* key, KV_Store* kv, BoolArray* array) {
+    Schema s("B");
+    Dataframe* d = new Dataframe(s);
+  }  
+
+  static DataFrame* from_array(Key* key, KV_Store* kv, StringArray* array) {
+    Schema s("S");
+    Dataframe* d = new Dataframe(s);
   }
  
   /** Returns the dataframe's schema. Modifying the schema after a dataframe
