@@ -3,6 +3,7 @@
 
 #include "../helpers/object.h"
 #include "../helpers/string.h"
+#include "../kv_store/key.h"
 #include <assert.h>
 
 /**

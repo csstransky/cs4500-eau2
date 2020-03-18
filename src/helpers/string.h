@@ -3,7 +3,7 @@
 #include <cstring>
 #include <string>
 #include <cassert>
-#include "../networks/serial.h"
+#include "serial.h"
 #include "object.h"
 
 /** An immutable string class that wraps a character array.

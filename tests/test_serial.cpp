@@ -7,6 +7,7 @@
 #include <string.h> 
 #include "../src/networks/message.h"
 #include "../src/array/array.h"
+#include "../src/kv_store/key.h"
 
 
 void test_string() {
@@ -378,6 +379,63 @@ void serializing_test() {
     printf("General serializing passed!\n");
 }
 
+void serialize_equals_test() {
+    size_t size_t_value = 55;
+    String string_value("hhihihi");
+
+    size_t serial_len = sizeof(size_t) + sizeof(size_t) + string_value.serial_len();
+    Serializer serializer1(serial_len);
+    Serializer serializer2(serial_len);
+    Serializer serializer3(serial_len);
+
+    serializer1.serialize_size_t(size_t_value);
+    serializer1.serialize_object(&string_value);
+    serializer2.serialize_size_t(size_t_value);
+    serializer2.serialize_object(&string_value);
+    // This will show that order is important for a serializer
+    serializer3.serialize_object(&string_value);
+    serializer3.serialize_size_t(size_t_value);
+
+    assert(serializer1.equals(&serializer1));
+    assert(serializer1.equals(&serializer2));
+    assert(!serializer1.equals(&serializer3));
+    assert(serializer2.equals(&serializer1));
+    assert(serializer2.equals(&serializer2));
+    assert(!serializer2.equals(&serializer3));
+    assert(!serializer3.equals(&serializer1));
+    assert(!serializer3.equals(&serializer2));
+    assert(serializer3.equals(&serializer3));
+    printf("Serializer equals passed!\n");
+}
+
+void serialize_clone_test() {
+    String* string1 = new String("A proper sentence.\n");
+    size_t size_of_array = 1;
+    StringArray* string_array = new StringArray(size_of_array);
+    string_array->push(string1);
+    Serializer* serial1 = new Serializer(string_array->serial_len());
+    serial1->serialize_object(string_array);
+
+    Serializer* serial_clone = static_cast<Serializer*>(serial1->clone());
+    assert(serial1->serial_size_ == serial_clone->serial_size_);
+    assert(serial1->serial_index_ == serial_clone->serial_index_);
+    assert(strncmp(serial1->serial_, serial_clone->serial_, serial1->serial_size_) == 0);
+    delete string1;
+    delete string_array;
+    delete serial1;
+
+    char* char_serial = serial_clone->get_serial();
+    StringArray* string_array_clone = StringArray::deserialize(char_serial);
+    String* string_clone = string_array_clone->get(0);
+    String temp_string("A proper sentence.\n");
+    assert(string_clone->equals(&temp_string));
+    delete serial_clone;
+    delete char_serial;
+    delete string_array_clone;
+
+    printf("Serializer clone passed!\n");
+}
+
 int main(int argc, char const *argv[]) 
 {   
     serializing_test();
@@ -391,6 +449,8 @@ int main(int argc, char const *argv[])
     test_float_array();
     test_int_array();
     test_string_array();
+    serialize_equals_test();
+    serialize_clone_test();
     printf("All tests passed!\n");
     return 0;
 } 
