@@ -20,12 +20,12 @@ class KV_Store : public Object {
     }
 
     // TODO: The put will happen inside DataFrame::from_array(&key, &kv, SZ, vals);
-    void put(Key* key, DataFrame* dataframe) {
+    // void put(Key* key, DataFrame* dataframe) {
 
-    }
+    // }
 
     void put(Key* key, Object* value) {
-        if (key->get_node_index == local_node_index_) {
+        if (key->get_node_index() == local_node_index_) {
             Serializer serial(value->serial_len());
             serial.serialize_object(value);
             kv_map_->put(key->get_key(), static_cast<Object*>(&serial));
@@ -42,8 +42,12 @@ class KV_Store : public Object {
         return map_serial->get_serial();
     }
 
-    // TODO: also need to get arrays. Either have multiple gets or return Object*
-    DataFrame* get(Key* key) {
+    // // TODO: also need to get arrays. Either have multiple gets or return Object*
+    // DataFrame* get(Key* key) {
+
+    // }
+
+    Object* get(Key* key) {
 
     }
 

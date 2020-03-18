@@ -4,7 +4,9 @@
 #include <assert.h>
 
 void test_file(char* file_path, size_t file_columns, size_t file_rows) {
-    SoR sor(file_path);
+    KV_Store kv(0);
+    String name("data");
+    SoR sor(file_path, &name, &kv);
     DataFrame* dataframe = sor.get_dataframe();
     Schema schema = dataframe->get_schema();
 
@@ -44,7 +46,9 @@ void test_file(char* file_path, size_t file_columns, size_t file_rows) {
 }
 
 void test_easy_txt(char* file_path) {
-    SoR sor(file_path);
+    KV_Store kv(0);
+    String name("data");
+    SoR sor(file_path, &name, &kv);
     DataFrame* dataframe = sor.get_dataframe();
 
     char* schema_types = dataframe->get_schema().types_;
@@ -60,7 +64,9 @@ void test_easy_txt(char* file_path) {
 }
 
 void test_doc_txt(char* file_path) {
-    SoR sor(file_path);
+    KV_Store kv(0);
+    String name("data");
+    SoR sor(file_path, &name, &kv);
     DataFrame* dataframe = sor.get_dataframe();
 
     char* schema_types = dataframe->get_schema().types_;
