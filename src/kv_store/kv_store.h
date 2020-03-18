@@ -32,6 +32,7 @@ class KV_Store : public Object {
         } 
         else {
             // TODO call upon another Node to put the kv
+            assert(0);
         }
     }
 
@@ -44,7 +45,7 @@ class KV_Store : public Object {
 
     // // TODO: also need to get arrays. Either have multiple gets or return Object*
     // DataFrame* get(Key* key) {
-
+        // TODO
     // }
 
     Object* get(Key* key) {
