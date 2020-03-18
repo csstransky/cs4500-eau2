@@ -4,6 +4,7 @@
 #include "../helpers/object.h"
 #include "../helpers/string.h"
 #include "../kv_store/kv_store.h"
+#include "../kv_store/key.h"
 
 #include <stdarg.h>
 #include <assert.h>
@@ -53,7 +54,7 @@ class Column : public Object {
   char type_;
   size_t size_;
   size_t num_arrays_;
-  KV_Store* kv_; // not owned by Column
+  KV_Store* kv_; // not owned by Column, simply used for kv methods // TODO: Do not add in serial
   String* dataframe_name_; // not owned by Column
   size_t index_;
   KeyArray keys_; // owned
@@ -1074,6 +1075,18 @@ class DataFrame : public Object {
       delete column;
     }
     delete[] this->cols_;
+  }
+
+  /** Subclasses should redefine */
+  bool equals(Object* other) {
+    // TODO: do we even need this?
+    assert(0);
+  }
+
+  /** Return a copy of the object; nullptr is considered an error */
+  Object* clone() {
+    // TODO: do we even need this?
+    return new DataFrame(*this);
   }
  
   /** Returns the dataframe's schema. Modifying the schema after a dataframe
