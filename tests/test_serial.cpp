@@ -353,6 +353,20 @@ void test_string_array() {
     printf("StringArray serialization passed!\n");
 }
 
+void test_key() {
+    String key_string("main");
+    size_t node_index = 92;
+    Key key(&key_string, node_index);
+    char* serial = key.serialize();
+    Key* deserial_key = Key::deserialize(serial);
+    assert(key_string.equals(deserial_key->get_key()));
+    assert(node_index == deserial_key->get_node_index());
+    assert(key.equals(deserial_key));
+    delete serial;
+    delete deserial_key;
+    printf("Key serialization passed!\n");
+}
+
 void serializing_test() {
     size_t size_t_value = 55;
     String* string_value = new String("hhihihi");
@@ -449,6 +463,7 @@ int main(int argc, char const *argv[])
     test_float_array();
     test_int_array();
     test_string_array();
+    test_key();
     serialize_equals_test();
     serialize_clone_test();
     printf("All tests passed!\n");

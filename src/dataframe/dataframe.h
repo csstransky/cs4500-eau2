@@ -4,6 +4,7 @@
 #include "../helpers/object.h"
 #include "../helpers/string.h"
 #include "../kv_store/kv_store.h"
+#include "../kv_store/key.h"
 
 #include <stdarg.h>
 #include <assert.h>
@@ -53,7 +54,7 @@ class Column : public Object {
   char type_;
   size_t size_;
   size_t num_arrays_;
-  KV_Store* kv_; // not owned by Column
+  KV_Store* kv_; // not owned by Column, simply used for kv methods // TODO: Do not add in serial
   String* dataframe_name_; // not owned by Column
   size_t index_;
   KeyArray* keys_; // owned
@@ -961,7 +962,7 @@ class DataFrame : public Object {
 
   /** Create a data frame with the same columns as the given df but with no rows or rownmaes */
   DataFrame(DataFrame& df, String* name) : DataFrame(df.get_schema(), name, df.kv_) {
- 
+
   }
   
   ~DataFrame() {
@@ -971,6 +972,23 @@ class DataFrame : public Object {
     }
     delete[] this->cols_;
     delete name_;
+  }
+
+  /** Subclasses should redefine */
+  bool equals(Object* other) {
+    // TODO: do we even need this?
+    assert(0);
+  }
+
+  /** Return a copy of the object; nullptr is considered an error */
+  Object* clone() {
+    // TODO: do we even need this?
+    DataFrame* new_dataframe = new DataFrame(*this);
+    for (size_t ii = 0; ii < this->ncols(); ii++) {
+        Column* original_column = this->get_column(ii);
+        new_dataframe->add_column(original_column);
+    }
+    return new_dataframe;
   }
 
   static DataFrame* from_array(Key* key, KV_Store* kv, IntArray* array) {

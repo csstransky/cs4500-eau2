@@ -396,18 +396,10 @@ class SoR {
     }
 
     /** 
-     * You will have to delete this yourself, but be careful because the String values are created
-     * and deleted from the SoR, so be careful not to delete the SoR first.
+     * You will have to delete this dataframe yourself later
      */
     DataFrame* get_dataframe_clone() {
-        Schema new_schema("");
-        DataFrame* new_dataframe = new DataFrame(new_schema);
-        for (size_t ii = 0; ii < this->dataframe_->ncols(); ii++) {
-            Column* new_column = this->dataframe_->get_column(ii);
-            // We don't care about Column names currently, so all Column names are nullptr
-            new_dataframe->add_column(new_column);
-        }
-        return new_dataframe;
+        return static_cast<DataFrame*>(dataframe_->clone());
     }
 
     void print() {
