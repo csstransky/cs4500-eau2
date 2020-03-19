@@ -16,7 +16,7 @@ const int ELEMENT_ARRAY_SIZE = 100;
 const int DEFAULT_INT_VALUE = 0;
 const float DEFAULT_FLOAT_VALUE = 0;
 const bool DEFAULT_BOOL_VALUE = 0;
-const String* DEFAULT_STRING_VALUE = nullptr;
+String DEFAULT_STRING_VALUE("");
 const int NUM_THREADS = 4;
 
 class IntColumn;
@@ -422,16 +422,20 @@ class StringColumn : public Column {
     size_t index = idx % ELEMENT_ARRAY_SIZE;
     size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
 
+    String* s;
+
     // if element is in last array, get buffered_elements_ ow get blocks
     if (last_array == array) {
-      return buffered_elements_->get(index);
+      s = buffered_elements_->get(index);
     } else {
       Key* k = keys_->get(array);
       StringArray* data = kv_->get_string_array(k);
-      String* i = data->get(index);
+      String* i = data->get(index)->clone();
       delete data;
-      return i;
+      s = i;
     }
+
+    return s;
   }
 
   StringColumn* as_string() { return this; }
@@ -446,11 +450,13 @@ class StringColumn : public Column {
 
     // if element is to be place in last array, update buffered_elements, else get from kvstore
     if (last_array == array) {
-      buffered_elements_->replace(index, val);
+      String* old = buffered_elements_->replace(index, val);
+      delete old;
     } else {
       Key* k = keys_->get(array);
       StringArray* data = kv_->get_string_array(k);
-      data->replace(index, val);
+      String* old = data->replace(index, val);
+      delete old;
       kv_->put(k, data);
       delete data;
     }
@@ -462,6 +468,9 @@ class StringColumn : public Column {
   }
 
   void push_back(String* val) {
+    if (val == nullptr) {
+      val = &DEFAULT_STRING_VALUE;
+    }
     size_t array = size_ / ELEMENT_ARRAY_SIZE;
     size_t index = size_ % ELEMENT_ARRAY_SIZE;
 
@@ -478,6 +487,7 @@ class StringColumn : public Column {
     }
 
     size_++;
+
   }
 };
  
@@ -745,8 +755,7 @@ class Row : public Object {
           break;
         case 'S':
           cols_[i] = new StringColumn();
-          cols_[i]->push_back((String*)DEFAULT_STRING_VALUE);
-
+          cols_[i]->push_back(&DEFAULT_STRING_VALUE);
           break;
         default:
           // Shoulld never reach here 
@@ -1108,7 +1117,7 @@ class DataFrame : public Object {
       }
       case 'S': {
         for (size_t jj = 0; jj < num_rows_to_fill; jj++) {
-          column->push_back((String*)DEFAULT_STRING_VALUE);
+          column->push_back(&DEFAULT_STRING_VALUE);
         }
         break;
       }

@@ -77,7 +77,7 @@ void test_doc_txt(char* file_path) {
     assert(dataframe->get_int(1, 0) == 11);
     String string1("true");
     assert(dataframe->get_string(2, 0)->equals(&string1));
-    assert(dataframe->get_string(3, 0) == nullptr);
+    assert(dataframe->get_string(3, 0)->equals(&DEFAULT_STRING_VALUE));
     assert(!dataframe->get_bool(4, 0));
     assert(!dataframe->get_bool(5, 0));
     assert(!dataframe->get_bool(6, 0));
@@ -136,7 +136,7 @@ void test_doc_txt(char* file_path) {
     assert(dataframe->get_int(1, 5) == 0);
     String string14("\"I guess this'll\"worktoo");
     assert(dataframe->get_string(2, 5)->equals(&string14));
-    assert(dataframe->get_string(3, 5) == nullptr);
+    assert(dataframe->get_string(3, 5)->equals(&DEFAULT_STRING_VALUE));
     assert(!dataframe->get_bool(4, 5));
     assert(!dataframe->get_bool(5, 5));
     assert(!dataframe->get_bool(6, 5));
@@ -147,7 +147,7 @@ void test_doc_txt(char* file_path) {
     assert(dataframe->get_int(1, 6) == 0);
     String string17("reallyno");
     assert(dataframe->get_string(2, 6)->equals(&string17));
-    assert(dataframe->get_string(3, 6) == nullptr);
+    assert(dataframe->get_string(3, 6)->equals(&DEFAULT_STRING_VALUE));
     assert(!dataframe->get_bool(4, 6));
     assert(!dataframe->get_bool(5, 6));
     assert(!dataframe->get_bool(6, 6));

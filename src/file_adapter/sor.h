@@ -25,7 +25,7 @@ class SoR {
             return new String(element.c_str());
         }
         else {
-            return (String*)DEFAULT_STRING_VALUE;
+            return DEFAULT_STRING_VALUE.clone();
         }
     }
 
