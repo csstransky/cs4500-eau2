@@ -300,6 +300,9 @@ void concat_string_test() {
   t_true(string1.size() == 13, "13c");
   t_true(strncmp(string1.c_str(), "goodbye world", string1.size()) == 0, "13d");
   t_true(strncmp(string2.c_str(), "world", string2.size()) == 0, "13e");  
+  string1.concat(243);
+  t_true(string1.size() == 16, "13f");
+  t_true(strncmp(string1.c_str(), "goodbye world243", string1.size()) == 0, "13g");
 
   OK("13");
 }

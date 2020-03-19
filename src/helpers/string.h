@@ -98,6 +98,12 @@ public:
         concat(const_cast<char*>(chars));
     }
 
+    void concat(size_t size_value) {
+        char str[21]; // max char array is "18446744073709551615\0", so 21 chars
+        snprintf(str, sizeof(str), "%zu", size_value);
+        concat(str);
+    }
+
     void concat(String* other) {
         char* temp_cstr = new char[size_ + other->size_ + 1]; // ensure that we copy the terminator
         memcpy(temp_cstr, cstr_, size_);
