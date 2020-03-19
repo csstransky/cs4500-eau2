@@ -1362,8 +1362,8 @@ class DataFrame : public Object {
  
   /** Create a new dataframe, constructed from rows for which the given Rower
     * returned true from its accept method. */
-  DataFrame* filter(Rower& r) {
-    DataFrame* filtered_dataframe = new DataFrame(*this);
+  DataFrame* filter(Rower& r, String* name) {
+    DataFrame* filtered_dataframe = new DataFrame(*this, name);
     size_t num_rows = this->schema_.length();
     Row* row = new Row(this->schema_);
     for (size_t ii = 0; ii < num_rows; ii++) {

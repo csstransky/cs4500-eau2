@@ -781,7 +781,7 @@ public:
     assert(count_ > 0 && index < count_);
 
     Object* e = elements_[index];
-    elements_[index] = to_add->clone();
+    elements_[index] = to_add ? to_add->clone() : nullptr;
 
     return e;
   }
