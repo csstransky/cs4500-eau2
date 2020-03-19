@@ -91,9 +91,6 @@ class Column : public Object {
     index_ = col_index;
     type_ = type;
     size_ = size;
-    kv_ = nullptr;
-    dataframe_name_ = nullptr;
-    index_ = SIZE_MAX;
     keys_ = new KeyArray(size / ELEMENT_ARRAY_SIZE + 1);
   }
 

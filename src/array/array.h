@@ -396,7 +396,7 @@ public:
 
   /* Replaces a float at the given index with the given float, returns the replaced float */
   /* Throws an error if not found or out of range or no elements in array*/
-  float replace(size_t index, int to_add) {
+  float replace(size_t index, float to_add) {
     assert(count_ > 0 && index < count_);
 
     float e = elements_[index];
@@ -758,7 +758,7 @@ public:
       increase_array_();
     }
 
-    elements_[count_] = to_add->clone();
+    elements_[count_] = to_add ? to_add->clone() : nullptr;
     return count_++;
   }
 
