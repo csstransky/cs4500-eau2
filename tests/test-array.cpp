@@ -293,8 +293,7 @@ void clone_stringarray_test() {
 void concat_string_test() {
   String string1("good");
   String string2("world");
-  char* char1 = const_cast<char*>("bye ");
-  string1.concat(char1);
+  string1.concat("bye ");
   t_true(string1.size() == 8, "13a");
   t_true(strncmp(string1.c_str(), "goodbye ", string1.size()) == 0, "13b");
   string1.concat(&string2);

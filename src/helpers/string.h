@@ -94,6 +94,10 @@ public:
         size_ += chars_len;
     }
 
+    void concat(const char* chars) {
+        concat(const_cast<char*>(chars));
+    }
+
     void concat(String* other) {
         char* temp_cstr = new char[size_ + other->size_ + 1]; // ensure that we copy the terminator
         memcpy(temp_cstr, cstr_, size_);
