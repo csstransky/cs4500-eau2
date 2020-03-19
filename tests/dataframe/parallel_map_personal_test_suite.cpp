@@ -182,7 +182,10 @@ class AddRower : public Rower {
 void test() {
   Schema s("II");
 
-  DataFrame df(s);
+  KV_Store kv(0);
+  String c("c");
+  
+  DataFrame df(s, &c, &kv);
   Row  r(df.get_schema());
   for (size_t i = 0; i <  1000 * 1000; i++) {
     r.set(0,(int)i);
@@ -296,29 +299,32 @@ void get_type_tests() {
 }
 
 void size_tests() {
-    Column* int_column = new IntColumn();
-    Column* float_column = new FloatColumn();
-    Column* bool_column = new BoolColumn();
-    Column* string_column = new StringColumn();
+    KV_Store kv(0);
+    String c("c");
+  
+    Column* int_column = new IntColumn(&kv, &c, 0);
+    Column* float_column = new FloatColumn(&kv, &c, 0);
+    Column* bool_column = new BoolColumn(&kv, &c, 0);
+    Column* string_column = new StringColumn(&kv, &c, 0);
 
     int int_value = 2;
     float float_value = 2.2;
     bool bool_value = true;
     String* string_value = new String("lol");
 
-    for (size_t ii = 0; ii < 100; ii++) {
+    for (size_t ii = 0; ii < 400; ii++) {
         int_column->push_back(int_value);
         GT_EQUALS(int_column->size(), ii + 1);
     }
-    for (size_t ii = 0; ii < 100; ii++) {
+    for (size_t ii = 0; ii < 400; ii++) {
         float_column->push_back(float_value);
         GT_EQUALS(float_column->size(), ii + 1);
     }
-    for (size_t ii = 0; ii < 100; ii++) {
+    for (size_t ii = 0; ii < 400; ii++) {
         bool_column->push_back(bool_value);
         GT_EQUALS(bool_column->size(), ii + 1);
     }
-    for (size_t ii = 0; ii < 100; ii++) {
+    for (size_t ii = 0; ii < 400; ii++) {
         string_column->push_back(string_value);
         GT_EQUALS(string_column->size(), ii + 1);
     }
@@ -331,24 +337,14 @@ void size_tests() {
     exit(0);
 }
 
-void int_column_constructor_tests() {
-    IntColumn* int_column = new IntColumn(6, 23, 42, 5, 5234, 2342, 2);
-    GT_EQUALS(int_column->size(), 6);
-    GT_EQUALS(int_column->get(0), 23);
-    GT_EQUALS(int_column->get(3), 5234);
-    GT_EQUALS(int_column->get(5), 2);
-
-    IntColumn* int_column2 = new IntColumn(2, 3, 4);
-    GT_EQUALS(int_column2->size(), 2);
-    GT_EQUALS(int_column2->get(1), 4);
-
-    delete int_column;
-    delete int_column2;
-    exit(0);
-}
-
 void int_column_set_tests() {
-    IntColumn* int_column = new IntColumn(6, 23, 42, 5, 5234, 2342, 2);
+    IntColumn* int_column = new IntColumn();
+    int_column->push_back(23);
+    int_column->push_back(42);
+    int_column->push_back(5);
+    int_column->push_back(5234);
+    int_column->push_back(2342);
+    int_column->push_back(2);
     int_column->set(0, 1);
     int_column->set(4, 2);
     int_column->set(5, 1);
@@ -360,42 +356,19 @@ void int_column_set_tests() {
     GT_EQUALS(int_column->get(5), 1);
     GT_EQUALS(int_column->get(6), 188);
 
-    IntColumn* int_column2 = new IntColumn(100, 3, 4);
-    int_column2->set(0, 14);
-    int_column2->set(36, 144);
-    int_column2->set(99, 1);
-    int_column2->push_back(133);
-    GT_EQUALS(int_column2->size(), 101);
-    GT_EQUALS(int_column2->get(0), 14);
-    GT_EQUALS(int_column2->get(1), 4);
-    GT_EQUALS(int_column2->get(36), 144);
-    GT_EQUALS(int_column2->get(99), 1);
-    GT_EQUALS(int_column2->get(100), 133);
-
     delete int_column;
-    delete int_column2;
-    exit(0);
-}
-
-void float_column_constructor_tests() {
-    FloatColumn* float_column = new FloatColumn(6, 23.23, 42.33, 5.0, 5234.1123, (float)2342, 2.1);
-    GT_EQUALS(float_column->size(), 6);
-    GT_EQUALS(float_column->get(0), (float)23.23);
-    GT_EQUALS(float_column->get(3), (float)5234.1123);
-    GT_EQUALS(float_column->get(5), (float)2.1);
-
-    FloatColumn* float_column2 = new FloatColumn(100, 3.1, 4.44);
-    GT_EQUALS(float_column2->size(), 100);
-    GT_EQUALS(float_column2->get(1), (float)4.44);
-    GT_EQUALS(float_column2->get(99), (float)0);
-
-    delete float_column;
-    delete float_column2;
     exit(0);
 }
 
 void float_column_set_tests() {
-    FloatColumn* float_column = new FloatColumn(6, 23.12, 42.3, 5.1, (float)5234, 2342.33, 2.1);
+    FloatColumn* float_column = new FloatColumn();
+    float_column->push_back(23.12);
+    float_column->push_back(42.3);
+    float_column->push_back(5.1);
+    float_column->push_back(5234);
+    float_column->push_back(2342.33);
+    float_column->push_back(2.1);
+
     float_column->set(0, 1.11);
     float_column->set(4, 2.2);
     float_column->set(5, 1.33);
@@ -407,41 +380,19 @@ void float_column_set_tests() {
     GT_EQUALS(float_column->get(5), (float)1.33);
     GT_EQUALS(float_column->get(6), (float)188);
 
-    FloatColumn* float_column2 = new FloatColumn(100, 3.1, 4.2);
-    float_column2->set(0, 14.11);
-    float_column2->set(36, 144.2);
-    float_column2->set(99, 1.33333);
-    float_column2->push_back(133.1);
-    GT_EQUALS(float_column2->size(), 101);
-    GT_EQUALS(float_column2->get(0), (float)14.11);
-    GT_EQUALS(float_column2->get(1), (float)4.2);
-    GT_EQUALS(float_column2->get(36), (float)144.2);
-    GT_EQUALS(float_column2->get(99), (float)1.33333);
-    GT_EQUALS(float_column2->get(100), (float)133.1);
-
     delete float_column;
-    delete float_column2;
-    exit(0);
-}
-
-void bool_column_constructor_tests() {
-    BoolColumn* bool_column = new BoolColumn(6, 0, false, 0, 1, 1, true);
-    GT_EQUALS(bool_column->size(), 6);
-    GT_EQUALS(bool_column->get(0), false);
-    GT_EQUALS(bool_column->get(3), true);
-    GT_EQUALS(bool_column->get(5), 1);
-
-    BoolColumn* bool_column2 = new BoolColumn(2, false, true);
-    GT_EQUALS(bool_column2->size(), 2);
-    GT_EQUALS(bool_column2->get(1), true);
-
-    delete bool_column;
-    delete bool_column2;
     exit(0);
 }
 
 void bool_column_set_tests() {
-    BoolColumn* bool_column = new BoolColumn(6, 0, false, 1, true, true, false);
+    BoolColumn* bool_column = new BoolColumn();
+    bool_column->push_back(0);
+    bool_column->push_back(false);
+    bool_column->push_back(1);
+    bool_column->push_back(true);
+    bool_column->push_back(true);
+    bool_column->push_back(false);
+
     bool_column->set(0, 1);
     bool_column->set(4, 2);
     bool_column->set(5, true);
@@ -453,37 +404,7 @@ void bool_column_set_tests() {
     GT_EQUALS(bool_column->get(5), 1);
     GT_EQUALS(bool_column->get(6), false);
 
-    BoolColumn* bool_column2 = new BoolColumn(100, true, false);
-    bool_column2->set(0, true);
-    bool_column2->set(36, 0);
-    bool_column2->set(99, 1);
-    bool_column2->push_back(133);
-    GT_EQUALS(bool_column2->size(), 101);
-    GT_EQUALS(bool_column2->get(0), true);
-    GT_EQUALS(bool_column2->get(1), 0);
-    GT_EQUALS(bool_column2->get(36), false);
-    GT_EQUALS(bool_column2->get(99), true);
-    GT_EQUALS(bool_column2->get(100), true);
-
     delete bool_column;
-    delete bool_column2;
-    exit(0);
-}
-
-void string_column_constructor_tests() {
-    String* string1 = new String("lol");
-    String* string2 = new String("BIG LOL");
-    String* string3 = new String("Someone end this alreayd");
-    StringColumn* string_column = new StringColumn(3, string1, string2, string3);
-    GT_EQUALS(string_column->size(), 3);
-    GT_TRUE(string_column->get(0)->equals(string1));
-    GT_TRUE(string_column->get(1)->equals(string2));
-    GT_TRUE(string_column->get(2)->equals(string3));
-
-    delete string1;
-    delete string2;
-    delete string3;
-    delete string_column;
     exit(0);
 }
 
@@ -491,7 +412,10 @@ void string_column_set_tests() {
     String* string1 = new String("lol");
     String* string2 = new String("BIG LOL");
     String* string3 = new String("Someone end this alreayd");
-    StringColumn* string_column = new StringColumn(3, string1, string2, string3);
+    StringColumn* string_column = new StringColumn();
+    string_column->push_back(string1);
+    string_column->push_back(string2);
+    string_column->push_back(string3);
     string_column->set(0, string2);
     string_column->set(2, string1);
     string_column->push_back(string3);
@@ -686,8 +610,10 @@ void test_nonempty_filter_rower() {
 }
 
 void test_map() {
+  KV_Store kv(0);
+  String c("c");
   Schema* s = new Schema("IIFI");
-  DataFrame* df = new DataFrame(*s);
+  DataFrame* df = new DataFrame(*s, &c, &kv);
   Row* r = new Row(df->get_schema());
   AddRower* rower = new AddRower(df);
 
@@ -719,8 +645,10 @@ void test_map() {
 }
 
 void test_filter() {
+  KV_Store kv(0);
+  String c("c");
   Schema* s = new Schema("IFSB");
-  DataFrame* df = new DataFrame(*s);
+  DataFrame* df = new DataFrame(*s, &c, &kv);
   
   Rower* rower = new NonEmptyFilterRower();
   Row* row = new Row(*s);
@@ -779,8 +707,10 @@ void test_filter() {
 }
 
 void test_get_schema() {
+  KV_Store kv(0);
+  String c("c");
   Schema* s1 = new Schema("IFSB");
-  DataFrame* df = new DataFrame(*s1);
+  DataFrame* df = new DataFrame(*s1, &c, &kv);
 
   Schema s2 = df->get_schema();
 
@@ -795,8 +725,10 @@ void test_get_schema() {
 }
 
 void test_add_column() {
+  KV_Store kv(0);
+  String c("c");
   Schema s1("IFSB");
-  DataFrame df(s1);
+  DataFrame df(s1, &c, &kv);
   String* hi = new String("hi");
   String* hello = new String("hello");
   String* h = new String("h");
@@ -804,10 +736,26 @@ void test_add_column() {
   GT_EQUALS(df.ncols(), 4);
   GT_EQUALS(df.nrows(), 0);
 
-  Column* c_int = new IntColumn(4, 1, 3, 4, 2);
-  Column* c_float = new FloatColumn(4, (float)1.2, (float)3.2, (float)2, (float)1);
-  Column* c_string = new StringColumn(4, hi, hi, hi, hi);
-  Column* c_bool = new BoolColumn(4, (bool)0, (bool)1, (bool)1, (bool)1);
+  Column* c_int = new IntColumn();
+  c_int->push_back(1);
+  c_int->push_back(3);
+  c_int->push_back(4);
+  c_int->push_back(2);
+  Column* c_float = new FloatColumn();
+  c_float->push_back((float)1.2);
+  c_float->push_back((float)3.2);
+  c_float->push_back((float)2);
+  c_float->push_back((float)1);
+  Column* c_string = new StringColumn();
+  c_string->push_back(hi);
+  c_string->push_back(hi);
+  c_string->push_back(hi);
+  c_string->push_back(hi);
+  Column* c_bool = new BoolColumn();
+  c_bool->push_back((bool)0);
+  c_bool->push_back((bool)1);
+  c_bool->push_back((bool)1);
+  c_bool->push_back((bool)1);
 
   df.add_column(c_int);
   df.add_column(c_float);
@@ -844,8 +792,10 @@ void test_add_column() {
 }
 
 void dataframe_constructor_tests() {
+  KV_Store kv(0);
+  String c("c");
   Schema schema1("IFSBSB");
-  DataFrame* dataframe1 = new DataFrame(schema1);
+  DataFrame* dataframe1 = new DataFrame(schema1, &c, &kv);
   GT_EQUALS(dataframe1->ncols(), 6);
   GT_EQUALS(dataframe1->nrows(), 0);
 
@@ -868,8 +818,10 @@ void dataframe_constructor_tests() {
 }
 
 void dataframe_getters_tests() { 
+  KV_Store kv(0);
+  String c("c");
   Schema s1("");
-  DataFrame df(s1);
+  DataFrame df(s1, &c, &kv);
   String* hi = new String("hi");
   String* hello = new String("hello");
   String* h = new String("h");
@@ -877,10 +829,26 @@ void dataframe_getters_tests() {
   GT_EQUALS(df.ncols(), 0);
   GT_EQUALS(df.nrows(), 0);
 
-  Column* c_int = new IntColumn(4, 1, 3, 4, 2);
-  Column* c_float = new FloatColumn(4, (float)1.2, (float)3.2, (float)2, (float)1);
-  Column* c_string = new StringColumn(5, hi, hello, nullptr, hi, h);
-  Column* c_bool = new BoolColumn(3, (bool)0, (bool)1, (bool)1);
+  Column* c_int = new IntColumn();
+  c_int->push_back(1);
+  c_int->push_back(3);
+  c_int->push_back(4);
+  c_int->push_back(2);
+  Column* c_float = new FloatColumn();
+  c_float->push_back((float)1.2);
+  c_float->push_back((float)3.2);
+  c_float->push_back((float)2);
+  c_float->push_back((float)1);
+  Column* c_string = new StringColumn();
+  c_string->push_back(hi);
+  c_string->push_back(hello);
+  c_string->push_back(nullptr);
+  c_string->push_back(hi);
+  c_string->push_back(h);
+  Column* c_bool = new BoolColumn();
+  c_bool->push_back((bool)0);
+  c_bool->push_back((bool)1);
+  c_bool->push_back((bool)1);
 
   df.add_column(c_int);
   df.add_column(c_float);
@@ -927,8 +895,10 @@ void dataframe_getters_tests() {
 }
 
 void dataframe_setters_tests() { 
+  KV_Store kv(0);
+  String c("c");
   Schema s1("");
-  DataFrame df(s1);
+  DataFrame df(s1, &c, &kv);
   String* hi = new String("hi");
   String* hello = new String("hello");
   String* h = new String("h");
@@ -936,10 +906,26 @@ void dataframe_setters_tests() {
   GT_EQUALS(df.ncols(), 0);
   GT_EQUALS(df.nrows(), 0);
 
-  Column* c_int = new IntColumn(4, 1, 3, 4, 2);
-  Column* c_float = new FloatColumn(4, (float)1.2, (float)3.2, (float)2, (float)1);
-  Column* c_string = new StringColumn(5, hi, hello, nullptr, hi, h);
-  Column* c_bool = new BoolColumn(3, (bool)0, (bool)1, (bool)1);
+  Column* c_int = new IntColumn();
+  c_int->push_back(1);
+  c_int->push_back(3);
+  c_int->push_back(4);
+  c_int->push_back(2);
+  Column* c_float = new FloatColumn();
+  c_float->push_back((float)1.2);
+  c_float->push_back((float)3.2);
+  c_float->push_back((float)2);
+  c_float->push_back((float)1);
+  Column* c_string = new StringColumn();
+  c_string->push_back(hi);
+  c_string->push_back(hello);
+  c_string->push_back(nullptr);
+  c_string->push_back(hi);
+  c_string->push_back(h);
+  Column* c_bool = new BoolColumn();
+  c_bool->push_back((bool)0);
+  c_bool->push_back((bool)1);
+  c_bool->push_back((bool)1);
 
   df.add_column(c_int);
   df.add_column(c_float);
@@ -972,8 +958,10 @@ void dataframe_setters_tests() {
 }
 
 void dataframe_fill_row_tests() { 
+  KV_Store kv(0);
+  String c("c");
   Schema s1("");
-  DataFrame df(s1);
+  DataFrame df(s1, &c, &kv);
   String* hi = new String("hi");
   String* hello = new String("hello");
   String* h = new String("h");
@@ -981,10 +969,26 @@ void dataframe_fill_row_tests() {
   GT_EQUALS(df.ncols(), 0);
   GT_EQUALS(df.nrows(), 0);
 
-  Column* c_int = new IntColumn(4, 1, 3, 4, 2);
-  Column* c_float = new FloatColumn(4, (float)1.2, (float)3.2, (float)2, (float)1);
-  Column* c_string = new StringColumn(5, hi, hello, nullptr, hi, h);
-  Column* c_bool = new BoolColumn(3, (bool)0, (bool)1, (bool)1);
+  Column* c_int = new IntColumn();
+  c_int->push_back(1);
+  c_int->push_back(3);
+  c_int->push_back(4);
+  c_int->push_back(2);
+  Column* c_float = new FloatColumn();
+  c_float->push_back((float)1.2);
+  c_float->push_back((float)3.2);
+  c_float->push_back((float)2);
+  c_float->push_back((float)1);
+  Column* c_string = new StringColumn();
+  c_string->push_back(hi);
+  c_string->push_back(hello);
+  c_string->push_back(nullptr);
+  c_string->push_back(hi);
+  c_string->push_back(h);
+  Column* c_bool = new BoolColumn();
+  c_bool->push_back((bool)0);
+  c_bool->push_back((bool)1);
+  c_bool->push_back((bool)1);
 
   df.add_column(c_int);
   df.add_column(c_float);
@@ -1044,8 +1048,10 @@ void dataframe_fill_row_tests() {
 }
 
 void dataframe_add_row_tests() { 
+  KV_Store kv(0);
+  String c("c");
   Schema s1("");
-  DataFrame df(s1);
+  DataFrame df(s1, &c, &kv);
   String* hi = new String("hi");
   String* hello = new String("hello");
   String* h = new String("h");
@@ -1053,10 +1059,26 @@ void dataframe_add_row_tests() {
   GT_EQUALS(df.ncols(), 0);
   GT_EQUALS(df.nrows(), 0);
 
-  Column* c_int = new IntColumn(4, 1, 3, 4, 2);
-  Column* c_float = new FloatColumn(4, (float)1.2, (float)3.2, (float)2, (float)1);
-  Column* c_string = new StringColumn(5, hi, hello, nullptr, hi, h);
-  Column* c_bool = new BoolColumn(3, (bool)0, (bool)1, (bool)1);
+  Column* c_int = new IntColumn();
+  c_int->push_back(1);
+  c_int->push_back(3);
+  c_int->push_back(4);
+  c_int->push_back(2);
+  Column* c_float = new FloatColumn();
+  c_float->push_back((float)1.2);
+  c_float->push_back((float)3.2);
+  c_float->push_back((float)2);
+  c_float->push_back((float)1);
+  Column* c_string = new StringColumn();
+  c_string->push_back(hi);
+  c_string->push_back(hello);
+  c_string->push_back(nullptr);
+  c_string->push_back(hi);
+  c_string->push_back(h);
+  Column* c_bool = new BoolColumn();
+  c_bool->push_back((bool)0);
+  c_bool->push_back((bool)1);
+  c_bool->push_back((bool)1);
 
   df.add_column(c_int);
   df.add_column(c_float);
@@ -1137,8 +1159,10 @@ void dataframe_add_row_tests() {
 }
 
 void test_pmap_add() {
+  KV_Store kv(0);
+  String c("c");
   Schema s("IIFI");
-  DataFrame df(s);
+  DataFrame df(s, &c, &kv);
   Row  r(df.get_schema());
   AddRower rower(&df);
 
@@ -1165,8 +1189,10 @@ void test_pmap_add() {
 }
 
 void test_map_add() {
+  KV_Store kv(0);
+  String c("c");
   Schema s("IIFI");
-  DataFrame df(s);
+  DataFrame df(s, &c, &kv);
   Row  r(df.get_schema());
   AddRower rower(&df);
 
@@ -1203,13 +1229,9 @@ TEST(Column, converter_tests){ ASSERT_EXIT_ZERO(converter_tests); }
 TEST(Column, push_back_tests){ ASSERT_EXIT_ZERO(push_back_tests); }
 TEST(Column, get_type_tests){ ASSERT_EXIT_ZERO(get_type_tests); }
 TEST(Column, size_tests){ ASSERT_EXIT_ZERO(size_tests); }
-TEST(IntColumn, int_column_constructor_tests){ ASSERT_EXIT_ZERO(int_column_constructor_tests); }
 TEST(IntColumn, int_column_set_tests){ ASSERT_EXIT_ZERO(int_column_set_tests); }
-TEST(FloatColumn, float_column_constructor_tests){ ASSERT_EXIT_ZERO(float_column_constructor_tests); }
 TEST(FloatColumn, float_column_set_tests){ ASSERT_EXIT_ZERO(float_column_set_tests); }
-TEST(BoolColumn, bool_column_constructor_tests){ ASSERT_EXIT_ZERO(bool_column_constructor_tests); }
 TEST(BoolColumn, bool_column_set_tests){ ASSERT_EXIT_ZERO(bool_column_set_tests); }
-TEST(StringColumn, string_column_constructor_tests){ ASSERT_EXIT_ZERO(string_column_constructor_tests); }
 TEST(StringColumn, string_column_set_tests){ ASSERT_EXIT_ZERO(string_column_set_tests); }
 
 // Schema Tests

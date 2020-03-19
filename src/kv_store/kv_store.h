@@ -19,11 +19,6 @@ class KV_Store : public Object {
         delete kv_map_;
     }
 
-    // TODO: The put will happen inside DataFrame::from_array(&key, &kv, SZ, vals);
-    // void put(Key* key, DataFrame* dataframe) {
-
-    // }
-
     void put(Key* key, Object* value) {
         if (key->get_node_index() == local_node_index_) {
             Serializer serial(value->serial_len());
@@ -41,15 +36,6 @@ class KV_Store : public Object {
         String* key_string = key->get_key();
         Serializer* map_serial = static_cast<Serializer*>(kv_map_->get(key_string));
         return map_serial->get_serial();
-    }
-
-    // // TODO: also need to get arrays. Either have multiple gets or return Object*
-    // DataFrame* get(Key* key) {
-        // TODO
-    // }
-
-    Object* get(Key* key) {
-
     }
 
     // Returns a new IntArray, make sure to delete it later

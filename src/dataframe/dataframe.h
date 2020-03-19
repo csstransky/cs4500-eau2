@@ -1066,6 +1066,11 @@ class DataFrame : public Object {
     return new_dataframe;
   }
 
+  static DataFrame* deserialize(char* serial) {
+
+    return nullptr;
+  }
+
   static DataFrame* from_array(Key* key, KV_Store* kv, size_t num, int* array) {
     Schema s("I");
     DataFrame* d = new DataFrame(s, key->get_key(), kv);

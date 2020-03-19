@@ -9,8 +9,10 @@
 
 void test() {
   Schema s("II");
+  KV_Store kv(0);
+  String c("c");
 
-  DataFrame df(s);
+  DataFrame df(s, &c, &kv);
   Row  r(df.get_schema());
   for (size_t i = 0; i <  1000 * 1000; i++) {
     r.set(0,(int)i);
