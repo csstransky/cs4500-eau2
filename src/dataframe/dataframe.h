@@ -23,6 +23,7 @@ class IntColumn;
 class FloatColumn;
 class BoolColumn;
 class StringColumn;
+class KD_Store;
 
 size_t max_(size_t a, size_t b) {
   if (a > b) {
@@ -1065,49 +1066,14 @@ class DataFrame : public Object {
     return nullptr;
   }
 
-  static DataFrame* from_array(Key* key, KV_Store* kv, size_t num, int* array) {
-    Schema s("I");
-    DataFrame* d = new DataFrame(s, key->get_key(), kv);
-    for (size_t i = 0; i < num; i++) {
-      IntColumn* col = d->get_column(0)->as_int();
-      col->push_back(array[i]);
-    }
+  // Not implemented here to remove circular dependency. See piazza post @963
+  static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, int* array);
 
-    return d;
-  }
+  static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, float* array);
 
-  static DataFrame* from_array(Key* key, KV_Store* kv, size_t num, float* array) {
-    Schema s("F");
-    DataFrame* d = new DataFrame(s, key->get_key(), kv);
-    for (size_t i = 0; i < num; i++) {
-      FloatColumn* col = d->get_column(0)->as_float();
-      col->push_back(array[i]);
-    }
+  static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, bool* array);
 
-    return d;
-  }
-
-  static DataFrame* from_array(Key* key, KV_Store* kv, size_t num, bool* array) {
-    Schema s("B");
-    DataFrame* d = new DataFrame(s, key->get_key(), kv);
-    for (size_t i = 0; i < num; i++) {
-      BoolColumn* col = d->get_column(0)->as_bool();
-      col->push_back(array[i]);
-    }
-
-    return d;
-  }  
-
-  static DataFrame* from_array(Key* key, KV_Store* kv, size_t num, String** array) {
-    Schema s("S");
-    DataFrame* d = new DataFrame(s, key->get_key(), kv);
-    for (size_t i = 0; i < num; i++) {
-      StringColumn* col = d->get_column(0)->as_string();
-      col->push_back(array[i]);
-    }
-
-    return d;
-  }
+  static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, String** array);
  
   /** Returns the dataframe's schema. Modifying the schema after a dataframe
     * has been created in undefined. */
