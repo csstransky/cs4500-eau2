@@ -210,6 +210,86 @@ void object_array_test() {
   OK("8");
 }
 
+void clone_intarray_test() {
+  IntArray arr(10);
+  arr.push(1);
+  arr.push(2);
+  arr.push(3);
+  t_true(arr.length() == 3, "9a");
+  IntArray* clone = arr.clone();
+  t_true(clone->length() == 3, "9b");
+  t_true(clone->get(0) == 1, "9c");
+  t_true(clone->get(1) == 2, "9d");
+  t_true(clone->get(2) == 3, "9e");
+
+  delete clone;
+  OK("9");
+}
+
+void clone_floatarray_test() {
+  FloatArray arr(10);
+
+  arr.push(1.5);
+  arr.push(2.7);
+  arr.push(3.9);
+  t_true(arr.length() == 3, "10a");
+  FloatArray* clone = arr.clone();
+  t_true(clone->length() == 3, "10b");
+  t_true(clone->get(0) == (float)1.5, "10c");
+  t_true(clone->get(1) == (float)2.7, "10d");
+  t_true(clone->get(2) == (float)3.9, "10e");
+
+  delete clone;
+  OK("10");
+}
+
+void clone_boolarray_test() {
+  BoolArray arr(2);
+
+  arr.push(true);
+  arr.push(1);
+  arr.push(false);
+  arr.push(0);
+  t_true(arr.length() == 4, "11a");
+  BoolArray* clone = arr.clone();
+  t_true(clone->length() == 4, "11b");
+  t_true(clone->get(0), "11c");
+  t_true(clone->get(1), "11d");
+  t_true(!clone->get(2), "11e");
+  t_true(!clone->get(3), "11e");
+
+  delete clone;
+  OK("11");
+}
+
+void clone_stringarray_test() {
+  String * x = new String("Hello");
+  String * y = new String("World");
+  String * z = new String("!");
+  StringArray* arr = new StringArray(10);
+
+  arr->push(x);
+  arr->push(y);
+  arr->push(z);
+  t_true(arr->length() == 3, "12a");
+  StringArray* clone = arr->clone();
+  t_true(clone->length() == 3, "12b");
+  delete x;
+  delete y;
+  delete z;
+  delete arr;
+
+  String a("Hello");
+  String b("World");
+  String c("!");
+  t_true(clone->get(0)->equals(&a), "12c");
+  t_true(clone->get(1)->equals(&b), "12d");
+  t_true(clone->get(2)->equals(&c), "12e");
+
+  delete clone;
+  OK("12");
+}
+
 int main() {
   basic_object_test();
   basic_string_test();
@@ -222,6 +302,10 @@ int main() {
   complex_stringarray_test();
 
   object_array_test();
+  clone_intarray_test();
+  clone_floatarray_test();
+  clone_boolarray_test();
+  clone_stringarray_test();
 
   exit(0);
 }
