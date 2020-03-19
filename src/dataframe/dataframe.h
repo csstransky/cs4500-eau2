@@ -53,7 +53,6 @@ class Column : public Object {
 
   char type_;
   size_t size_;
-  size_t num_arrays_;
   KV_Store* kv_; // not owned by Column, simply used for kv methods // TODO: Do not add in serial
   String* dataframe_name_; // not owned by Column
   size_t index_;
@@ -91,11 +90,10 @@ class Column : public Object {
     index_ = col_index;
     type_ = type;
     size_ = size;
-    num_arrays_ = size / ELEMENT_ARRAY_SIZE + 1;
     kv_ = nullptr;
     dataframe_name_ = nullptr;
     index_ = SIZE_MAX;
-    keys_ = new KeyArray(num_arrays_);
+    keys_ = new KeyArray(size / ELEMENT_ARRAY_SIZE + 1);
   }
 
   Key* generate_key_(size_t array_index) {
@@ -207,9 +205,8 @@ class IntColumn : public Column {
     if (index == ELEMENT_ARRAY_SIZE - 1) {
       Key* k = generate_key_(array);
       keys_->push(k);
-      delete k;
-
       kv_->put(k, buffered_elements_); 
+      delete k;
       delete buffered_elements_;
       buffered_elements_ = new IntArray(ELEMENT_ARRAY_SIZE);
     }
@@ -297,9 +294,8 @@ class FloatColumn : public Column {
     if (index == ELEMENT_ARRAY_SIZE - 1) {
       Key* k = generate_key_(array);
       keys_->push(k);
-      delete k;
-
       kv_->put(k, buffered_elements_); 
+      delete k;
       delete buffered_elements_;
       buffered_elements_ = new FloatArray(ELEMENT_ARRAY_SIZE);
     }
@@ -387,9 +383,8 @@ class BoolColumn : public Column {
     if (index == ELEMENT_ARRAY_SIZE - 1) {
       Key* k = generate_key_(array);
       keys_->push(k);
-      delete k;
-
       kv_->put(k, buffered_elements_); 
+      delete k;
       delete buffered_elements_;
       buffered_elements_ = new BoolArray(ELEMENT_ARRAY_SIZE);
     }
@@ -478,9 +473,8 @@ class StringColumn : public Column {
     if (index == ELEMENT_ARRAY_SIZE - 1) {
       Key* k = generate_key_(array);
       keys_->push(k);
-      delete k;
-
       kv_->put(k, buffered_elements_); 
+      delete k;
       delete buffered_elements_;
       buffered_elements_ = new StringArray(ELEMENT_ARRAY_SIZE);
     }
