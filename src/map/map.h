@@ -126,12 +126,14 @@ class Map: public Object {
             size_t new_buckets_size_ = buckets_size_ * 2;
             ObjectArray* new_buckets = new ObjectArray(new_buckets_size_);
             for(size_t ii = 0; ii < new_buckets_size_; ii++) {
-                new_buckets->push(new ObjectArray(1));
+                ObjectArray o(1);
+                new_buckets->push(&o);
             }
             ObjectArray* old_buckets = buckets_;
             size_t old_bucket_size = buckets_size_;
             buckets_ = new_buckets;
             buckets_size_ = new_buckets_size_;
+            count_ = 0;
 
             // Because the bucket_size_ has changed, now the hashing function has changed, so every
             // single element in our old map needs to be rehashed again into the new map
@@ -140,9 +142,7 @@ class Map: public Object {
                 for (size_t jj = 0; jj < old_bucket_array->length(); jj++) {
                     Pair* pair = dynamic_cast<Pair*>(old_bucket_array->get(jj));
                     this->put(pair->get_key(), pair->get_value());
-                    delete pair;
                 }
-                delete old_bucket_array;
             }
             delete old_buckets;
         }

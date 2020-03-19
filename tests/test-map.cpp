@@ -170,11 +170,34 @@ void testBasicSSMap () {
     delete values;
 }
 
-void testErrors() {
-    
-}
+void testIncreaseMap() {
+    SSMap* map = new SSMap();
+    assert(map->isEmpty());
+    assert(map->size() == 0);
+    String value("value");
+    int size = 1000;
+
+    char buf[20];
+    for (int i = 0; i < size; i++) {
+        snprintf(buf, 20, "k_%d", i);
+        String s(buf);
+        map->put(&s, &value);
+    }
+
+    assert(map->size() == size);
+
+    for (int i = 0; i < size; i++) {
+        snprintf(buf, 20, "k_%d", i);
+        String s(buf);
+        String* result = map->get(&s);
+        assert(result->equals(&value));
+    }
+
+    delete map;
+} 
 
 int main() {
     testBasicSOMap();
     testBasicSSMap();
+    testIncreaseMap();
 }
