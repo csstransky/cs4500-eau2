@@ -2,7 +2,6 @@
 
 #include "../helpers/object.h"
 #include "../map/map.h"
-#include "../dataframe/dataframe.h"
 #include "key.h"
 
 class KV_Store : public Object {
