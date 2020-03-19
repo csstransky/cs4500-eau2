@@ -290,6 +290,21 @@ void clone_stringarray_test() {
   OK("12");
 }
 
+void concat_string_test() {
+  String string1("good");
+  String string2("world");
+  char* char1 = const_cast<char*>("bye ");
+  string1.concat(char1);
+  t_true(string1.size() == 8, "13a");
+  t_true(strncmp(string1.c_str(), "goodbye ", string1.size()) == 0, "13b");
+  string1.concat(&string2);
+  t_true(string1.size() == 13, "13c");
+  t_true(strncmp(string1.c_str(), "goodbye world", string1.size()) == 0, "13d");
+  t_true(strncmp(string2.c_str(), "world", string2.size()) == 0, "13e");  
+
+  OK("13");
+}
+
 int main() {
   basic_object_test();
   basic_string_test();
@@ -306,6 +321,7 @@ int main() {
   clone_floatarray_test();
   clone_boolarray_test();
   clone_stringarray_test();
+  concat_string_test();
 
   exit(0);
 }
