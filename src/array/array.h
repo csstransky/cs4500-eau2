@@ -129,6 +129,10 @@ public:
     return true;
   }
 
+  BoolArray* clone() {
+    return new BoolArray(this);
+  }
+
   /* Inherited from Object, generates a hash for an Array */
   size_t hash() {
     size_t hash = 0; //= reinterpret_cast<size_t>(this);
@@ -316,6 +320,10 @@ public:
     return true;
   }
 
+  FloatArray* clone() {
+    return new FloatArray(this);
+  }
+
   /* Inherited from Object, generates a hash for an Array */
   size_t hash() {
     size_t hash = 0; //= reinterpret_cast<size_t>(this);
@@ -500,6 +508,10 @@ public:
     }
 
     return true;
+  }
+
+  IntArray* clone() {
+    return new IntArray(this);
   }
 
   /* Inherited from Object, generates a hash for an Array */
@@ -697,6 +709,10 @@ public:
     return true;
   }
 
+  ObjectArray* clone() {
+    return new ObjectArray(this);
+  }
+
   /* Inherited from Object, generates a hash for an Array */
   size_t hash() {
     size_t hash = 0; //= reinterpret_cast<size_t>(this);
@@ -786,10 +802,6 @@ public:
     return e;
   }
 
-  Object* clone() {
-    return new ObjectArray(this);
-  }
-
   size_t serial_len() {
     size_t elements_serial_length = 0;
     for (size_t ii = 0; ii < count_; ii++) {
@@ -859,7 +871,11 @@ public:
 
   /** ARRAY METHODS **/
 
-    /* Adds an StringArray to existing contents */
+  StringArray* clone() {
+    return new StringArray(this);
+  }
+
+  /* Adds an StringArray to existing contents */
   void concat(StringArray* const arr) {
     ObjectArray::concat(arr);
   }
@@ -926,7 +942,7 @@ public:
   }
 
   /* Copies the contents of an already existing Array */
-  KeyArray(StringArray* arr) : ObjectArray(arr) {
+  KeyArray(KeyArray* arr) : ObjectArray(arr) {
     
   }
 
@@ -937,7 +953,11 @@ public:
 
   /** ARRAY METHODS **/
 
-    /* Adds an StringArray to existing contents */
+  KeyArray* clone() {
+    return new KeyArray(this);
+  }
+
+  /* Adds an StringArray to existing contents */
   void concat(KeyArray* const arr) {
     ObjectArray::concat(arr);
   }
