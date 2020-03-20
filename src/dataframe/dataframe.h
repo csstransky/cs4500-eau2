@@ -6,14 +6,12 @@
 #include "../kv_store/kv_store.h"
 #include "../array/array.h"
 #include "../array/column_array.h"
+#include "rower.h"
 
 #include <stdarg.h>
 #include <assert.h>
 #include <cstring>
 #include <thread>
-
-// TODO: Move this back to array.h when we finish moving columns to column.h
- 
  
 /*************************************************************************
  * Schema::
@@ -397,30 +395,6 @@ class Row : public Object {
  
 };
  
-// TODO: move this to rower.h
-/*******************************************************************************
- *  Rower::
- *  An interface for iterating through each row of a data frame. The intent
- *  is that this class should subclassed and the accept() method be given
- *  a meaningful implementation. Rowers can be cloned for parallel execution.
- */
-class Rower : public Object {
- public:
-  /** This method is called once per row. The row object is on loan and
-      should not be retained as it is likely going to be reused in the next
-      call. The return value is used in filters to indicate that a row
-      should be kept. */
-  virtual bool accept(Row& r) = 0;
- 
-  /** Once traversal of the data frame is complete the rowers that were
-      split off will be joined.  There will be one join per split. The
-      original object will be the last to be called join on. The join method
-      is reponsible for cleaning up memory. */
-  virtual void join_delete(Rower* other) = 0;
-
-  virtual Rower* clone() { assert(0); }
-};
-
 /*****************************************************************************
  * PrinterFielder::
  * Prints out each field in the row.
@@ -510,7 +484,6 @@ class PrinterRower : public Rower {
   }
  
 };
-
  
 /****************************************************************************
  * DataFrame::
@@ -641,7 +614,7 @@ class DataFrame : public Object {
       return new_dataframe;
   }  
 
-  // Not implemented here to remove circular dependency. See piazza post @963
+  // Implemented in kd_store.h to remove circular dependency. See piazza post @963
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, int* array);
 
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, float* array);
@@ -987,20 +960,3 @@ class DataFrame : public Object {
     }
   }
 };
-
-Column* Column::deserialize(Deserializer& deserializer, KV_Store* kv_store) {
-  char column_type = get_column_type(deserializer);
-  switch(column_type) {
-    case 'I':
-      return IntColumn::deserialize(deserializer, kv_store);
-    case 'F':
-      return FloatColumn::deserialize(deserializer, kv_store);
-    case 'B':
-      return BoolColumn::deserialize(deserializer, kv_store);
-    case 'S':
-      return StringColumn::deserialize(deserializer, kv_store);
-    default:
-      assert(0);
-  }
-}
-

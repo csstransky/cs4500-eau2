@@ -719,3 +719,19 @@ class StringColumn : public Column {
     return new_string_column;
   }
 };
+
+Column* Column::deserialize(Deserializer& deserializer, KV_Store* kv_store) {
+  char column_type = get_column_type(deserializer);
+  switch(column_type) {
+    case 'I':
+      return IntColumn::deserialize(deserializer, kv_store);
+    case 'F':
+      return FloatColumn::deserialize(deserializer, kv_store);
+    case 'B':
+      return BoolColumn::deserialize(deserializer, kv_store);
+    case 'S':
+      return StringColumn::deserialize(deserializer, kv_store);
+    default:
+      assert(0);
+  }
+}
