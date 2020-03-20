@@ -26,7 +26,7 @@ class SoR {
         }
         // TODO, see if this still works, will be moving to empty String instead of nullptr
         else {
-            return (String*)DEFAULT_STRING_VALUE;
+            return DEFAULT_STRING_VALUE.clone();
         }
     }
 

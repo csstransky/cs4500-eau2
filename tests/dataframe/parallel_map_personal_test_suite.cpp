@@ -97,7 +97,7 @@ class NonEmptyFilterRower : public Rower {
       }
       case 'S': {
         String* val = r.get_string(i);
-        if(val != DEFAULT_STRING_VALUE) {
+        if(!val->equals(&DEFAULT_STRING_VALUE)) {
           return true;
         }
         break;
@@ -586,7 +586,7 @@ void test_nonempty_filter_rower() {
   Rower* rower = new NonEmptyFilterRower();
   Row* row = new Row(*s);
   String* hi = new String("hi");
-  String* empty = nullptr;
+  String* empty = new String("");
 
   row->set(0, 4);
   row->set(1, (float)3.2);
@@ -684,8 +684,8 @@ void test_filter() {
   df->add_row(*row);
 
   GT_EQUALS(df->nrows(), 4);
-
-  DataFrame* df_new = df->filter(*rower);
+  String filter("filtered");
+  DataFrame* df_new = df->filter(*rower, &filter);
 
   GT_EQUALS(df_new->nrows(), 2);
 
@@ -768,7 +768,7 @@ void test_add_column() {
   for (int i = 0; i < 4; i++) {
     GT_EQUALS(df.get_int(0, i), DEFAULT_INT_VALUE);
     GT_EQUALS(df.get_float(1, i), DEFAULT_FLOAT_VALUE);
-    GT_EQUALS(df.get_string(2, i), DEFAULT_STRING_VALUE);
+    GT_TRUE(df.get_string(2, i)->equals(&DEFAULT_STRING_VALUE));
     GT_EQUALS(df.get_bool(3, i), DEFAULT_BOOL_VALUE); 
   }
   
@@ -799,7 +799,8 @@ void dataframe_constructor_tests() {
   GT_EQUALS(dataframe1->ncols(), 6);
   GT_EQUALS(dataframe1->nrows(), 0);
 
-  DataFrame* dataframe2 = new DataFrame(*dataframe1);
+  String c_new("c_new");
+  DataFrame* dataframe2 = new DataFrame(*dataframe1, &c_new);
   IntColumn* int_column = new IntColumn();
   GT_EQUALS(dataframe2->ncols(), 6);
   GT_EQUALS(dataframe2->nrows(), 0);
@@ -867,7 +868,7 @@ void dataframe_getters_tests() {
 
   GT_TRUE(df.get_string(2, 0)->equals(hi));
   GT_TRUE(df.get_string(2, 1)->equals(hello));
-  GT_EQUALS(df.get_string(2, 2), nullptr);
+  GT_TRUE(df.get_string(2, 2)->equals(&DEFAULT_STRING_VALUE));
   GT_TRUE(df.get_string(2, 3)->equals(hi));
   GT_TRUE(df.get_string(2, 4)->equals(h));
 
@@ -1021,7 +1022,7 @@ void dataframe_fill_row_tests() {
 
   GT_TRUE(row1->get_string(2)->equals(hi));
   GT_TRUE(row2->get_string(2)->equals(hello));
-  GT_EQUALS(row3->get_string(2), nullptr);
+  GT_TRUE(row3->get_string(2)->equals(&DEFAULT_STRING_VALUE));
   GT_TRUE(row4->get_string(2)->equals(hi));
   GT_TRUE(row5->get_string(2)->equals(h));
 
@@ -1123,7 +1124,7 @@ void dataframe_add_row_tests() {
 
     GT_TRUE(df.get_string(2, ii)->equals(hi));
     GT_TRUE(df.get_string(2, ii + 1)->equals(hello));
-    GT_EQUALS(df.get_string(2, ii + 2), nullptr);
+    GT_TRUE(df.get_string(2, ii + 2)->equals(&DEFAULT_STRING_VALUE));
     GT_TRUE(df.get_string(2, ii + 3)->equals(hi));
     GT_TRUE(df.get_string(2, ii + 4)->equals(h));
 
@@ -1267,6 +1268,6 @@ TEST(DataFrame, test_pmap_add){ ASSERT_EXIT_ZERO(test_pmap_add);}
 TEST(DataFrame, test_map_add){ ASSERT_EXIT_ZERO(test_map_add);}
 
 int main(int argc, char **argv) {
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
