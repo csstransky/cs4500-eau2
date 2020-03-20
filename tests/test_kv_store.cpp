@@ -8,7 +8,9 @@ void test_put_get() {
     kv.put(&key, &k);
     char* serial = kv.get_value_serial(&key);
     String* kk = String::deserialize(serial);
+    delete[] serial;
     assert(k.equals(kk));
+    delete kk;
 
     printf("KV Store put get test passed!\n");
 }
