@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "../../src/dataframe/dataframe.h" 
+#include "../../src/kv_store/kd_store.h"
 
 #define GT_TRUE(a)   ASSERT_EQ((a),true)
 #define GT_FALSE(a)  ASSERT_EQ((a),false)
@@ -1267,7 +1268,311 @@ TEST(DataFrame, dataframe_add_row_tests){ ASSERT_EXIT_ZERO(dataframe_add_row_tes
 TEST(DataFrame, test_pmap_add){ ASSERT_EXIT_ZERO(test_pmap_add);}
 TEST(DataFrame, test_map_add){ ASSERT_EXIT_ZERO(test_map_add);}
 
+void test_from_array_int() {
+  size_t num = 500;
+  int array[num];
+
+  for (size_t i = 0; i < num; i++) {
+    array[i] = i;
+  }
+
+  Key k("k", 0);
+  KD_Store kd(0);
+  DataFrame* df = DataFrame::from_array(&k, &kd, num, array);
+
+  assert(df->ncols() == 1);
+  assert(df->nrows() == num);
+  for (size_t i = 0; i < num; i++) {
+    assert(df->get_int(0,i) == array[i]);
+  }
+
+  DataFrame* df2 = kd.get(&k);
+
+  assert(df2->ncols() == 1);
+  assert(df2->nrows() == num);
+  for (size_t i = 0; i < num; i++) {
+    assert(df2->get_int(0,i) == array[i]);
+  }
+
+  delete df;
+  delete df2;
+
+  printf("Dataframe from int array tests pass!\n");
+}
+
+void test_from_array_float() {
+  size_t num = 500;
+  float array[num];
+
+  for (size_t i = 0; i < num; i++) {
+    array[i] = i + 0.2;
+  }
+
+  Key k("k", 0);
+  KD_Store kd(0);
+  DataFrame* df = DataFrame::from_array(&k, &kd, num, array);
+
+  assert(df->ncols() == 1);
+  assert(df->nrows() == num);
+  for (size_t i = 0; i < num; i++) {
+    assert(df->get_float(0,i) == array[i]);
+  }
+
+  DataFrame* df2 = kd.get(&k);
+
+  assert(df2->ncols() == 1);
+  assert(df2->nrows() == num);
+  for (size_t i = 0; i < num; i++) {
+    assert(df2->get_float(0,i) == array[i]);
+  }
+
+  delete df;
+  delete df2;
+
+  printf("Dataframe from float array tests pass!\n");
+}
+
+void test_from_array_bool() {
+  size_t num = 500;
+  bool array[num];
+
+  for (size_t i = 0; i < num; i++) {
+    array[i] = i % 2;
+  }
+
+  Key k("k", 0);
+  KD_Store kd(0);
+  DataFrame* df = DataFrame::from_array(&k, &kd, num, array);
+
+  assert(df->ncols() == 1);
+  assert(df->nrows() == num);
+  for (size_t i = 0; i < num; i++) {
+    assert(df->get_bool(0,i) == array[i]);
+  }
+
+  DataFrame* df2 = kd.get(&k);
+
+  assert(df2->ncols() == 1);
+  assert(df2->nrows() == num);
+  for (size_t i = 0; i < num; i++) {
+    assert(df2->get_bool(0,i) == array[i]);
+  }
+
+  delete df;
+  delete df2;
+
+  printf("Dataframe from bool array tests pass!\n");
+}
+
+void test_from_array_string() {
+  size_t num = 500;
+  String* array[num];
+
+  for (size_t i = 0; i < num; i++) {
+    array[i] = new String("hi");
+  }
+
+  Key k("k", 0);
+  KD_Store kd(0);
+  DataFrame* df = DataFrame::from_array(&k, &kd, num, array);
+
+  assert(df->ncols() == 1);
+  assert(df->nrows() == num);
+  for (size_t i = 0; i < num; i++) {
+    assert(df->get_string(0,i)->equals(array[i]));
+  }
+
+  DataFrame* df2 = kd.get(&k);
+
+  assert(df2->ncols() == 1);
+  assert(df2->nrows() == num);
+  for (size_t i = 0; i < num; i++) {
+    assert(df2->get_string(0,i)->equals(array[i]));
+  }
+
+  delete df;
+  delete df2;
+
+  for (size_t i = 0; i < num; i++) {
+    delete array[i];
+  }
+
+  printf("Dataframe from string array tests pass!\n");
+}
+
+void test_from_file() {
+  char* path = const_cast<char*>("../data/doc.txt");
+
+  Key k("k", 0);
+  KD_Store kd(0);
+  DataFrame* dataframe = DataFrame::from_file(&k, &kd, path);
+
+  char* schema_types = dataframe->get_schema().types_;
+  assert(strcmp("SISSBBBB", schema_types) == 0);
+    
+  String string0("0hi");
+  assert(dataframe->get_string(0, 0)->equals(&string0));
+  assert(dataframe->get_int(1, 0) == 11);
+  String string1("true");
+  assert(dataframe->get_string(2, 0)->equals(&string1));
+  assert(dataframe->get_string(3, 0)->equals(&DEFAULT_STRING_VALUE));
+  assert(!dataframe->get_bool(4, 0));
+  assert(!dataframe->get_bool(5, 0));
+  assert(!dataframe->get_bool(6, 0));
+  assert(!dataframe->get_bool(7, 0));
+
+  String string2("1yellow");
+  assert(dataframe->get_string(0, 1)->equals(&string2));
+  assert(dataframe->get_int(1, 1) == 10);
+  String string3("false");
+  assert(dataframe->get_string(2, 1)->equals(&string3));
+  String string4("string");
+  assert(dataframe->get_string(3, 1)->equals(&string4));
+  assert(!dataframe->get_bool(4, 1));
+  assert(!dataframe->get_bool(5, 1));
+  assert(!dataframe->get_bool(6, 1));
+  assert(!dataframe->get_bool(7, 1));
+
+  String string5("212");
+  assert(dataframe->get_string(0, 2)->equals(&string5));
+  assert(dataframe->get_int(1, 2) == 0);
+  String string6("true");
+  assert(dataframe->get_string(2, 2)->equals(&string6));
+  String string6_2("");
+  assert(dataframe->get_string(3, 2)->equals(&string6_2));
+  assert(!dataframe->get_bool(4, 2));
+  assert(!dataframe->get_bool(5, 2));
+  assert(!dataframe->get_bool(6, 2));
+  assert(!dataframe->get_bool(7, 2));
+
+  String string7("3vroom");
+  assert(dataframe->get_string(0, 3)->equals(&string7));
+  assert(dataframe->get_int(1, 3) == 172);
+  String string8("hi");
+  assert(dataframe->get_string(2, 3)->equals(&string8));
+  String string9("hihi");
+  assert(dataframe->get_string(3, 3)->equals(&string9));
+  assert(!dataframe->get_bool(4, 3));
+  assert(!dataframe->get_bool(5, 3));
+  assert(!dataframe->get_bool(6, 3));
+  assert(!dataframe->get_bool(7, 3));
+  
+  String string10("4hello");
+  assert(dataframe->get_string(0, 4)->equals(&string10));
+  assert(dataframe->get_int(1, 4) == 12);
+  String string11("false");
+  assert(dataframe->get_string(2, 4)->equals(&string11));
+  String string12("");
+  assert(dataframe->get_string(3, 4)->equals(&string12));
+  assert(dataframe->get_bool(4, 4));
+  assert(!dataframe->get_bool(5, 4));
+  assert(!dataframe->get_bool(6, 4));
+  assert(!dataframe->get_bool(7, 4));
+
+  String string13("5\"quote checl\"");
+  assert(dataframe->get_string(0, 5)->equals(&string13));
+  assert(dataframe->get_int(1, 5) == 0);
+  String string14("\"I guess this'll\"worktoo");
+  assert(dataframe->get_string(2, 5)->equals(&string14));
+  assert(dataframe->get_string(3, 5)->equals(&DEFAULT_STRING_VALUE));
+  assert(!dataframe->get_bool(4, 5));
+  assert(!dataframe->get_bool(5, 5));
+  assert(!dataframe->get_bool(6, 5));
+  assert(!dataframe->get_bool(7, 5));
+
+  String string16("");
+  assert(dataframe->get_string(0, 6)->equals(&string16));
+  assert(dataframe->get_int(1, 6) == 0);
+  String string17("reallyno");
+  assert(dataframe->get_string(2, 6)->equals(&string17));
+  assert(dataframe->get_string(3, 6)->equals(&DEFAULT_STRING_VALUE));
+  assert(!dataframe->get_bool(4, 6));
+  assert(!dataframe->get_bool(5, 6));
+  assert(!dataframe->get_bool(6, 6));
+  assert(!dataframe->get_bool(7, 6));
+
+  delete dataframe;
+
+  dataframe = kd.get(&k);
+
+  schema_types = dataframe->get_schema().types_;
+  assert(strcmp("SISSBBBB", schema_types) == 0);
+    
+  assert(dataframe->get_string(0, 0)->equals(&string0));
+  assert(dataframe->get_int(1, 0) == 11);
+  assert(dataframe->get_string(2, 0)->equals(&string1));
+  assert(dataframe->get_string(3, 0)->equals(&DEFAULT_STRING_VALUE));
+  assert(!dataframe->get_bool(4, 0));
+  assert(!dataframe->get_bool(5, 0));
+  assert(!dataframe->get_bool(6, 0));
+  assert(!dataframe->get_bool(7, 0));
+
+  assert(dataframe->get_string(0, 1)->equals(&string2));
+  assert(dataframe->get_int(1, 1) == 10);
+  assert(dataframe->get_string(2, 1)->equals(&string3));
+  assert(dataframe->get_string(3, 1)->equals(&string4));
+  assert(!dataframe->get_bool(4, 1));
+  assert(!dataframe->get_bool(5, 1));
+  assert(!dataframe->get_bool(6, 1));
+  assert(!dataframe->get_bool(7, 1));
+
+  assert(dataframe->get_string(0, 2)->equals(&string5));
+  assert(dataframe->get_int(1, 2) == 0);
+  assert(dataframe->get_string(2, 2)->equals(&string6));
+  assert(dataframe->get_string(3, 2)->equals(&string6_2));
+  assert(!dataframe->get_bool(4, 2));
+  assert(!dataframe->get_bool(5, 2));
+  assert(!dataframe->get_bool(6, 2));
+  assert(!dataframe->get_bool(7, 2));
+
+  assert(dataframe->get_string(0, 3)->equals(&string7));
+  assert(dataframe->get_int(1, 3) == 172);
+  assert(dataframe->get_string(2, 3)->equals(&string8));
+  assert(dataframe->get_string(3, 3)->equals(&string9));
+  assert(!dataframe->get_bool(4, 3));
+  assert(!dataframe->get_bool(5, 3));
+  assert(!dataframe->get_bool(6, 3));
+  assert(!dataframe->get_bool(7, 3));
+  
+  assert(dataframe->get_string(0, 4)->equals(&string10));
+  assert(dataframe->get_int(1, 4) == 12);
+  assert(dataframe->get_string(2, 4)->equals(&string11));
+  assert(dataframe->get_string(3, 4)->equals(&string12));
+  assert(dataframe->get_bool(4, 4));
+  assert(!dataframe->get_bool(5, 4));
+  assert(!dataframe->get_bool(6, 4));
+  assert(!dataframe->get_bool(7, 4));
+
+  assert(dataframe->get_string(0, 5)->equals(&string13));
+  assert(dataframe->get_int(1, 5) == 0);
+  assert(dataframe->get_string(2, 5)->equals(&string14));
+  assert(dataframe->get_string(3, 5)->equals(&DEFAULT_STRING_VALUE));
+  assert(!dataframe->get_bool(4, 5));
+  assert(!dataframe->get_bool(5, 5));
+  assert(!dataframe->get_bool(6, 5));
+  assert(!dataframe->get_bool(7, 5));
+
+  assert(dataframe->get_string(0, 6)->equals(&string16));
+  assert(dataframe->get_int(1, 6) == 0);
+  assert(dataframe->get_string(2, 6)->equals(&string17));
+  assert(dataframe->get_string(3, 6)->equals(&DEFAULT_STRING_VALUE));
+  assert(!dataframe->get_bool(4, 6));
+  assert(!dataframe->get_bool(5, 6));
+  assert(!dataframe->get_bool(6, 6));
+  assert(!dataframe->get_bool(7, 6));
+
+  delete dataframe;
+
+  printf("Dataframe from file tests pass!\n");
+}
+
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  int val = RUN_ALL_TESTS();
+  test_from_array_int();
+  test_from_array_float();
+  test_from_array_bool();
+  test_from_array_string();
+  test_from_file();
+  return val;
 }
