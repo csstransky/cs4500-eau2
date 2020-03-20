@@ -71,7 +71,7 @@ class NonEmptyFilterRower : public Rower {
   }
 
   /** Return a copy of the object; nullptr is considered an error */
-  Object* clone() {
+  Rower* clone() {
     return new NonEmptyFilterRower();
   }
 
@@ -145,7 +145,7 @@ class AddRower : public Rower {
   }
 
     /** Return a copy of the object; nullptr is considered an error */
-  Object* clone() {
+  Rower* clone() {
     return new AddRower(df_);
   }
 
