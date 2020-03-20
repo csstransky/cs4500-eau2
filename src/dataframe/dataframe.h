@@ -54,7 +54,7 @@ class Column : public Object {
 
   char type_;
   size_t size_;
-  KV_Store* kv_; // not owned by Column, simply used for kv methods // TODO: Do not add in serial
+  KV_Store* kv_; // not owned by Column, simply used for kv methods
   String* dataframe_name_; // not owned by Column
   size_t index_;
   KeyArray* keys_; // owned
@@ -85,30 +85,40 @@ class Column : public Object {
     assert(0);
   }
 
-  void set_parent_values_(size_t size, char type, KV_Store* kv, String* dataframe_name, size_t col_index) { // TODO: Use this for every column instead
+  size_t get_num_arrays() {
+    return size_ / ELEMENT_ARRAY_SIZE + 1;
+  }
+
+  void set_parent_values_(size_t size, char type, KV_Store* kv, String* dataframe_name, 
+    size_t col_index) {
     kv_ = kv;
-    dataframe_name_ = dataframe_name;
+    dataframe_name_ = dataframe_name->clone();
     index_ = col_index;
     type_ = type;
     size_ = size;
-    keys_ = new KeyArray(size / ELEMENT_ARRAY_SIZE + 1);
+    size_t num_arrays_ = get_num_arrays();
+    keys_ = new KeyArray(num_arrays_);
+  }
+
+  void set_parent_values_(size_t size, char type, KV_Store* kv, String* dataframe_name, 
+    size_t col_index, KeyArray* keys) { 
+    kv_ = kv;
+    dataframe_name_ = dataframe_name->clone();
+    index_ = col_index;
+    type_ = type;
+    size_ = size;
+    keys_ = keys->clone();
   }
 
   Key* generate_key_(size_t array_index) {
-    // TODO: CHECK THIS
-    char c[dataframe_name_->size()+16]; // TODO: Is 16 big enough for two integers and two _
-    strcpy(c, dataframe_name_->c_str());
-    strcat(c, "_");
-    char str[10];
-    snprintf(str, sizeof(str), "%zu", index_);
-    strcat(c, str);
-    strcat(c, "_");
-    snprintf(str, sizeof(str), "%zu", array_index);
-    strcat(c, str);
-    String s(c); 
+    String key_name(*dataframe_name_);
+    key_name.concat("_");
+    key_name.concat(index_);
+    key_name.concat("_");
+    key_name.concat(array_index);
 
-    return new Key(&s, 0); // TODO: change 0 to node index
-    
+    Key* new_key = new Key(&key_name, kv_->get_node_index());
+    return new_key;    
   }
  
  /** Returns the number of elements in the column. */
@@ -119,6 +129,24 @@ class Column : public Object {
   /** Return the type of this column as a char: 'S', 'B', 'I' and 'F'. */
   char get_type() {
     return type_;
+  }
+
+  size_t column_serial_size_(Array* buffered_elements) {
+    return sizeof(size_t) // serial_size
+      + sizeof(size_t) // size_
+      + dataframe_name_->serial_len()
+      + sizeof(index_) // index_
+      + keys_->serial_len()
+      + buffered_elements->serial_len();
+  }
+
+  void serialize_column_(Serializer& serializer, Array* buffered_elements) {
+    serializer.serialize_size_t(serializer.get_serial_size());
+    serializer.serialize_size_t(size_);
+    serializer.serialize_object(dataframe_name_);
+    serializer.serialize_size_t(index_);
+    serializer.serialize_object(keys_);
+    serializer.serialize_object(buffered_elements);
   }
 };
  
@@ -133,6 +161,12 @@ class IntColumn : public Column {
   // number of elements.
   IntArray* buffered_elements_;  
 
+  IntColumn(KV_Store* kv, String* name, size_t index, size_t size, KeyArray* keys, 
+    IntArray* local_array) {
+    set_parent_values_(size, 'I', kv, name, index, keys);
+    buffered_elements_ = local_array->clone();
+  }
+
   IntColumn(KV_Store* kv, String* name, size_t index) {
     set_parent_values_(0, 'I', kv, name, index);
     buffered_elements_ = new IntArray(ELEMENT_ARRAY_SIZE);
@@ -143,6 +177,7 @@ class IntColumn : public Column {
   }
 
   ~IntColumn() {
+    delete dataframe_name_;
     delete buffered_elements_;
     delete keys_;
   }
@@ -211,6 +246,38 @@ class IntColumn : public Column {
 
     size_++;
   }
+
+  size_t serial_len() {
+    return column_serial_size_(buffered_elements_);
+  }
+
+  char* serialize() {
+    size_t serial_size = serial_len();
+    Serializer serializer(serial_size);
+    serialize_column_(serializer, buffered_elements_);
+    return serializer.get_serial();
+  }
+
+  static IntColumn* deserialize(char* serial, KV_Store* kv_store) {
+    Deserializer deserializer(serial);
+    return deserialize(deserializer, kv_store);
+  }
+
+  static IntColumn* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
+    deserializer.deserialize_size_t(); // skip serial size
+    size_t dataframe_size = deserializer.deserialize_size_t(); 
+    String* dataframe_name = String::deserialize(deserializer);
+    size_t dataframe_index = deserializer.deserialize_size_t();
+    KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
+    IntArray* buffered_elements = IntArray::deserialize(deserializer);
+
+    IntColumn* new_int_column = new IntColumn(kv_store, dataframe_name, dataframe_index, 
+      dataframe_size, dataframe_keys, buffered_elements);
+    delete dataframe_name;
+    delete dataframe_keys;
+    delete buffered_elements;
+    return new_int_column;
+  }
 };
  
 /*************************************************************************
@@ -223,6 +290,12 @@ class FloatColumn : public Column {
   // number of elements.
   FloatArray* buffered_elements_;
 
+  FloatColumn(KV_Store* kv, String* name, size_t index, size_t size, KeyArray* keys, 
+    FloatArray* local_array) {
+    set_parent_values_(size, 'F', kv, name, index, keys);
+    buffered_elements_ = local_array->clone();
+  }
+
   FloatColumn(KV_Store* kv, String* name, size_t index) {
     set_parent_values_(0, 'F', kv, name, index);
     buffered_elements_ = new FloatArray(ELEMENT_ARRAY_SIZE);
@@ -233,6 +306,7 @@ class FloatColumn : public Column {
   }
 
   ~FloatColumn() {
+    delete dataframe_name_;
     delete buffered_elements_;
     delete keys_;
   }
@@ -300,6 +374,38 @@ class FloatColumn : public Column {
 
     size_++;
   }
+
+  size_t serial_len() {
+    return column_serial_size_(buffered_elements_);
+  }
+
+  char* serialize() {
+    size_t serial_size = serial_len();
+    Serializer serializer(serial_size);
+    serialize_column_(serializer, buffered_elements_);
+    return serializer.get_serial();
+  }
+
+  static FloatColumn* deserialize(char* serial, KV_Store* kv_store) {
+    Deserializer deserializer(serial);
+    return deserialize(deserializer, kv_store);
+  }
+
+  static FloatColumn* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
+    deserializer.deserialize_size_t(); // skip serial size
+    size_t dataframe_size = deserializer.deserialize_size_t(); 
+    String* dataframe_name = String::deserialize(deserializer);
+    size_t dataframe_index = deserializer.deserialize_size_t();
+    KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
+    FloatArray* buffered_elements = FloatArray::deserialize(deserializer);
+
+    FloatColumn* new_float_column = new FloatColumn(kv_store, dataframe_name, dataframe_index, 
+      dataframe_size, dataframe_keys, buffered_elements);
+    delete dataframe_name;
+    delete dataframe_keys;
+    delete buffered_elements;
+    return new_float_column;
+  }
 };
 
 /*************************************************************************
@@ -312,6 +418,12 @@ class BoolColumn : public Column {
   // number of elements.
   BoolArray* buffered_elements_;
 
+  BoolColumn(KV_Store* kv, String* name, size_t index, size_t size, KeyArray* keys, 
+    BoolArray* local_array) {
+    set_parent_values_(size, 'B', kv, name, index, keys);
+    buffered_elements_ = local_array->clone();
+  }
+
   BoolColumn(KV_Store* kv, String* name, size_t index) {
     set_parent_values_(0, 'B', kv, name, index);
     buffered_elements_ = new BoolArray(ELEMENT_ARRAY_SIZE);
@@ -322,6 +434,7 @@ class BoolColumn : public Column {
   }
 
   ~BoolColumn() {
+    delete dataframe_name_;
     delete buffered_elements_;
     delete keys_;
   }
@@ -389,6 +502,38 @@ class BoolColumn : public Column {
 
     size_++;
   }
+
+  size_t serial_len() {
+    return column_serial_size_(buffered_elements_);
+  }
+
+  char* serialize() {
+    size_t serial_size = serial_len();
+    Serializer serializer(serial_size);
+    serialize_column_(serializer, buffered_elements_);
+    return serializer.get_serial();
+  }
+
+  static BoolColumn* deserialize(char* serial, KV_Store* kv_store) {
+    Deserializer deserializer(serial);
+    return deserialize(deserializer, kv_store);
+  }
+
+  static BoolColumn* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
+    deserializer.deserialize_size_t(); // skip serial size
+    size_t dataframe_size = deserializer.deserialize_size_t(); 
+    String* dataframe_name = String::deserialize(deserializer);
+    size_t dataframe_index = deserializer.deserialize_size_t();
+    KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
+    BoolArray* buffered_elements = BoolArray::deserialize(deserializer);
+
+    BoolColumn* new_bool_column = new BoolColumn(kv_store, dataframe_name, dataframe_index, 
+      dataframe_size, dataframe_keys, buffered_elements);
+    delete dataframe_name;
+    delete dataframe_keys;
+    delete buffered_elements;
+    return new_bool_column;
+  }
 };
  
 /*************************************************************************
@@ -402,6 +547,12 @@ class StringColumn : public Column {
   // number of elements.
   StringArray* buffered_elements_;
 
+  StringColumn(KV_Store* kv, String* name, size_t index, size_t size, KeyArray* keys, 
+    StringArray* local_array) {
+    set_parent_values_(size, 'S', kv, name, index, keys);
+    buffered_elements_ = local_array->clone();
+  }
+
   StringColumn(KV_Store* kv, String* name, size_t index) {
     set_parent_values_(0, 'S', kv, name, index);
     buffered_elements_ = new StringArray(ELEMENT_ARRAY_SIZE);
@@ -412,6 +563,7 @@ class StringColumn : public Column {
   }
 
   ~StringColumn() {
+    delete dataframe_name_;
     delete buffered_elements_;
     delete keys_;
   }
@@ -428,7 +580,8 @@ class StringColumn : public Column {
     } else {
       Key* k = keys_->get(array);
       StringArray* data = kv_->get_string_array(k);
-      String* i = data->get(index);
+      // TODO: seriously fix this memory leak
+      String* i = data->get(index)->clone(); //TODO: Call Kaylin, find a way to avoid this clone
       delete data;
       return i;
     }
@@ -478,6 +631,38 @@ class StringColumn : public Column {
     }
 
     size_++;
+  }
+// 
+  size_t serial_len() {
+    return column_serial_size_(buffered_elements_);
+  }
+
+  char* serialize() {
+    size_t serial_size = serial_len();
+    Serializer serializer(serial_size);
+    serialize_column_(serializer, buffered_elements_);
+    return serializer.get_serial();
+  }
+
+  static StringColumn* deserialize(char* serial, KV_Store* kv_store) {
+    Deserializer deserializer(serial);
+    return deserialize(deserializer, kv_store);
+  }
+
+  static StringColumn* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
+    deserializer.deserialize_size_t(); // skip serial size
+    size_t dataframe_size = deserializer.deserialize_size_t(); 
+    String* dataframe_name = String::deserialize(deserializer);
+    size_t dataframe_index = deserializer.deserialize_size_t();
+    KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
+    StringArray* buffered_elements = StringArray::deserialize(deserializer);
+
+    StringColumn* new_string_column = new StringColumn(kv_store, dataframe_name, dataframe_index, 
+      dataframe_size, dataframe_keys, buffered_elements);
+    delete dataframe_name;
+    delete dataframe_keys;
+    delete buffered_elements;
+    return new_string_column;
   }
 };
  
@@ -547,7 +732,7 @@ class Schema : public Object {
   }
 
   /** Return a copy of the object; nullptr is considered an error */
-  Object* clone() {
+  Schema* clone() {
     // TODO Do we need this?
     assert(0);
   }
@@ -881,6 +1066,8 @@ class Rower : public Object {
       original object will be the last to be called join on. The join method
       is reponsible for cleaning up memory. */
   virtual void join_delete(Rower* other) = 0;
+
+  virtual Rower* clone() { assert(0); }
 };
 
 /*****************************************************************************
@@ -953,7 +1140,7 @@ class PrinterRower : public Rower {
   }
 
     /** Return a copy of the object; nullptr is considered an error */
-  Object* clone() {
+  Rower* clone() {
     return new PrinterRower(fielder_);
   }
 
@@ -1048,7 +1235,7 @@ class DataFrame : public Object {
   }
 
   /** Return a copy of the object; nullptr is considered an error */
-  Object* clone() {
+  DataFrame* clone() {
     // TODO: do we even need this?
     DataFrame* new_dataframe = new DataFrame(*this);
     for (size_t ii = 0; ii < this->ncols(); ii++) {
@@ -1410,7 +1597,7 @@ class DataFrame : public Object {
 
     // For each thread, clone rower and create thread
     for (size_t i = 0; i < NUM_THREADS; i++) {
-      clones[i] = static_cast<Rower*>(rower.clone());
+      clones[i] = rower.clone();
       size_t start = rows_per_thread * i;
       // Minimum of the rows_per_thread and the leftover
       size_t end = min_(rows_per_thread * (i + 1), num_rows);

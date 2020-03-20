@@ -22,12 +22,16 @@ class KV_Store : public Object {
         if (key->get_node_index() == local_node_index_) {
             Serializer serial(value->serial_len());
             serial.serialize_object(value);
-            kv_map_->put(key->get_key(), static_cast<Object*>(&serial));
+            kv_map_->put(key->get_key(), &serial);
         } 
         else {
             // TODO call upon another Node to put the kv
             assert(0);
         }
+    }
+
+    size_t get_node_index() {
+        return local_node_index_;
     }
 
     // Returns a new char array, make sure to delete it later
