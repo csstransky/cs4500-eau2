@@ -333,9 +333,7 @@ void basic_columnarray_test() {
   t_true(arr.get(1)->as_int()->get(0) == 3, "14c");
   t_true(arr.get(2)->as_float()->get(0) == (float)232.3, "14d");
   t_true(arr.get(3)->as_bool()->get(0), "14e");
-  String* get = arr.get(4)->as_string()->get(0);
-  t_true(get->equals(&str), "14f");
-  delete get;
+  t_true(arr.get(4)->as_string()->get(0)->equals(&str), "14f");
 
   Column* v = arr.pop();
   delete v;

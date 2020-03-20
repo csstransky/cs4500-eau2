@@ -594,7 +594,6 @@ void test_string_column() {
         temp_string.concat(ii);
         String* kv_string = deserial_string_col->get(ii);
         assert(kv_string->equals(&temp_string));
-        delete kv_string;
     }
     assert(deserial_string_col->get_num_arrays() == number_of_kv_chunks + 1);
     assert(deserial_string_col->size_ == string_column_count);
@@ -617,7 +616,6 @@ void test_string_column() {
             assert(stored_strings->get(jj)->equals(&temp_string));
             String* kv_string = deserial_string_col->get(starting_index + jj);
             assert(stored_strings->get(jj)->equals(kv_string));
-            delete kv_string;
         }
         delete stored_strings;
     }
@@ -631,7 +629,6 @@ void test_string_column() {
         assert(buffered_strings->get(ii)->equals(&temp_string));
         String* local_string = deserial_string_col->get(starting_buffer_index + ii);
         assert(buffered_strings->get(ii)->equals(local_string));
-        delete local_string;
     }
 
     delete string_col_serial;
@@ -695,7 +692,6 @@ void test_column_array() {
                     temp_string.concat(jj);
                     String* column_string = col_array.get(ii)->as_string()->get(jj);
                     assert(column_string->equals(&temp_string));
-                    delete column_string;
                 }
                 break;
             }
@@ -738,8 +734,6 @@ void test_column_array() {
                     String* deserial_string = deserial_col_array->get(ii)->as_string()->get(jj);
                     assert(deserial_string->equals(&temp_string));
                     assert(deserial_string->equals(column_string));
-                    delete column_string;
-                    delete deserial_string;
                 }
                 break;
             }

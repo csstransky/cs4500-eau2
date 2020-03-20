@@ -47,6 +47,7 @@ class EncryptRower : public Rower {
         String* val = r.get_string(i);
         char* c = val->c_str();
         char e[val->size()];
+        // TODO: clean up all theses comments later, Kaylin
         // for (int i = 0; i < val->size(); i++) {
         //     e[i] = ((int)pow(c[i], public_key_)) % 255;
         // }
