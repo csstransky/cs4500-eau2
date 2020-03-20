@@ -70,14 +70,6 @@ public:
   }
 
   static ColumnArray* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
-    // TODO: geet rid of this
-    // size_t starting_index = deserializer.get_serial_index();
-    // // Don't need serial size, so we skip it
-    // size_t debugsizt = deserializer.deserialize_size_t();
-    // deserializer.set_serial_index(starting_index);
-    // for (size_t ii = 0; ii < debugsizt; ii++) {
-    //   printf("%d\n", deserializer.serial_[ii]);
-    // }
     deserializer.deserialize_size_t();
     size_t size = deserializer.deserialize_size_t();
     size_t count = deserializer.deserialize_size_t();

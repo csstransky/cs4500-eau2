@@ -704,6 +704,7 @@ void test_column_array() {
 
     char* serial = col_array.serialize();
     ColumnArray* deserial_col_array = ColumnArray::deserialize(serial, &kv);
+
     assert(deserial_col_array->size_ == col_array_size);
     assert(deserial_col_array->length() == col_count);
     for (size_t ii = 0; ii < col_count; ii++) {
@@ -789,6 +790,9 @@ void test_basic_dataframe() {
     df.add_column(&c_float);
     df.add_column(&c_string);
     df.add_column(&c_bool);
+
+    assert(df.get_schema().width() == 4);
+    assert(df.get_schema().length() == 5);
 
     char* serial = df.serialize();
     DataFrame* deserial_df = DataFrame::deserialize(serial, &kv);
@@ -930,7 +934,7 @@ int main(int argc, char const *argv[])
     test_bool_column();
     test_string_column();
     test_column_array();
-    //test_basic_dataframe(); // TODO
+    test_basic_dataframe();
     serialize_equals_test();
     serialize_clone_test();
     printf("All tests passed!\n");

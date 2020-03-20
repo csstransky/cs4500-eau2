@@ -25,7 +25,7 @@ class Schema : public Object {
   char* types_;
   size_t num_cols_;
   size_t num_rows_;
-  size_t col_array_size_;
+  size_t col_array_size_; // size of types_, INCLUDES '\0' character
 
   /** Copying constructor */
   Schema(Schema& from) : Schema(from.types_) {
@@ -55,9 +55,7 @@ class Schema : public Object {
 
     col_array_size_ = types_length + 1;
     this->types_ = new char[col_array_size_];
-    strcpy(types_, types);
-    this->types_[types_length] = '\0';
-    // strlen doesn't include the last '\0' char so this will return the exact number of columns
+    strncpy(types_, types, col_array_size_);
     num_cols_ = types_length; 
     num_rows_ = 0;
   }
@@ -98,7 +96,8 @@ class Schema : public Object {
       serializer.serialize_size_t(num_cols_);
       serializer.serialize_size_t(num_rows_);
       serializer.serialize_size_t(col_array_size_);
-      serializer.serialize_chars(types_, col_array_size_);
+      // Important: remove '\0' from serial size with "col_array_size - 1"
+      serializer.serialize_chars(types_, col_array_size_ - 1);
       return serializer.get_serial();
   }
 
@@ -112,7 +111,8 @@ class Schema : public Object {
       deserializer.deserialize_size_t(); // skip num_cols_
       size_t num_rows = deserializer.deserialize_size_t();
       size_t col_array_size = deserializer.deserialize_size_t();
-      char* types = deserializer.deserialize_char_array(col_array_size);
+      // Important: remove '\0' from deserial size with "col_array_size - 1"
+      char* types = deserializer.deserialize_char_array(col_array_size - 1); 
       Schema* new_schema = new Schema(types);
       new_schema->num_rows_ = num_rows;
       delete types;
