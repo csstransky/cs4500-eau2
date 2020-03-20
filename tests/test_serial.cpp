@@ -592,8 +592,8 @@ void test_string_column() {
     for (size_t ii = 0; ii < deserial_string_col->size(); ii++) {
         String temp_string(base_string);
         temp_string.concat(ii);
-        printf("deserial: %s\n", deserial_string_col->get(ii)->c_str());
-        printf("temp: %s\n", temp_string.c_str());
+        //printf("deserial: %s\n", deserial_string_col->get(ii)->c_str());
+        //printf("temp: %s\n", temp_string.c_str());
         assert(deserial_string_col->get(ii)->equals(&temp_string));
     }
     assert(deserial_string_col->get_num_arrays() == number_of_kv_chunks + 1);

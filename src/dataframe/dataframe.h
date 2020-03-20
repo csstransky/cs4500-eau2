@@ -92,7 +92,7 @@ class Column : public Object {
   void set_parent_values_(size_t size, char type, KV_Store* kv, String* dataframe_name, 
     size_t col_index) {
     kv_ = kv;
-    dataframe_name_ = dataframe_name->clone();
+    dataframe_name_ = dataframe_name ? dataframe_name->clone() : nullptr; // TODO: but this is not owned by the df. Does it need to be?
     index_ = col_index;
     type_ = type;
     size_ = size;
@@ -103,7 +103,7 @@ class Column : public Object {
   void set_parent_values_(size_t size, char type, KV_Store* kv, String* dataframe_name, 
     size_t col_index, KeyArray* keys) { 
     kv_ = kv;
-    dataframe_name_ = dataframe_name->clone();
+    dataframe_name_ = dataframe_name ? dataframe_name->clone() : nullptr; // TODO: but this is not owned by the df. Does it need to be?
     index_ = col_index;
     type_ = type;
     size_ = size;
@@ -1267,6 +1267,8 @@ class DataFrame : public Object {
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, bool* array);
 
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, String** array);
+
+  static DataFrame* from_file(Key* key, KV_Store* kv, char* file_name);
  
   /** Returns the dataframe's schema. Modifying the schema after a dataframe
     * has been created in undefined. */

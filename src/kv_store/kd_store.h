@@ -1,13 +1,18 @@
 #pragma once
 
 #include "dataframe.h"
+#include "sor.h"
 
 class KD_Store : public Object {
     public:
     KV_Store* kv_;
 
-    KD_Store(KV_Store* kv) {
-        kv_ = kv;
+    KD_Store(size_t node_index) {
+        kv_ = new KV_Store(node_index);
+    }
+
+    ~KD_Store() {
+        delete kv_;
     }
 
     DataFrame* get(Key* key) {
@@ -73,4 +78,10 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, String** ar
     }
 
     return d;
- }
+}
+
+DataFrame* DataFrame::from_file(Key* key, KV_Store* kv, char* file_name) {
+    SoR sor(file_name, key->get_key(), kv);
+    kv->put(key, sor.get_dataframe());
+    return sor.get_dataframe();
+}

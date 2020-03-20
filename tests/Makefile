@@ -15,7 +15,6 @@ test: build
 	build/dataframe/parallel_map_personal_test_suite
 	
 valgrind: build
-	valgrind build/serial_examples
 	valgrind build/test_serial
 	valgrind build/test_sorer
 	valgrind build/test-array
