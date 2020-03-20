@@ -36,7 +36,7 @@ void clone_test() {
     assert(key1.get_key()->equals(&key_string));
     assert(key1.get_node_index() == node_index);
 
-    Key* key_clone = static_cast<Key*>(key1.clone());
+    Key* key_clone = key1.clone();
     assert(key_clone->get_key()->equals(&key_string));
     assert(key_clone->get_node_index() == node_index);
     delete key_clone;

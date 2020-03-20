@@ -29,7 +29,6 @@ class Key : public Object {
         return node_index_;
     }
 
-    /** Subclasses should redefine */
     bool equals(Object* other) {
         if (other == this) return true;
         Key* other_key = dynamic_cast<Key*>(other);
@@ -38,8 +37,7 @@ class Key : public Object {
             && this->node_index_ == other_key->node_index_;
     }
 
-    /** Return a copy of the object; nullptr is considered an error */
-    Object* clone() {
+    Key* clone() {
         return new Key(*this);
     }
 

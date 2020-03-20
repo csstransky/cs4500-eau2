@@ -26,7 +26,7 @@ class EncryptRower : public Rower {
   }
 
     /** Return a copy of the object; nullptr is considered an error */
-  Object* clone() {
+  Rower* clone() {
     return new EncryptRower(df_);
   }
 
@@ -101,7 +101,7 @@ class AddRower : public Rower {
   }
 
     /** Return a copy of the object; nullptr is considered an error */
-  Object* clone() {
+  Rower* clone() {
     return new AddRower(df_);
   }
 
@@ -153,7 +153,7 @@ class AverageRower : public Rower {
   }
 
     /** Return a copy of the object; nullptr is considered an error */
-  Object* clone() {
+  Rower* clone() {
     return new AverageRower(df_);
   }
 

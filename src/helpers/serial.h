@@ -80,7 +80,6 @@ class Serializer : public Object {
         return new_serial;
     }
 
-    /** Subclasses should redefine */
     bool equals(Object* other) {
         Serializer* other_serial = dynamic_cast<Serializer*>(other);
         return other == this
@@ -90,8 +89,7 @@ class Serializer : public Object {
                 && strncmp(this->serial_, other_serial->serial_, serial_size_) == 0);
     }
 
-    /** Return a copy of the object; nullptr is considered an error */
-    Object* clone() {
+    Serializer* clone() {
         return new Serializer(*this);
     }
 };

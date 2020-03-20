@@ -24,6 +24,7 @@ class SoR {
             string element = line.at(index);
             return new String(element.c_str());
         }
+        // TODO, see if this still works, will be moving to empty String instead of nullptr
         else {
             return (String*)DEFAULT_STRING_VALUE;
         }
@@ -399,7 +400,7 @@ class SoR {
      * You will have to delete this dataframe yourself later
      */
     DataFrame* get_dataframe_clone() {
-        return static_cast<DataFrame*>(dataframe_->clone());
+        return dataframe_->clone();
     }
 
     void print() {
