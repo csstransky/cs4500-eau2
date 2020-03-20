@@ -34,48 +34,52 @@ class KD_Store : public Object {
 
 // Moved here to remove circular dependency. See piazza post @963
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, int* array) {
-    Schema s("I");
+    Schema s("");
     DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
+    IntColumn col(kd->get_kv(), key->get_key(), 0);
     for (size_t i = 0; i < num; i++) {
-        IntColumn* col = d->get_column(0)->as_int();
-        col->push_back(array[i]);
+        col.push_back(array[i]);
     }
+    d->add_column(&col);
 
     return d;
 }
 
 // Moved here to remove circular dependency. See piazza post @963
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, float* array) {
-    Schema s("F");
+    Schema s("");
     DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
+    FloatColumn col(kd->get_kv(), key->get_key(), 0);
     for (size_t i = 0; i < num; i++) {
-        FloatColumn* col = d->get_column(0)->as_float();
-        col->push_back(array[i]);
+        col.push_back(array[i]);
     }
+    d->add_column(&col);
 
     return d;
 }
 
 // Moved here to remove circular dependency. See piazza post @963
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, bool* array) {
-    Schema s("B");
+    Schema s("");
     DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
+    BoolColumn col(kd->get_kv(), key->get_key(), 0);
     for (size_t i = 0; i < num; i++) {
-        BoolColumn* col = d->get_column(0)->as_bool();
-        col->push_back(array[i]);
+        col.push_back(array[i]);
     }
+    d->add_column(&col);
 
     return d;
 }  
 
 // Moved here to remove circular dependency. See piazza post @963
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, String** array) {
-    Schema s("S");
+    Schema s("");
     DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
+    StringColumn col(kd->get_kv(), key->get_key(), 0);
     for (size_t i = 0; i < num; i++) {
-        StringColumn* col = d->get_column(0)->as_string();
-        col->push_back(array[i]);
+        col.push_back(array[i]);
     }
+    d->add_column(&col);
 
     return d;
 }
