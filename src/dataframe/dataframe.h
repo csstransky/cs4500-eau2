@@ -540,15 +540,12 @@ class DataFrame : public Object {
     }
   }
 
+  /** copy constructor mainly used for deserialization */
   DataFrame(Schema& schema, String* name, KV_Store* kv, ColumnArray* columns) {
-    name_ = name->clone();
-    kv_ = kv;
-
-    size_t num_cols = schema.width();
-    for (size_t ii = 0; ii < num_cols; ii++) {
-        char col_type = schema.col_type(ii);
-        this->schema_.add_column(col_type);
-    }
+    this->name_ = name->clone();
+    this->kv_ = kv;
+    Schema copy_schema(schema);
+    this->schema_ = copy_schema;
     this->cols_ = columns->clone();    
   }
 
