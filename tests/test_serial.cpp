@@ -647,6 +647,8 @@ void test_column_array() {
     KV_Store kv(local_node_index);
     StringColumn string_column(&kv, df_key.get_key(), df_key.get_node_index());
     FloatColumn float_column(&kv, df_key.get_key(), df_key.get_node_index());
+    BoolColumn bool_column(&kv, df_key.get_key(), df_key.get_node_index());
+    IntColumn int_column(&kv, df_key.get_key(), df_key.get_node_index());
 
     size_t buffered_elements_size = 10;
     size_t number_of_kv_chunks = 0;
@@ -657,15 +659,22 @@ void test_column_array() {
         temp_string.concat(ii);
         string_column.push_back(&temp_string);
         float_column.push_back(ii + float_decimal);
+        int_column.push_back(ii);
+        bool_column.push_back(true);
     }
     assert(string_column.get_num_arrays() == number_of_kv_chunks + 1);
     assert(float_column.get_num_arrays() == number_of_kv_chunks + 1);
+    assert(int_column.get_num_arrays() == number_of_kv_chunks + 1);
+    assert(bool_column.get_num_arrays() == number_of_kv_chunks + 1);
 
     size_t col_array_size = 10;
-    size_t col_count = 2;
+    size_t col_count = 4;
     ColumnArray col_array(10);
     col_array.push(&string_column);
     col_array.push(&float_column);
+    col_array.push(&int_column);
+    col_array.push(&bool_column);
+
     assert(col_array.size_ == col_array_size);
     assert(col_array.length() == col_count);
     for (size_t ii = 0; ii < col_count; ii++) {
