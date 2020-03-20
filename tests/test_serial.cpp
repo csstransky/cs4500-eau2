@@ -797,38 +797,40 @@ void test_basic_dataframe() {
     char* serial = df.serialize();
     DataFrame* deserial_df = DataFrame::deserialize(serial, &kv);
 
-    assert(df.get_int(0, 0) == 1);
-    assert(df.get_int(0, 1) ==3);
-    assert(df.get_int(0, 2) == 4);
-    assert(df.get_int(0, 3) == 2);
+    assert(deserial_df->get_schema().width() == 4);
+    assert(deserial_df->get_schema().length() == 5);
 
-    assert(df.get_float(1, 0) == (float)1.2);
-    assert(df.get_float(1, 1) == (float)3.2);
-    assert(df.get_float(1, 2) == (float)2);
-    assert(df.get_float(1, 3) == (float)1);
+    assert(deserial_df->get_int(0, 0) == 1);
+    assert(deserial_df->get_int(0, 1) ==3);
+    assert(deserial_df->get_int(0, 2) == 4);
+    assert(deserial_df->get_int(0, 3) == 2);
 
-    assert(df.get_string(2, 0)->equals(&hi));
-    assert(df.get_string(2, 1)->equals(&hello));
-    assert(df.get_string(2, 2)->equals(&DEFAULT_STRING_VALUE));
-    assert(df.get_string(2, 3)->equals(&hi));
-    assert(df.get_string(2, 4)->equals(&h));
+    assert(deserial_df->get_float(1, 0) == (float)1.2);
+    assert(deserial_df->get_float(1, 1) == (float)3.2);
+    assert(deserial_df->get_float(1, 2) == (float)2);
+    assert(deserial_df->get_float(1, 3) == (float)1);
 
-    assert(df.get_bool(3, 0) == false);
-    assert(df.get_bool(3, 1) == 1);
-    assert(df.get_bool(3, 2) == true);
+    assert(deserial_df->get_string(2, 0)->equals(&hi));
+    assert(deserial_df->get_string(2, 1)->equals(&hello));
+    assert(deserial_df->get_string(2, 2)->equals(&DEFAULT_STRING_VALUE));
+    assert(deserial_df->get_string(2, 3)->equals(&hi));
+    assert(deserial_df->get_string(2, 4)->equals(&h));
+
+    assert(deserial_df->get_bool(3, 0) == false);
+    assert(deserial_df->get_bool(3, 1) == 1);
+    assert(deserial_df->get_bool(3, 2) == true);
 
     // Test that this array grew to fit the row size
-    assert(df.get_bool(3, 3) == DEFAULT_BOOL_VALUE);
+    assert(deserial_df->get_bool(3, 3) == DEFAULT_BOOL_VALUE);
 
     // Test that the rest of the arrays grew from the extra string array rows
-    assert(df.get_int(0, 4) == DEFAULT_INT_VALUE);
-    assert(df.get_float(1, 4) == DEFAULT_FLOAT_VALUE);
-    assert(df.get_bool(3, 4) == DEFAULT_BOOL_VALUE);
+    assert(deserial_df->get_int(0, 4) == DEFAULT_INT_VALUE);
+    assert(deserial_df->get_float(1, 4) == DEFAULT_FLOAT_VALUE);
+    assert(deserial_df->get_bool(3, 4) == DEFAULT_BOOL_VALUE);
 
     delete serial;
     delete deserial_df;
-    // TODO, get this to compile
-    printf("DataFrame serialization complete!\n");
+    printf("DataFrame basic serialization complete!\n");
 }
 
 void serializing_test() {
