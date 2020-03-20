@@ -1281,7 +1281,7 @@ void test_from_array_int() {
   DataFrame* df = DataFrame::from_array(&k, &kd, num, array);
 
   assert(df->ncols() == 1);
-  assert(df->nrows() == num);
+  assert(df->nrows() == num); // TODO: Issue here Kaylin?
   for (size_t i = 0; i < num; i++) {
     assert(df->get_int(0,i) == array[i]);
   }

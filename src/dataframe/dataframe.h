@@ -350,6 +350,8 @@ class Row : public Object {
     return column->get(0);
   }
   
+  // NOTE: Returns a pointer that can be volatile (if coming from KV store, will overwrite the old
+  // cache String pointer, so String address CAN change later), clone if needed longer
   String* get_string(size_t col) {
     StringColumn* column = get_string_column_(this->cols_, this->width_, col);
     return column->get(0);
@@ -763,6 +765,8 @@ class DataFrame : public Object {
     FloatColumn* float_column = get_float_column_(this->cols_, this->schema_.width(), col);
     return float_column->get(row);
   }
+  // NOTE: Returns a pointer that can be volatile (if coming from KV store, will overwrite the old
+  // cache String pointer, so String address CAN change later), clone if needed longer
   String* get_string(size_t col, size_t row) {
     StringColumn* string_column = get_string_column_(this->cols_, this->schema_.width(), col);
     return string_column->get(row);

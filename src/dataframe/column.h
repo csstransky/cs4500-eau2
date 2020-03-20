@@ -578,19 +578,24 @@ class BoolColumn : public Column {
  */
 class StringColumn : public Column {
  public:
-   // Elements are stored as an array of int arrays where each int array holds ELEMENT_ARRAY_SIZE 
+  // Elements are stored as an array of int arrays where each int array holds ELEMENT_ARRAY_SIZE 
   // number of elements.
   StringArray* buffered_elements_;
+  // Since Strings can be stored in a kv_store, we need to be able to use get(...) without having to 
+  // worry about deleting the deserialized String later, this cache string will be used to hold it
+  String* cache_string_;
 
   StringColumn(KV_Store* kv, String* name, size_t index, size_t size, KeyArray* keys, 
     StringArray* local_array) {
     set_parent_values_(size, 'S', kv, name, index, keys);
     buffered_elements_ = local_array->clone();
+    cache_string_ = nullptr;
   }
 
   StringColumn(KV_Store* kv, String* name, size_t index) {
     set_parent_values_(0, 'S', kv, name, index);
     buffered_elements_ = new StringArray(ELEMENT_ARRAY_SIZE);
+    cache_string_ = nullptr;
   }
 
   StringColumn(StringColumn& other) 
@@ -604,6 +609,7 @@ class StringColumn : public Column {
   }
 
   ~StringColumn() {
+    delete cache_string_;
     delete dataframe_name_;
     delete buffered_elements_;
     delete keys_;
@@ -613,7 +619,8 @@ class StringColumn : public Column {
     return new StringColumn(*this);
   }
 
-  // NOTE: Returns a clone, make sure to delete afterward
+  // NOTE: Returns a pointer that can be volatile (if coming from KV store, will overwrite the old
+  // cache String pointer, so String address CAN change later), clone if needed longer
   String* get(size_t idx) {
     assert(idx < size_);
     size_t array = idx / ELEMENT_ARRAY_SIZE;
@@ -621,21 +628,17 @@ class StringColumn : public Column {
     size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
 
     String* s;
-    StringArray* data = nullptr;
-
     // if element is in last array, get buffered_elements_ ow get blocks
     if (last_array == array) {
       s = buffered_elements_->get(index);
     } else {
       Key* k = keys_->get(array);
-      data = kv_->get_string_array(k);
-      s = data->get(index);
+      StringArray* data = kv_->get_string_array(k);
+      delete cache_string_;
+      cache_string_ = data->get(index)->clone();
+      delete data;
+      s = cache_string_;
     }
-    if (s == nullptr) {
-      s = &DEFAULT_STRING_VALUE;
-    }
-    s = s->clone();
-    delete data;
     return s;
   }
 
