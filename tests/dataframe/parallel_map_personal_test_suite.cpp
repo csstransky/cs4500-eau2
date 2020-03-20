@@ -877,12 +877,12 @@ void dataframe_getters_tests() {
   GT_EQUALS(df.get_bool(3, 2), true);
 
   // Test that this array grew to fit the row size
-  GT_EQUALS(df.get_bool(3, 3), false);
+  GT_EQUALS(df.get_bool(3, 3), DEFAULT_BOOL_VALUE);
 
   // Test that the rest of the arrays grew from the extra string array rows
-  GT_EQUALS(df.get_int(0, 4), 0);
-  GT_EQUALS(df.get_float(1, 4), 0);
-  GT_EQUALS(df.get_bool(3, 4), 0);
+  GT_EQUALS(df.get_int(0, 4), DEFAULT_INT_VALUE);
+  GT_EQUALS(df.get_float(1, 4), DEFAULT_FLOAT_VALUE);
+  GT_EQUALS(df.get_bool(3, 4), DEFAULT_BOOL_VALUE);
 
   delete h;
   delete hi;
@@ -1270,4 +1270,5 @@ TEST(DataFrame, test_map_add){ ASSERT_EXIT_ZERO(test_map_add);}
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
+  test();
 }

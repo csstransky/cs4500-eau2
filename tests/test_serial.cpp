@@ -592,9 +592,9 @@ void test_string_column() {
     for (size_t ii = 0; ii < deserial_string_col->size(); ii++) {
         String temp_string(base_string);
         temp_string.concat(ii);
-        //printf("deserial: %s\n", deserial_string_col->get(ii)->c_str());
-        //printf("temp: %s\n", temp_string.c_str());
-        assert(deserial_string_col->get(ii)->equals(&temp_string));
+        String* kv_string = deserial_string_col->get(ii);
+        assert(kv_string->equals(&temp_string));
+        delete kv_string;
     }
     assert(deserial_string_col->get_num_arrays() == number_of_kv_chunks + 1);
     assert(deserial_string_col->size_ == string_column_count);
@@ -615,7 +615,9 @@ void test_string_column() {
             String temp_string(base_string);
             temp_string.concat(starting_index + jj);
             assert(stored_strings->get(jj)->equals(&temp_string));
-            assert(stored_strings->get(jj)->equals(deserial_string_col->get(starting_index + jj)));
+            String* kv_string = deserial_string_col->get(starting_index + jj);
+            assert(stored_strings->get(jj)->equals(kv_string));
+            delete kv_string;
         }
         delete stored_strings;
     }
@@ -627,12 +629,151 @@ void test_string_column() {
         String temp_string(base_string);
         temp_string.concat(starting_buffer_index + ii);
         assert(buffered_strings->get(ii)->equals(&temp_string));
-        assert(buffered_strings->get(ii)->equals(deserial_string_col->get(starting_buffer_index + ii)));
+        String* local_string = deserial_string_col->get(starting_buffer_index + ii);
+        assert(buffered_strings->get(ii)->equals(local_string));
+        delete local_string;
     }
 
     delete string_col_serial;
     delete deserial_string_col;
     printf("StringColumn serialization passed!\n");
+}
+
+void test_column_array() {
+    String df_name("mainframe");
+    String base_string("col_string_");
+    size_t local_node_index = 3;
+    Key df_key(&df_name, local_node_index);
+    KV_Store kv(local_node_index);
+    StringColumn string_column(&kv, df_key.get_key(), df_key.get_node_index());
+    FloatColumn float_column(&kv, df_key.get_key(), df_key.get_node_index());
+
+    size_t buffered_elements_size = 10;
+    size_t number_of_kv_chunks = 0;
+    size_t string_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
+    float float_decimal = 0.002;
+    for (size_t ii = 0; ii < string_column_count; ii++) {
+        String temp_string(base_string);
+        temp_string.concat(ii);
+        string_column.push_back(&temp_string);
+        float_column.push_back(ii + float_decimal);
+    }
+    assert(string_column.get_num_arrays() == number_of_kv_chunks + 1);
+    assert(float_column.get_num_arrays() == number_of_kv_chunks + 1);
+
+    size_t col_array_size = 10;
+    size_t col_count = 2;
+    ColumnArray col_array(10);
+    col_array.push(&string_column);
+    col_array.push(&float_column);
+    assert(col_array.size_ == col_array_size);
+    assert(col_array.length() == col_count);
+    for (size_t ii = 0; ii < col_count; ii++) {
+        char col_type = col_array.get(ii)->get_type();
+        switch (col_type) {
+            case 'I': {
+                for (size_t jj = 0; jj < string_column_count; jj++) {
+                    assert(col_array.get(ii)->as_int()->get(jj) == jj);
+                }
+                break;
+            }
+            case 'S': {
+                for (size_t jj = 0; jj < string_column_count; jj++) {
+                    String temp_string(base_string);
+                    temp_string.concat(jj);
+                    assert(col_array.get(ii)->as_string()->get(jj)->equals(&temp_string));
+                }
+                break;
+            }
+            case 'F': {
+                for (size_t jj = 0; jj < string_column_count; jj++) {
+                    assert(col_array.get(ii)->as_float()->get(jj) == jj + float_decimal);
+                }
+                break;
+            }
+            case 'B': {
+                for (size_t jj = 0; jj < string_column_count; jj++) {
+                    assert(col_array.get(ii)->as_bool()->get(jj));
+                }
+                break;
+            }
+        }
+    }
+
+    // TODO: Add acutal serial tests
+    printf("ColumnArray serialization passed!\n");
+}
+
+void test_basic_dataframe() {
+    KV_Store kv(0);
+    String c("main");
+    Schema s1("");
+    DataFrame df(s1, &c, &kv);
+
+    IntColumn c_int;
+    c_int.push_back(1);
+    c_int.push_back(3);
+    c_int.push_back(4);
+    c_int.push_back(2);
+    FloatColumn c_float;
+    c_float.push_back((float)1.2);
+    c_float.push_back((float)3.2);
+    c_float.push_back((float)2);
+    c_float.push_back((float)1);
+    String hi("hi");
+    String hello("hello");
+    String h("h");
+    StringColumn c_string;
+    c_string.push_back(&hi);
+    c_string.push_back(&hello);
+    c_string.push_back(nullptr);
+    c_string.push_back(&hi);
+    c_string.push_back(&h);
+    BoolColumn c_bool;
+    c_bool.push_back((bool)0);
+    c_bool.push_back((bool)1);
+    c_bool.push_back((bool)1);
+
+    df.add_column(&c_int);
+    df.add_column(&c_float);
+    df.add_column(&c_string);
+    df.add_column(&c_bool);
+
+    char* serial = df.serialize();
+    DataFrame* deserial_df = DataFrame::deserialize(serial, &kv);
+
+    assert(df.get_int(0, 0) == 1);
+    assert(df.get_int(0, 1) ==3);
+    assert(df.get_int(0, 2) == 4);
+    assert(df.get_int(0, 3) == 2);
+
+    assert(df.get_float(1, 0) == (float)1.2);
+    assert(df.get_float(1, 1) == (float)3.2);
+    assert(df.get_float(1, 2) == (float)2);
+    assert(df.get_float(1, 3) == (float)1);
+
+    assert(df.get_string(2, 0)->equals(&hi));
+    assert(df.get_string(2, 1)->equals(&hello));
+    assert(df.get_string(2, 2)->equals(&DEFAULT_STRING_VALUE));
+    assert(df.get_string(2, 3)->equals(&hi));
+    assert(df.get_string(2, 4)->equals(&h));
+
+    assert(df.get_bool(3, 0) == false);
+    assert(df.get_bool(3, 1) == 1);
+    assert(df.get_bool(3, 2) == true);
+
+    // Test that this array grew to fit the row size
+    assert(df.get_bool(3, 3) == DEFAULT_BOOL_VALUE);
+
+    // Test that the rest of the arrays grew from the extra string array rows
+    assert(df.get_int(0, 4) == DEFAULT_INT_VALUE);
+    assert(df.get_float(1, 4) == DEFAULT_FLOAT_VALUE);
+    assert(df.get_bool(3, 4) == DEFAULT_BOOL_VALUE);
+
+    delete serial;
+    delete deserial_df;
+    // TODO, get this to compile
+    printf("DataFrame serialization complete!\n");
 }
 
 void serializing_test() {
@@ -737,6 +878,8 @@ int main(int argc, char const *argv[])
     test_float_column();
     test_bool_column();
     test_string_column();
+    test_column_array();
+    test_basic_dataframe();
     serialize_equals_test();
     serialize_clone_test();
     printf("All tests passed!\n");

@@ -5,6 +5,7 @@
 #include "../helpers/string.h"
 #include "../kv_store/kv_store.h"
 #include "../kv_store/key.h"
+#include "../array/array.h"
 
 #include <stdarg.h>
 #include <assert.h>
@@ -24,25 +25,17 @@ class FloatColumn;
 class BoolColumn;
 class StringColumn;
 class KD_Store;
+class ColumnArray;
 
 size_t max_(size_t a, size_t b) {
-  if (a > b) {
-    return a;
-  } 
-  else {
-    return b;
-  }
+  return (a > b) ? a : b;
 }
 
 size_t min_(size_t a, size_t b) {
-  if (a < b) {
-    return a;
-  } 
-  else {
-    return b;
-  }
+  return (a < b) ? a : b;
 }
 
+// TODO: move all Columns to column.h 
 /**************************************************************************
  * Column ::
  * Represents one column of a data frame which holds values of a single type.
@@ -133,6 +126,7 @@ class Column : public Object {
 
   size_t column_serial_size_(Array* buffered_elements) {
     return sizeof(size_t) // serial_size
+      + sizeof(char) // type_
       + sizeof(size_t) // size_
       + dataframe_name_->serial_len()
       + sizeof(index_) // index_
@@ -142,12 +136,28 @@ class Column : public Object {
 
   void serialize_column_(Serializer& serializer, Array* buffered_elements) {
     serializer.serialize_size_t(serializer.get_serial_size());
+    serializer.serialize_char(type_);
     serializer.serialize_size_t(size_);
     serializer.serialize_object(dataframe_name_);
     serializer.serialize_size_t(index_);
     serializer.serialize_object(keys_);
     serializer.serialize_object(buffered_elements);
   }
+
+  static Column* deserialize(char* serial, KV_Store* kv_store) {
+    Deserializer deserializer(serial);
+    return deserialize(deserializer, kv_store);
+  }
+
+  static char get_column_type(Deserializer& deserializer) {
+    size_t deserial_start_index = deserializer.get_serial_index();
+    deserializer.deserialize_size_t(); // skip serial_length
+    char column_type = deserializer.deserialize_char();
+    deserializer.set_serial_index(deserial_start_index); // reset serial index back to the beginning
+    return column_type;
+  }
+
+  static Column* deserialize(Deserializer& deserializer, KV_Store* kv_store);
 };
  
 /*************************************************************************
@@ -172,14 +182,25 @@ class IntColumn : public Column {
     buffered_elements_ = new IntArray(ELEMENT_ARRAY_SIZE);
   }
 
-  IntColumn() : IntColumn(0, 0, 0) {
+  IntColumn(IntColumn& other) 
+    : IntColumn(other.kv_, other.dataframe_name_, other.index_, other.size_, other.keys_, 
+      other.buffered_elements_) {
+
+  }
+
+  IntColumn() : IntColumn(nullptr, nullptr, 0) {
 
   }
 
   ~IntColumn() {
+    // TODO: may need to watch out for nullptr in the future
     delete dataframe_name_;
     delete buffered_elements_;
     delete keys_;
+  }
+
+  IntColumn* clone() {
+    return new IntColumn(*this);
   }
 
   int get(size_t idx) {
@@ -265,6 +286,7 @@ class IntColumn : public Column {
 
   static IntColumn* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
     deserializer.deserialize_size_t(); // skip serial size
+    deserializer.deserialize_char(); // skip type
     size_t dataframe_size = deserializer.deserialize_size_t(); 
     String* dataframe_name = String::deserialize(deserializer);
     size_t dataframe_index = deserializer.deserialize_size_t();
@@ -301,7 +323,13 @@ class FloatColumn : public Column {
     buffered_elements_ = new FloatArray(ELEMENT_ARRAY_SIZE);
   }
 
-  FloatColumn() : FloatColumn(0, 0, 0) {
+  FloatColumn(FloatColumn& other) 
+    : FloatColumn(other.kv_, other.dataframe_name_, other.index_, other.size_, other.keys_, 
+      other.buffered_elements_) {
+
+  }
+
+  FloatColumn() : FloatColumn(nullptr, nullptr, 0) {
     
   }
 
@@ -309,6 +337,10 @@ class FloatColumn : public Column {
     delete dataframe_name_;
     delete buffered_elements_;
     delete keys_;
+  }
+
+  FloatColumn* clone() {
+    return new FloatColumn(*this);
   }
 
   float get(size_t idx) {
@@ -393,6 +425,7 @@ class FloatColumn : public Column {
 
   static FloatColumn* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
     deserializer.deserialize_size_t(); // skip serial size
+    deserializer.deserialize_char(); // skip type
     size_t dataframe_size = deserializer.deserialize_size_t(); 
     String* dataframe_name = String::deserialize(deserializer);
     size_t dataframe_index = deserializer.deserialize_size_t();
@@ -429,8 +462,18 @@ class BoolColumn : public Column {
     buffered_elements_ = new BoolArray(ELEMENT_ARRAY_SIZE);
   }
 
-  BoolColumn() : BoolColumn(0, 0, 0) {
+  BoolColumn(BoolColumn& other) 
+    : BoolColumn(other.kv_, other.dataframe_name_, other.index_, other.size_, other.keys_, 
+      other.buffered_elements_) {
+
+  }
+
+  BoolColumn() : BoolColumn(nullptr, nullptr, 0) {
     
+  }
+
+  BoolColumn* clone() {
+    return new BoolColumn(*this);
   }
 
   ~BoolColumn() {
@@ -521,6 +564,7 @@ class BoolColumn : public Column {
 
   static BoolColumn* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
     deserializer.deserialize_size_t(); // skip serial size
+    deserializer.deserialize_char(); // skip type
     size_t dataframe_size = deserializer.deserialize_size_t(); 
     String* dataframe_name = String::deserialize(deserializer);
     size_t dataframe_index = deserializer.deserialize_size_t();
@@ -558,7 +602,13 @@ class StringColumn : public Column {
     buffered_elements_ = new StringArray(ELEMENT_ARRAY_SIZE);
   }
 
-  StringColumn() : StringColumn(0, 0, 0) {
+  StringColumn(StringColumn& other) 
+    : StringColumn(other.kv_, other.dataframe_name_, other.index_, other.size_, other.keys_, 
+      other.buffered_elements_) {
+
+  }
+
+  StringColumn() : StringColumn(nullptr, nullptr, 0) {
     
   }
 
@@ -568,6 +618,11 @@ class StringColumn : public Column {
     delete keys_;
   }
 
+  StringColumn* clone() {
+    return new StringColumn(*this);
+  }
+
+  // NOTE: Returns a clone, make sure to delete afterward
   String* get(size_t idx) {
     assert(idx < size_);
     size_t array = idx / ELEMENT_ARRAY_SIZE;
@@ -578,16 +633,13 @@ class StringColumn : public Column {
 
     // if element is in last array, get buffered_elements_ ow get blocks
     if (last_array == array) {
-      s = buffered_elements_->get(index);
+      s = buffered_elements_->get(index)->clone();
     } else {
       Key* k = keys_->get(array);
       StringArray* data = kv_->get_string_array(k);
-      // TODO: seriously fix this memory leak
-      String* i = data->get(index)->clone(); //TODO: Call Kaylin, find a way to avoid this clone
+      s = data->get(index)->clone();
       delete data;
-      s = i;
     }
-
     return s;
   }
 
@@ -661,6 +713,7 @@ class StringColumn : public Column {
 
   static StringColumn* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
     deserializer.deserialize_size_t(); // skip serial size
+    deserializer.deserialize_char(); // skip type
     size_t dataframe_size = deserializer.deserialize_size_t(); 
     String* dataframe_name = String::deserialize(deserializer);
     size_t dataframe_index = deserializer.deserialize_size_t();
@@ -673,6 +726,97 @@ class StringColumn : public Column {
     delete dataframe_keys;
     delete buffered_elements;
     return new_string_column;
+  }
+};
+
+// TODO: Move this back to array.h when we finish moving columns to column.h
+/**
+ * An Array class to which Columns can be added to and removed from.
+ * author: kaylindevchand & csstransky */
+class ColumnArray : public ObjectArray {
+public:
+  /** CONSTRUCTORS & DESTRUCTORS **/
+
+  /* Creates an Array of desired size */
+  ColumnArray(const size_t size) : ObjectArray(size) {
+    
+  }
+
+  /* Copies the contents of an already existing Array */
+  ColumnArray(ColumnArray* arr) : ObjectArray(arr) {
+    
+  }
+
+  /* Clears Array from memory */
+  ~ColumnArray() {
+
+  }
+
+  /** ARRAY METHODS **/
+
+  ColumnArray* clone() {
+    return new ColumnArray(this);
+  }
+
+  /* Adds an ColumnArray to existing contents */
+  void concat(ColumnArray* const arr) {
+    ObjectArray::concat(arr);
+  }
+
+  /* Gets a Column at the given index */
+  /* Throws an error if not found or out of range or no elements in array*/
+  Column* get(size_t index) {
+    return dynamic_cast<Column*>(ObjectArray::get(index));
+  }
+
+  /* Removes the last Column of the Array, returns the removed Column */
+  /* Throws an error if not found or out of range or no elements in array*/
+  Column* pop() {
+    return dynamic_cast<Column*>(ObjectArray::pop());
+  }
+
+  /* Adds an Column to the end of the Array, returns the new length */
+  size_t push(Column* const to_add) {
+    return ObjectArray::push(to_add);
+  }
+
+  /* Removes a Column at the given index, returns removed Column */
+  /* Throws an error if not found or out of range or no elements in array*/
+  Column* remove(size_t index) {
+    return dynamic_cast<Column*>(ObjectArray::remove(index));
+  }
+
+  /* Replaces a Column at the given index with the given Column, returns the replaced Column */
+  /* Throws an error if not found or out of range or no elements in array*/
+  Column* replace(size_t index, Column* const to_add) {
+    return dynamic_cast<Column*>(ObjectArray::replace(index, to_add));
+  }
+
+  static ColumnArray* deserialize(char* serial, KV_Store* kv_store) {
+    Deserializer deserializer(serial);
+    return deserialize(deserializer, kv_store);
+  }
+
+  static ColumnArray* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
+    // TODO: geet rid of this
+    // size_t starting_index = deserializer.get_serial_index();
+    // // Don't need serial size, so we skip it
+    // size_t debugsizt = deserializer.deserialize_size_t();
+    // deserializer.set_serial_index(starting_index);
+    // for (size_t ii = 0; ii < debugsizt; ii++) {
+    //   printf("%d\n", deserializer.serial_[ii]);
+    // }
+    deserializer.deserialize_size_t();
+    size_t size = deserializer.deserialize_size_t();
+    size_t count = deserializer.deserialize_size_t();
+    ColumnArray* new_array = new ColumnArray(size);
+    for (size_t ii = 0; ii < count; ii++) {
+      // TODO: We'll have to add KV stores somehow in the future, nullptr won't cut it
+      Column* new_object = Column::deserialize(deserializer, kv_store);
+      new_array->push(new_object);
+      delete new_object;
+    }
+    return new_array;
   }
 };
  
@@ -772,8 +916,8 @@ class Schema : public Object {
   }
 
   static Schema* deserialize(Deserializer& deserializer) {
-      deserializer.deserialize_size_t();
-      deserializer.deserialize_size_t();
+      deserializer.deserialize_size_t(); // skip serial_length
+      deserializer.deserialize_size_t(); // skip num_cols_
       size_t num_rows = deserializer.deserialize_size_t();
       size_t col_array_size = deserializer.deserialize_size_t();
       char* types = deserializer.deserialize_char_array(col_array_size);
@@ -862,9 +1006,9 @@ public:
  * Helper function to get an absolutely certain BoolColumn with error checking. 
  * Throws error if the col_idx is out of bounds, or if the type of the Column is not BoolColumn.
  */
-BoolColumn* get_bool_column_(Column** columns, size_t columns_size, size_t col_idx) {
+BoolColumn* get_bool_column_(ColumnArray* columns, size_t columns_size, size_t col_idx) {
   assert(col_idx < columns_size);
-  BoolColumn* bool_column = columns[col_idx]->as_bool();
+  BoolColumn* bool_column = columns->get(col_idx)->as_bool();
   assert(bool_column);
   return bool_column;
 }
@@ -873,9 +1017,9 @@ BoolColumn* get_bool_column_(Column** columns, size_t columns_size, size_t col_i
  * Helper function to get an absolutely certain IntColumn with error checking. 
  * Throws error if the col_idx is out of bounds, or if the type of the Column is not IntColumn.
  */
-IntColumn* get_int_column_(Column** columns, size_t columns_size, size_t col_idx) {
+IntColumn* get_int_column_(ColumnArray* columns, size_t columns_size, size_t col_idx) {
   assert(col_idx < columns_size);
-  IntColumn* int_column = columns[col_idx]->as_int();
+  IntColumn* int_column = columns->get(col_idx)->as_int();
   assert(int_column);
   return int_column;
 }
@@ -884,9 +1028,9 @@ IntColumn* get_int_column_(Column** columns, size_t columns_size, size_t col_idx
  * Helper function to get an absolutely certain FloatColumn with error checking. 
  * Throws error if the col_idx is out of bounds, or if the type of the Column is not FloatColumn.
  */
-FloatColumn* get_float_column_(Column** columns, size_t columns_size, size_t col_idx) {
+FloatColumn* get_float_column_(ColumnArray* columns, size_t columns_size, size_t col_idx) {
   assert(col_idx < columns_size);
-  FloatColumn* float_column = columns[col_idx]->as_float();
+  FloatColumn* float_column = columns->get(col_idx)->as_float();
   assert(float_column);
   return float_column;
 }
@@ -895,9 +1039,9 @@ FloatColumn* get_float_column_(Column** columns, size_t columns_size, size_t col
  * Helper function to get an absolutely certain StringColumn with error checking. 
  * Throws error if the col_idx is out of bounds, or if the type of the Column is not StringColumn.
  */
-StringColumn* get_string_column_(Column** columns, size_t columns_size, size_t col_idx) {
+StringColumn* get_string_column_(ColumnArray* columns, size_t columns_size, size_t col_idx) {
   assert(col_idx < columns_size);
-  StringColumn* string_column = columns[col_idx]->as_string();
+  StringColumn* string_column = columns->get(col_idx)->as_string();
   assert(string_column);
   return string_column;
 }
@@ -914,34 +1058,41 @@ class Row : public Object {
   public:
 
   // list of columns with only one element each
-  Column** cols_;
+  ColumnArray* cols_;
   size_t idx_;
   size_t width_;
  
   /** Build a row following a schema. */
   Row(Schema& scm) {
     width_ = scm.width();
-    cols_ = new Column*[width_];
-
+    cols_ = new ColumnArray(width_);
+  
     for (size_t i = 0; i < width_; i++) {
       switch (scm.col_type(i)) {
-        case 'I':
-          cols_[i] = new IntColumn();
-          cols_[i]->push_back(DEFAULT_INT_VALUE);
+        case 'I': {
+          IntColumn temp_column;
+          cols_->push(&temp_column);
+          cols_->get(i)->push_back(DEFAULT_INT_VALUE);
           break;
-        case 'F':
-          cols_[i] = new FloatColumn();
-          cols_[i]->push_back(DEFAULT_FLOAT_VALUE);
+        }
+        case 'F': {
+          FloatColumn temp_column;
+          cols_->push(&temp_column);
+          cols_->get(i)->push_back(DEFAULT_FLOAT_VALUE);
           break;
-        case 'B':
-          cols_[i] = new BoolColumn();
-          cols_[i]->push_back(DEFAULT_BOOL_VALUE);
-
+        }
+        case 'B': {
+          BoolColumn temp_column;
+          cols_->push(&temp_column);
+          cols_->get(i)->push_back(DEFAULT_BOOL_VALUE);
           break;
-        case 'S':
-          cols_[i] = new StringColumn();
-          cols_[i]->push_back(&DEFAULT_STRING_VALUE);
+        }
+        case 'S': {
+          StringColumn temp_column;
+          cols_->push(&temp_column);
+          cols_->get(i)->push_back(&DEFAULT_STRING_VALUE);
           break;
+        }
         default:
           // Shoulld never reach here 
           assert(0);
@@ -953,11 +1104,7 @@ class Row : public Object {
   }
   
   ~Row() {
-    for (size_t ii = 0; ii < width_; ii++) {
-      Column* column = cols_[ii];
-      delete column;
-    }
-    delete[] cols_;
+    delete cols_;
   }
  
   /** Setters: set the given column with the given value. Setting a column with
@@ -1023,7 +1170,7 @@ class Row : public Object {
  
    /** Type of the field at the given position. An idx >= width is  undefined. */
   char col_type(size_t idx) {
-    return cols_[idx]->get_type();
+    return cols_->get(idx)->get_type();
   }
 
  
@@ -1033,7 +1180,7 @@ class Row : public Object {
   void visit(size_t idx, Fielder& f) {
     f.start(idx);
     for (size_t i = 0; i < width_; i++) {
-      switch (cols_[i]->get_type()) {
+      switch (cols_->get(i)->get_type()) {
         case 'I':
           f.accept(get_int(i));
           break;
@@ -1056,6 +1203,7 @@ class Row : public Object {
  
 };
  
+// TODO: move this to rower.h
 /*******************************************************************************
  *  Rower::
  *  An interface for iterating through each row of a data frame. The intent
@@ -1180,8 +1328,7 @@ class PrinterRower : public Rower {
 class DataFrame : public Object {
  public:
   Schema schema_;
-  Column** cols_;
-  size_t col_array_size_;
+  ColumnArray* cols_;
   String* name_; // owned
   KV_Store* kv_; // not owned
 
@@ -1213,14 +1360,29 @@ class DataFrame : public Object {
     size_t num_cols = schema.width();
     // It's possible to make a schema with 0 columns, so we want to make sure we have atleast an 
     // array size of 1, or else our doubling in size arthimetic won't work correctly
-    this->col_array_size_ = max_(num_cols, 1);
-    this->cols_ = new Column*[this->col_array_size_];
+    size_t col_size = max_(num_cols, 1);
+    this->cols_ = new ColumnArray(col_size);
     
     for (size_t ii = 0; ii < num_cols; ii++) {
         char col_type = schema.col_type(ii);
         this->schema_.add_column(col_type);
-        this->cols_[ii] = make_new_column_(col_type, ii);
+
+        Column* temp_col = make_new_column_(col_type, ii);
+        this->cols_->push(temp_col);
+        delete temp_col;
     }
+  }
+
+  DataFrame(Schema& schema, String* name, KV_Store* kv, ColumnArray* columns) {
+    name_ = name->clone();
+    kv_ = kv;
+
+    size_t num_cols = schema.width();
+    for (size_t ii = 0; ii < num_cols; ii++) {
+        char col_type = schema.col_type(ii);
+        this->schema_.add_column(col_type);
+    }
+    this->cols_ = columns->clone();    
   }
 
   /** Create a data frame with the same columns as the given df but with no rows or rownmaes */
@@ -1229,11 +1391,7 @@ class DataFrame : public Object {
   }
   
   ~DataFrame() {
-    for (size_t ii = 0; ii < this->schema_.width(); ii++) {
-      Column* column = this->cols_[ii];
-      delete column;
-    }
-    delete[] this->cols_;
+    delete cols_;
     delete name_;
   }
 
@@ -1254,10 +1412,40 @@ class DataFrame : public Object {
     return new_dataframe;
   }
 
-  static DataFrame* deserialize(char* serial) {
-
-    return nullptr;
+  size_t serial_len() {
+    return sizeof(size_t) // serial_length
+      + schema_.serial_len()
+      + cols_->serial_len()
+      + name_->serial_len();
   }
+
+  char* serialize() {
+      size_t serial_size = serial_len();
+      Serializer serializer(serial_size);
+      serializer.serialize_size_t(serial_size);
+      serializer.serialize_object(&schema_);
+      serializer.serialize_object(cols_);
+      serializer.serialize_object(name_);
+      return serializer.get_serial();
+  }
+
+  static DataFrame* deserialize(char* serial, KV_Store* kv_store) {
+      Deserializer deserializer(serial);
+      return deserialize(deserializer, kv_store);
+  }
+
+  static DataFrame* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
+      deserializer.deserialize_size_t(); // skip serial_length
+      Schema* schema = Schema::deserialize(deserializer);
+      ColumnArray* columns = ColumnArray::deserialize(deserializer, kv_store);
+      String* name = String::deserialize(deserializer);
+
+      DataFrame* new_dataframe = new DataFrame(*schema, name, kv_store, columns);
+      delete schema;
+      delete columns;
+      delete name;
+      return new_dataframe;
+  }  
 
   // Not implemented here to remove circular dependency. See piazza post @963
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, int* array);
@@ -1357,20 +1545,6 @@ class DataFrame : public Object {
     return copy_column;
   }
 
-  /** 
-   * Helper function that will increase the size of the cols_ and col_array_size_
-   */
-  void increase_size_column_array_() {
-    this->col_array_size_ = this->col_array_size_ * 2;
-    size_t num_cols = this->schema_.width();
-    Column** new_cols = new Column*[this->col_array_size_];
-    for (size_t ii = 0; ii < num_cols; ii++) {
-      new_cols[ii] = this->cols_[ii];
-    }
-    delete[] this->cols_;
-    this->cols_ = new_cols;
-  }
- 
   /** Adds a column this dataframe, updates the schema, the new column
     * is external, and appears as the last column of the dataframe, the
     * name is optional and external. A nullptr colum is undefined. */
@@ -1382,6 +1556,7 @@ class DataFrame : public Object {
     size_t num_cols = this->schema_.width();
     size_t col_size = col->size();
 
+    // TODO: Make this nicer in the future somehow
     Column* copy_column = make_new_copy_column_(col);
 
     // We want to make sure that every single Column has the SAME amount of rows
@@ -1394,24 +1569,20 @@ class DataFrame : public Object {
       // If the column you are adding has more rows than the dataframe,
       // fill the dataframe with empty rows
       for (size_t ii = 0; ii < num_cols; ii++) {
-        fill_rest_of_column_with_empty_values_(this->cols_[ii], col_size - num_rows);
+        fill_rest_of_column_with_empty_values_(this->cols_->get(ii), col_size - num_rows);
       }
       for (size_t jj = 0; jj < col_size - num_rows; jj++) {
         this->schema_.add_row();
       }
     }
 
-    if (num_cols + 1 >= this->col_array_size_) {
-      increase_size_column_array_();
-    }
-
-    this->cols_[num_cols] = copy_column;
+    this->cols_->push(copy_column);
     this->schema_.add_column(col->get_type());
   }
 
   /** Gets a specific Column inside of the DataFrame. */
   Column* get_column(size_t col) {
-    return this->cols_[col];
+    return this->cols_->get(col);
   }
  
   /** Return the value at the given column and row. Accessing rows or
@@ -1468,25 +1639,25 @@ class DataFrame : public Object {
 
       switch (row_type) {
         case 'I': {
-          IntColumn* int_column = this->cols_[ii]->as_int();
+          IntColumn* int_column = this->cols_->get(ii)->as_int();
           int int_value = int_column->get(idx);
           row.set(ii, int_value);
           break;
         }
         case 'F': {
-          FloatColumn* float_column = this->cols_[ii]->as_float();
+          FloatColumn* float_column = this->cols_->get(ii)->as_float();
           float float_value = float_column->get(idx);
           row.set(ii, float_value);
           break;
         }
         case 'B': {
-          BoolColumn* bool_column = this->cols_[ii]->as_bool();
+          BoolColumn* bool_column = this->cols_->get(ii)->as_bool();
           bool bool_value = bool_column->get(idx);
           row.set(ii, bool_value);
           break;
         }
         case 'S': {
-          StringColumn* string_column = this->cols_[ii]->as_string();
+          StringColumn* string_column = this->cols_->get(ii)->as_string();
           String* string_value = string_column->get(idx);
           row.set(ii, string_value);
           break;
@@ -1507,26 +1678,25 @@ class DataFrame : public Object {
       char schema_type = this->schema_.col_type(ii);
       assert(row_type == schema_type);
 
-      Column* column = this->cols_[ii];
       switch (row_type) {
         case 'I': {
           int int_value = row.get_int(ii);
-          column->push_back(int_value);
+          this->cols_->get(ii)->as_int()->push_back(int_value);
           break;
         }
         case 'F': {
           float float_value = row.get_float(ii);
-          column->push_back(float_value);
+          this->cols_->get(ii)->as_float()->push_back(float_value);
           break;
         }
         case 'B': {
           bool bool_value = row.get_bool(ii);
-          column->push_back(bool_value);
+          this->cols_->get(ii)->as_bool()->push_back(bool_value);
           break;
         }
         case 'S': {
           String* string_value = row.get_string(ii);
-          column->push_back(string_value);
+          this->cols_->get(ii)->as_string()->push_back(string_value);
           break;
         }
         default:
@@ -1623,3 +1793,20 @@ class DataFrame : public Object {
     }
   }
 };
+
+Column* Column::deserialize(Deserializer& deserializer, KV_Store* kv_store) {
+  char column_type = get_column_type(deserializer);
+  switch(column_type) {
+    case 'I':
+      return IntColumn::deserialize(deserializer, kv_store);
+    case 'F':
+      return FloatColumn::deserialize(deserializer, kv_store);
+    case 'B':
+      return BoolColumn::deserialize(deserializer, kv_store);
+    case 'S':
+      return StringColumn::deserialize(deserializer, kv_store);
+    default:
+      assert(0);
+  }
+}
+

@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include "../src/array/array.h"
 #include "../src/helpers/string.h"
+// TODO: This will have to change in the future when we get the directory right
+#include "../src/dataframe/dataframe.h"
 
 void FAIL(const char* m) {
   fprintf(stderr, "test %s failed\n", m);
@@ -307,6 +309,40 @@ void concat_string_test() {
   OK("13");
 }
 
+void basic_columnarray_test() {
+  Column col_col;
+  IntColumn int_col;
+  int_col.push_back(3);
+  FloatColumn float_col;
+  float_col.push_back(232.3);
+  BoolColumn bool_col;
+  bool_col.push_back(true);
+  StringColumn string_col;
+  String str("hell");
+  string_col.push_back(&str);
+  ColumnArray arr(10);
+  arr.push(&col_col);
+  arr.push(&int_col);
+  arr.push(&float_col);
+  arr.push(&bool_col);
+  arr.push(&string_col);
+
+  t_true(arr.length() == 5, "14a");
+  // Test to show that a normal Column does not work, and must be IntColumn, FloatColumn, etc.
+  t_true(arr.get(0) == nullptr, "14b");
+  t_true(arr.get(1)->as_int()->get(0) == 3, "14c");
+  t_true(arr.get(2)->as_float()->get(0) == (float)232.3, "14d");
+  t_true(arr.get(3)->as_bool()->get(0), "14e");
+  t_true(arr.get(4)->as_string()->get(0)->equals(&str), "14f");
+
+  Column* v = arr.pop();
+  t_true(arr.length() == 4, "14g");
+  arr.clear();
+  t_true(arr.length() == 0, "14h");
+
+  OK("14");
+}
+
 int main() {
   basic_object_test();
   basic_string_test();
@@ -319,11 +355,14 @@ int main() {
   complex_stringarray_test();
 
   object_array_test();
+
   clone_intarray_test();
   clone_floatarray_test();
   clone_boolarray_test();
   clone_stringarray_test();
+
   concat_string_test();
+  basic_columnarray_test();
 
   exit(0);
 }
