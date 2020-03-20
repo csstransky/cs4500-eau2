@@ -623,7 +623,7 @@ class DataFrame : public Object {
 
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, String** array);
 
-  static DataFrame* from_file(Key* key, KV_Store* kv, char* file_name);
+  static DataFrame* from_file(Key* key, KD_Store* kd, char* file_name);
  
   /** Returns the dataframe's schema. Modifying the schema after a dataframe
     * has been created in undefined. */

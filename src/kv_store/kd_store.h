@@ -1,7 +1,7 @@
 #pragma once
 
-#include "dataframe.h"
-#include "sor.h"
+#include "../dataframe/dataframe.h"
+#include "../file_adapter/sor.h"
 
 class KD_Store : public Object {
     public:
@@ -17,7 +17,7 @@ class KD_Store : public Object {
 
     DataFrame* get(Key* key) {
         char* kv_serial = kv_->get_value_serial(key);
-        DataFrame* df = DataFrame::deserialize(kv_serial);
+        DataFrame* df = DataFrame::deserialize(kv_serial, kv_);
         delete kv_serial;
         return df; 
     }
@@ -80,8 +80,8 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, String** ar
     return d;
 }
 
-DataFrame* DataFrame::from_file(Key* key, KV_Store* kv, char* file_name) {
-    SoR sor(file_name, key->get_key(), kv);
-    kv->put(key, sor.get_dataframe());
+DataFrame* DataFrame::from_file(Key* key, KD_Store* kd, char* file_name) {
+    SoR sor(file_name, key->get_key(), kd->get_kv());
+    kd->put(key, sor.get_dataframe());
     return sor.get_dataframe();
 }
