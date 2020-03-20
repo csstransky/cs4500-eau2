@@ -640,19 +640,22 @@ void test_string_column() {
 }
 
 void test_column_array() {
-    String df_name("mainframe");
-    String base_string("col_string_");
     size_t local_node_index = 3;
-    Key df_key(&df_name, local_node_index);
+    Key string_key("string_col", local_node_index);
+    Key float_key("float_col", local_node_index);
+    Key int_key("int_col", local_node_index);
+    Key bool_key("bool_col", local_node_index);
+
     KV_Store kv(local_node_index);
-    StringColumn string_column(&kv, df_key.get_key(), df_key.get_node_index());
-    FloatColumn float_column(&kv, df_key.get_key(), df_key.get_node_index());
-    BoolColumn bool_column(&kv, df_key.get_key(), df_key.get_node_index());
-    IntColumn int_column(&kv, df_key.get_key(), df_key.get_node_index());
+    StringColumn string_column(&kv, string_key.get_key(), string_key.get_node_index());
+    FloatColumn float_column(&kv, float_key.get_key(), float_key.get_node_index());
+    BoolColumn bool_column(&kv, bool_key.get_key(), bool_key.get_node_index());
+    IntColumn int_column(&kv, int_key.get_key(), int_key.get_node_index());
 
     size_t buffered_elements_size = 10;
-    size_t number_of_kv_chunks = 0;
+    size_t number_of_kv_chunks = 5;
     size_t string_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
+    String base_string("col_string_");
     float float_decimal = 0.002;
     for (size_t ii = 0; ii < string_column_count; ii++) {
         String temp_string(base_string);
