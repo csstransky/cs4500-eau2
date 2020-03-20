@@ -7,6 +7,11 @@ class Key : public Object {
     String* key_;
     size_t node_index_;
 
+    Key(const char* key, size_t node_index) {
+        key_ = new String(key);
+        node_index_ = node_index;
+    }
+
     Key(String* key, size_t node_index) {
         key_ = key->clone();
         node_index_ = node_index;
