@@ -1270,5 +1270,4 @@ TEST(DataFrame, test_map_add){ ASSERT_EXIT_ZERO(test_map_add);}
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
-  test();
 }

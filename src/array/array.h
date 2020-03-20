@@ -94,7 +94,7 @@ public:
   }
 
   /* Copies the contents of an already existing Array */
-  BoolArray(BoolArray* const arr) : BoolArray(arr->length()) {
+  BoolArray(BoolArray* const arr) : BoolArray(arr->size_) {
     for (size_t i = 0; i < arr->length(); i++) {
       elements_[i] = arr->get(i);
     }
@@ -285,7 +285,7 @@ public:
   }
 
   /* Copies the contents of an already existing Array */
-  FloatArray(FloatArray* const arr) : FloatArray(arr->length()) {
+  FloatArray(FloatArray* const arr) : FloatArray(arr->size_) {
     for (size_t i = 0; i < arr->length(); i++) {
       elements_[i] = arr->get(i);
     }
@@ -475,7 +475,7 @@ public:
   }
 
   /* Copies the contents of an already existing Array */
-  IntArray(IntArray* arr) : IntArray(arr->length()) {
+  IntArray(IntArray* arr) : IntArray(arr->size_) {
     for (size_t i = 0; i < arr->length(); i++) {
       elements_[i] = arr->get(i);
     }

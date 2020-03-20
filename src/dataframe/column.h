@@ -621,16 +621,21 @@ class StringColumn : public Column {
     size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
 
     String* s;
+    StringArray* data = nullptr;
 
     // if element is in last array, get buffered_elements_ ow get blocks
     if (last_array == array) {
-      s = buffered_elements_->get(index)->clone();
+      s = buffered_elements_->get(index);
     } else {
       Key* k = keys_->get(array);
-      StringArray* data = kv_->get_string_array(k);
-      s = data->get(index)->clone();
-      delete data;
+      data = kv_->get_string_array(k);
+      s = data->get(index);
     }
+    if (s == nullptr) {
+      s = &DEFAULT_STRING_VALUE;
+    }
+    s = s->clone();
+    delete data;
     return s;
   }
 
