@@ -53,10 +53,9 @@ public:
 
   // NOTE: Only the base serial size, NOT including the elements of the array
   size_t base_array_serial_size_() {
-    // Includes the total size of the serial message, the size, and the count; NOT elements
-    return sizeof(size_t)
-      + sizeof(size_t)
-      + sizeof(size_t);
+    return sizeof(size_t) // serial_length
+      + sizeof(size_t) // size_
+      + sizeof(size_t); // count_
   }
 
   void serialize_array_(Serializer& serializer) {
