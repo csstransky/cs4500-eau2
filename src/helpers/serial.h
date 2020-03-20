@@ -49,6 +49,11 @@ class Serializer : public Object {
         serial_index_ += sizeof(bool);
     }
 
+    void serialize_char(char char_value) {
+        memcpy(serial_ + serial_index_, &char_value, sizeof(char));
+        serial_index_ += sizeof(char);
+    }
+
     /**
      * 
      * NOTE: size is the number of elements EXCLUDING the null terminator
@@ -111,6 +116,14 @@ class Deserializer {
         serial_index_ = serial_index;
     }
 
+    size_t get_serial_index() {
+        return serial_index_;
+    }
+
+    void set_serial_index(size_t index) {
+        serial_index_ = index;
+    }
+
     size_t deserialize_size_t() {
         size_t size_t_value;
         memcpy(&size_t_value, &serial_[serial_index_], sizeof(size_t));
@@ -137,6 +150,13 @@ class Deserializer {
         memcpy(&bool_value, &serial_[serial_index_], sizeof(bool));
         serial_index_ += sizeof(bool);
         return bool_value;
+    }
+
+    char deserialize_char() {
+        char char_value;
+        memcpy(&char_value, &serial_[serial_index_], sizeof(char));
+        serial_index_ += sizeof(char);
+        return char_value;
     }
 
     // NOTE: The char_array_size does NOT include the null terminator at the end
