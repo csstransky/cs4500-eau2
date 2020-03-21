@@ -115,7 +115,7 @@ class Schema : public Object {
       char* types = deserializer.deserialize_char_array(col_array_size - 1); 
       Schema* new_schema = new Schema(types);
       new_schema->num_rows_ = num_rows;
-      delete types;
+      delete[] types;
       return new_schema;
   }  
 
@@ -722,14 +722,11 @@ class DataFrame : public Object {
     size_t num_cols = this->schema_.width();
     size_t col_size = col->size();
 
-    // TODO: Make this nicer in the future somehow
-    Column* copy_column = make_new_copy_column_(col);
-
     // We want to make sure that every single Column has the SAME amount of rows
     if (col_size < num_rows) {
       // If the column you are adding has less rows than the dataframe,
       // fill the rest of the column with empty values.
-      fill_rest_of_column_with_empty_values_(copy_column, num_rows - col_size);
+      fill_rest_of_column_with_empty_values_(col, num_rows - col_size);
     }
     else if (col_size > num_rows) {
       // If the column you are adding has more rows than the dataframe,
@@ -742,7 +739,7 @@ class DataFrame : public Object {
       }
     }
 
-    this->cols_->push(copy_column);
+    this->cols_->push(col);
     this->schema_.add_column(col->get_type());
   }
 

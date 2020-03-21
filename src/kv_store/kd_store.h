@@ -18,7 +18,7 @@ class KD_Store : public Object {
     DataFrame* get(Key* key) {
         char* kv_serial = kv_->get_value_serial(key);
         DataFrame* df = DataFrame::deserialize(kv_serial, kv_);
-        delete kv_serial;
+        delete[] kv_serial;
         return df; 
     }
 
