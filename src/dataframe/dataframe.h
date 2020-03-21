@@ -544,10 +544,9 @@ class DataFrame : public Object {
 
   /** copy constructor mainly used for deserialization */
   DataFrame(Schema& schema, String* name, KV_Store* kv, ColumnArray* columns) {
-    this->name_ = name->clone();
     this->kv_ = kv;
-    Schema copy_schema(schema);
-    this->schema_ = copy_schema;
+    this->name_ = name->clone();
+    this->schema_ = schema; // TODO: call Kaylin and kind a way to properly valgrind this
     this->cols_ = columns->clone();    
   }
 

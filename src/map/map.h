@@ -25,8 +25,8 @@ class Map: public Object {
             buckets_ = new ObjectArray(buckets_size_);
             // We want a little more speed, so we're going to initialize all the bucket arrays by 
             // 1 element, just to avoid an initialization check every time we get and set
+            ObjectArray temp_array(1);
             for(size_t ii = 0; ii < buckets_size_; ii++) {
-                ObjectArray temp_array(1);
                 buckets_->push(&temp_array);
             }
         }

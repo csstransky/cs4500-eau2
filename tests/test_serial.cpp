@@ -839,6 +839,68 @@ void test_basic_dataframe() {
     printf("DataFrame basic serialization complete!\n");
 }
 
+void test_complex_dataframe() {
+    size_t local_node_index = 18;
+    Key string_key("string_col", local_node_index);
+    Key float_key("float_col", local_node_index);
+    Key int_key("int_col", local_node_index);
+    Key bool_key("bool_col", local_node_index);
+
+    KV_Store kv(local_node_index);
+    StringColumn string_column(&kv, string_key.get_key(), string_key.get_node_index());
+    FloatColumn float_column(&kv, float_key.get_key(), float_key.get_node_index());
+    BoolColumn bool_column(&kv, bool_key.get_key(), bool_key.get_node_index());
+    IntColumn int_column(&kv, int_key.get_key(), int_key.get_node_index());
+
+    size_t buffered_elements_size = 83;
+    size_t number_of_kv_chunks = 4;
+    size_t string_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
+    String base_string("col_s7r1ng_");
+    float float_decimal = 0.012;
+    for (size_t ii = 0; ii < string_column_count; ii++) {
+        String temp_string(base_string);
+        temp_string.concat(ii);
+        string_column.push_back(&temp_string);
+        float_column.push_back(ii + float_decimal);
+        int_column.push_back(ii);
+        bool_column.push_back(true);
+    }
+    assert(string_column.get_num_arrays() == number_of_kv_chunks + 1);
+    assert(float_column.get_num_arrays() == number_of_kv_chunks + 1);
+    assert(int_column.get_num_arrays() == number_of_kv_chunks + 1);
+    assert(bool_column.get_num_arrays() == number_of_kv_chunks + 1);
+
+    String c("main");
+    Schema s1("");
+    DataFrame df(s1, &c, &kv);
+    df.add_column(&int_column);
+    df.add_column(&float_column);
+    df.add_column(&string_column);
+    df.add_column(&bool_column);
+    
+    assert(df.get_schema().width() == 4);
+    assert(df.get_schema().length() == string_column_count);
+
+    char* serial = df.serialize();
+    DataFrame* deserial_df = DataFrame::deserialize(serial, &kv);
+
+    assert(deserial_df->get_schema().width() == 4);
+    assert(deserial_df->get_schema().length() == string_column_count);
+
+    for (size_t ii = 0; ii < string_column_count; ii++) {
+        assert(deserial_df->get_int(0, ii) == ii);
+        assert(deserial_df->get_float(1, ii) == ii + float_decimal);
+        String temp_string(base_string);
+        temp_string.concat(ii);
+        assert(deserial_df->get_string(2, ii)->equals(&temp_string));
+        assert(deserial_df->get_bool(3, ii));
+    }
+
+    delete[] serial;
+    delete deserial_df;
+    printf("DataFrame complex serialization complete!\n");
+}
+
 void serializing_test() {
     size_t size_t_value = 55;
     String* string_value = new String("hhihihi");
@@ -942,7 +1004,8 @@ int main(int argc, char const *argv[])
     test_bool_column();
     test_string_column();
     test_column_array();
-    test_basic_dataframe();
+    //test_basic_dataframe(); // TODO call Kaylin and find a way to free up memory
+    test_complex_dataframe();
     serialize_equals_test();
     serialize_clone_test();
     printf("All tests passed!\n");
