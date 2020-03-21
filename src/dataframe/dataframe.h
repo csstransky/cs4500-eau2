@@ -115,7 +115,7 @@ class Schema : public Object {
       char* types = deserializer.deserialize_char_array(col_array_size - 1); 
       Schema* new_schema = new Schema(types);
       new_schema->num_rows_ = num_rows;
-      delete types;
+      delete[] types;
       return new_schema;
   }  
 
@@ -544,10 +544,9 @@ class DataFrame : public Object {
 
   /** copy constructor mainly used for deserialization */
   DataFrame(Schema& schema, String* name, KV_Store* kv, ColumnArray* columns) {
-    this->name_ = name->clone();
     this->kv_ = kv;
-    Schema copy_schema(schema);
-    this->schema_ = copy_schema;
+    this->name_ = name->clone();
+    this->schema_ = schema; // TODO: call Kaylin and kind a way to properly valgrind this
     this->cols_ = columns->clone();    
   }
 

@@ -45,7 +45,7 @@ class KV_Store : public Object {
     IntArray* get_int_array(Key* key) {
         char* kv_serial = get_value_serial(key);
         IntArray* int_array = IntArray::deserialize(kv_serial);
-        delete kv_serial;
+        delete[] kv_serial;
         return int_array;
     }
 
@@ -53,7 +53,7 @@ class KV_Store : public Object {
     BoolArray* get_bool_array(Key* key) {
         char* kv_serial = get_value_serial(key);
         BoolArray* bool_array = BoolArray::deserialize(kv_serial);
-        delete kv_serial;
+        delete[] kv_serial;
         return bool_array;
     }
 
@@ -61,7 +61,7 @@ class KV_Store : public Object {
     FloatArray* get_float_array(Key* key) {
         char* kv_serial = get_value_serial(key);
         FloatArray* float_array = FloatArray::deserialize(kv_serial);
-        delete kv_serial;
+        delete[] kv_serial;
         return float_array;
     }
 
@@ -69,7 +69,7 @@ class KV_Store : public Object {
     StringArray* get_string_array(Key* key) {
         char* kv_serial = get_value_serial(key);
         StringArray* string_array = StringArray::deserialize(kv_serial);
-        delete kv_serial;
+        delete[] kv_serial;
         return string_array;
     }
 };

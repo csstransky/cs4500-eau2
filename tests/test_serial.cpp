@@ -363,7 +363,7 @@ void test_key() {
     assert(key_string.equals(deserial_key->get_key()));
     assert(node_index == deserial_key->get_node_index());
     assert(key.equals(deserial_key));
-    delete serial;
+    delete[] serial;
     delete deserial_key;
     printf("Key serialization passed!\n");
 }
@@ -388,7 +388,7 @@ void test_schema() {
     assert(deserial_schema->col_array_size_ == schema.col_array_size_);
     assert(schema.equals(deserial_schema));
 
-    delete schema_serial;
+    delete[] schema_serial;
     delete deserial_schema;
     printf("Schema serialization passed!\n");
 }
@@ -444,7 +444,7 @@ void test_int_column() {
         assert(buffered_ints->get(ii) == deserial_int_col->get(starting_buffer_index + ii));
     }
 
-    delete int_col_serial;
+    delete[] int_col_serial;
     delete deserial_int_col;
     printf("IntColumn serialization passed!\n");
 }
@@ -501,7 +501,7 @@ void test_float_column() {
         assert(buffered_floats->get(ii) == deserial_float_col->get(starting_buffer_index + ii));
     }
 
-    delete float_col_serial;
+    delete[] float_col_serial;
     delete deserial_float_col;
     printf("FloatColumn serialization passed!\n");
 }
@@ -563,7 +563,7 @@ void test_bool_column() {
         assert(buffered_bools->get(ii + 1) == deserial_bool_col->get(starting_buffer_index + ii + 1));
     }
 
-    delete bool_col_serial;
+    delete[] bool_col_serial;
     delete deserial_bool_col;
     printf("BoolColumn serialization passed!\n");
 }
@@ -631,7 +631,7 @@ void test_string_column() {
         assert(buffered_strings->get(ii)->equals(local_string));
     }
 
-    delete string_col_serial;
+    delete[] string_col_serial;
     delete deserial_string_col;
     printf("StringColumn serialization passed!\n");
 }
@@ -757,7 +757,7 @@ void test_column_array() {
         }
     }
 
-    delete serial;
+    delete[] serial;
     delete deserial_col_array;
     printf("ColumnArray serialization passed!\n");
 }
@@ -834,7 +834,7 @@ void test_basic_dataframe() {
     assert(deserial_df->get_float(1, 4) == DEFAULT_FLOAT_VALUE);
     assert(deserial_df->get_bool(3, 4) == DEFAULT_BOOL_VALUE);
 
-    delete serial;
+    delete[] serial;
     delete deserial_df;
     printf("DataFrame basic serialization complete!\n");
 }
@@ -916,7 +916,7 @@ void serialize_clone_test() {
     String temp_string("A proper sentence.\n");
     assert(string_clone->equals(&temp_string));
     delete serial_clone;
-    delete char_serial;
+    delete[] char_serial;
     delete string_array_clone;
 
     printf("Serializer clone passed!\n");
