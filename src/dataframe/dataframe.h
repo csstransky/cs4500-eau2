@@ -677,31 +677,23 @@ class DataFrame : public Object {
     size_t index = this->schema_.width();
     switch (col_type) {
       case 'I': {
-        copy_column = new IntColumn(kv_, name_, index);
-        for (size_t ii = 0; ii < col_size; ii++) {
-          copy_column->push_back(col->as_int()->get(ii));
-        }
+        IntColumn* coll = col->as_int();
+        copy_column = new IntColumn(kv_, name_, index, coll->size_, coll->keys_, coll->buffered_elements_);
         break;
       }
       case 'F': {
-        copy_column = new FloatColumn(kv_, name_, index);
-        for (size_t ii = 0; ii < col_size; ii++) {
-          copy_column->push_back(col->as_float()->get(ii));
-        }
+        FloatColumn* coll = col->as_float();
+        copy_column = new FloatColumn(kv_, name_, index, coll->size_, coll->keys_, coll->buffered_elements_);
         break;
       }
       case 'B': {
-        copy_column = new BoolColumn(kv_, name_, index);
-        for (size_t ii = 0; ii < col_size; ii++) {
-          copy_column->push_back(col->as_bool()->get(ii));
-        }
+        BoolColumn* coll = col->as_bool();
+        copy_column = new BoolColumn(kv_, name_, index, coll->size_, coll->keys_, coll->buffered_elements_);
         break;
       }
       case 'S': {
-        copy_column = new StringColumn(kv_, name_, index);
-        for (size_t ii = 0; ii < col_size; ii++) {
-          copy_column->push_back(col->as_string()->get(ii));
-        }
+        StringColumn* coll = col->as_string();
+        copy_column = new StringColumn(kv_, name_, index, coll->size_, coll->keys_, coll->buffered_elements_);
         break;
       }
       default:
@@ -721,7 +713,6 @@ class DataFrame : public Object {
     size_t num_cols = this->schema_.width();
     size_t col_size = col->size();
 
-    // TODO: Make this nicer in the future somehow
     Column* copy_column = make_new_copy_column_(col);
 
     // We want to make sure that every single Column has the SAME amount of rows
@@ -742,6 +733,7 @@ class DataFrame : public Object {
     }
 
     this->cols_->push(copy_column);
+    delete copy_column;
     this->schema_.add_column(col->get_type());
   }
 

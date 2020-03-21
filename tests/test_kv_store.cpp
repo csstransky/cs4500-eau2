@@ -8,14 +8,16 @@ void test_put_get() {
     kv.put(&key, &k);
     char* serial = kv.get_value_serial(&key);
     String* kk = String::deserialize(serial);
+    delete[] serial;
     assert(k.equals(kk));
+    delete kk;
 
     printf("KV Store put get test passed!\n");
 }
 
 void test_int_array() {
-    IntArray* array = new IntArray(100);
-    for (int i = 0; i < 100; i++) {
+    IntArray* array = new IntArray(500);
+    for (int i = 0; i < 500; i++) {
         array->push(i);
     }
 
@@ -26,7 +28,7 @@ void test_int_array() {
     kv.put(&key, array);
     IntArray* result = kv.get_int_array(&key);
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 500; i++) {
         assert(result->get(i) == i);
     }
 
@@ -39,8 +41,8 @@ void test_int_array() {
 }
 
 void test_float_array() {
-    FloatArray* array = new FloatArray(100);
-    for (int i = 0; i < 100; i++) {
+    FloatArray* array = new FloatArray(500);
+    for (int i = 0; i < 500; i++) {
         array->push((float)i);
     }
 
@@ -51,7 +53,7 @@ void test_float_array() {
     kv.put(&key, array);
     FloatArray* result = kv.get_float_array(&key);
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 500; i++) {
         assert(result->get(i) == (float)i);
     }
 
@@ -64,8 +66,8 @@ void test_float_array() {
 }
 
 void test_bool_array() {
-    BoolArray* array = new BoolArray(100);
-    for (int i = 0; i < 100; i++) {
+    BoolArray* array = new BoolArray(500);
+    for (int i = 0; i < 500; i++) {
         array->push((bool)i % 2);
     }
 
@@ -76,7 +78,7 @@ void test_bool_array() {
     kv.put(&key, array);
     BoolArray* result = kv.get_bool_array(&key);
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 500; i++) {
         assert(result->get(i) == (bool)i%2);
     }
 
@@ -90,8 +92,8 @@ void test_bool_array() {
 
 void test_string_array() {
     String s("s");
-    StringArray* array = new StringArray(100);
-    for (int i = 0; i < 100; i++) {
+    StringArray* array = new StringArray(500);
+    for (int i = 0; i < 500; i++) {
         array->push(&s);
     }
 
@@ -102,7 +104,7 @@ void test_string_array() {
     kv.put(&key, array);
     StringArray* result = kv.get_string_array(&key);
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 500; i++) {
         assert(result->get(i)->equals(&s));
     }
 
@@ -115,21 +117,21 @@ void test_string_array() {
 }
 
 void test_multiple() {
-    IntArray* int_array = new IntArray(100);
-    for (int i = 0; i < 100; i++) {
+    IntArray* int_array = new IntArray(500);
+    for (int i = 0; i < 500; i++) {
         int_array->push(i);
     } 
-    FloatArray* float_array = new FloatArray(100);
-    for (int i = 0; i < 100; i++) {
+    FloatArray* float_array = new FloatArray(500);
+    for (int i = 0; i < 500; i++) {
         float_array->push((float)i);
     } 
-    BoolArray* bool_array = new BoolArray(100);
-    for (int i = 0; i < 100; i++) {
+    BoolArray* bool_array = new BoolArray(500);
+    for (int i = 0; i < 500; i++) {
         bool_array->push((bool)i % 2);
     } 
     String s("s");
-    StringArray* string_array = new StringArray(100);
-    for (int i = 0; i < 100; i++) {
+    StringArray* string_array = new StringArray(500);
+    for (int i = 0; i < 500; i++) {
         string_array->push(&s);
     }
 
