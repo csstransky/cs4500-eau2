@@ -739,14 +739,14 @@ void test_add_column() {
 
   Column* c_int = new IntColumn();
   c_int->push_back(1);
+  c_int->push_back(2);
   c_int->push_back(3);
   c_int->push_back(4);
-  c_int->push_back(2);
   Column* c_float = new FloatColumn();
   c_float->push_back((float)1.2);
+  c_float->push_back((float)2.2);
   c_float->push_back((float)3.2);
-  c_float->push_back((float)2);
-  c_float->push_back((float)1);
+  c_float->push_back((float)4.2);
   Column* c_string = new StringColumn();
   c_string->push_back(hi);
   c_string->push_back(hi);
@@ -755,7 +755,7 @@ void test_add_column() {
   Column* c_bool = new BoolColumn();
   c_bool->push_back((bool)0);
   c_bool->push_back((bool)1);
-  c_bool->push_back((bool)1);
+  c_bool->push_back((bool)0);
   c_bool->push_back((bool)1);
 
   df.add_column(c_int);
@@ -771,6 +771,13 @@ void test_add_column() {
     GT_EQUALS(df.get_float(1, i), DEFAULT_FLOAT_VALUE);
     GT_TRUE(df.get_string(2, i)->equals(&DEFAULT_STRING_VALUE));
     GT_EQUALS(df.get_bool(3, i), DEFAULT_BOOL_VALUE); 
+  }
+
+  for (int i = 0; i < 4; i++) {
+    GT_EQUALS(df.get_int(4, i), i+1);
+    GT_EQUALS(df.get_float(5, i), (float)(i + 1.2));
+    GT_TRUE(df.get_string(6, i)->equals(hi));
+    GT_EQUALS(df.get_bool(7, i), i % 2); 
   }
   
   for (int i = 0; i < 100; i++) {
@@ -1281,7 +1288,7 @@ void test_from_array_int() {
   DataFrame* df = DataFrame::from_array(&k, &kd, num, array);
 
   assert(df->ncols() == 1);
-  assert(df->nrows() == num); // TODO: Issue here Kaylin?
+  assert(df->nrows() == num);
   for (size_t i = 0; i < num; i++) {
     assert(df->get_int(0,i) == array[i]);
   }
@@ -1569,7 +1576,7 @@ void test_from_file() {
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   int val = 0;;
-  //val = RUN_ALL_TESTS();
+  val = RUN_ALL_TESTS();
   test_from_array_int();
   test_from_array_float();
   test_from_array_bool();

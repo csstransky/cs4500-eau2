@@ -568,7 +568,7 @@ class DataFrame : public Object {
 
   /** Return a copy of the object; nullptr is considered an error */
   DataFrame* clone() {
-    // TODO: do we even need this?
+    // TODO: Cristian this does not work. We need this for SoR.
     DataFrame* new_dataframe = new DataFrame(*this);
     for (size_t ii = 0; ii < this->ncols(); ii++) {
         Column* original_column = this->get_column(ii);

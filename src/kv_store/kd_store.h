@@ -41,6 +41,8 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, int* array)
         col.push_back(array[i]);
     }
     d->add_column(&col);
+    
+    kd->put(key, d);
 
     return d;
 }
@@ -55,6 +57,8 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, float* arra
     }
     d->add_column(&col);
 
+    kd->put(key, d);
+
     return d;
 }
 
@@ -67,6 +71,8 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, bool* array
         col.push_back(array[i]);
     }
     d->add_column(&col);
+
+    kd->put(key, d);
 
     return d;
 }  
@@ -81,11 +87,13 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, String** ar
     }
     d->add_column(&col);
 
+    kd->put(key, d);
+
     return d;
 }
 
 DataFrame* DataFrame::from_file(Key* key, KD_Store* kd, char* file_name) {
     SoR sor(file_name, key->get_key(), kd->get_kv());
     kd->put(key, sor.get_dataframe());
-    return sor.get_dataframe();
+    return sor.get_dataframe()->clone();
 }
