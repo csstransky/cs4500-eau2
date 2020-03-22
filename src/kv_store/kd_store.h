@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../dataframe/dataframe.h"
-#include "../file_adapter/sor.h"
+#include "../helpers/sor.h"
 
 class KD_Store : public Object {
     public:

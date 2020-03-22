@@ -1,6 +1,6 @@
 // Made by Kaylin Devchand and Cristian Stransky
 
-#include "../src/file_adapter/sor.h"
+#include "../src/helpers/sor.h"
 #include <assert.h>
 
 void test_file(char* file_path, size_t file_columns, size_t file_rows) {

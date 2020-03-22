@@ -3,9 +3,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "../src/array/array.h"
-#include "../src/helpers/string.h"
-#include "../src/dataframe/dataframe.h"
+#include "../src/helpers/array.h"
+#include "../src/dataframe/column_array.h"
+#include "../src/kv_store/key_array.h"
 
 void FAIL(const char* m) {
   fprintf(stderr, "test %s failed\n", m);
@@ -343,6 +343,38 @@ void basic_columnarray_test() {
   OK("14");
 }
 
+void basic_keyarray_test() {
+  KeyArray arr;
+  size_t num_keys = 101;
+  for (size_t ii = 0; ii < num_keys; ii++) {
+    String key_string("key");
+    key_string.concat(ii);
+    Key temp_key(&key_string, ii);
+    arr.push(&temp_key);
+  }
+
+  t_true(arr.length() == num_keys, "15a");
+  for (size_t ii = 0; ii < num_keys; ii++) {
+    String test_string("15b_");
+    test_string.concat(ii);
+    test_string.concat("_a");
+    t_true(arr.get(ii)->get_node_index() == ii, test_string.c_str());
+    
+    String key_string("key");
+    key_string.concat(ii);
+    test_string.concat("_b");
+    t_true(arr.get(ii)->get_key()->equals(&key_string), test_string.c_str());
+  }
+
+  Key* v = arr.pop();
+  delete v;
+  t_true(arr.length() == num_keys - 1, "15c");
+  arr.clear();
+  t_true(arr.length() == 0, "15d");
+
+  OK("15");
+}
+
 int main() {
   basic_object_test();
   basic_string_test();
@@ -363,6 +395,7 @@ int main() {
 
   concat_string_test();
   basic_columnarray_test();
+  basic_keyarray_test();
 
   exit(0);
 }

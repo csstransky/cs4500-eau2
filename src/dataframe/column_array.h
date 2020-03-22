@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../dataframe/column.h"
+#include "../helpers/array.h"
+#include "column.h"
 
 /**
  * An Array class to which Columns can be added to and removed from.
@@ -8,6 +9,11 @@
 class ColumnArray : public ObjectArray {
 public:
   /** CONSTRUCTORS & DESTRUCTORS **/
+
+  /* Creates a default Array */
+  ColumnArray() : ColumnArray(1) {
+    
+  }
 
   /* Creates an Array of desired size */
   ColumnArray(const size_t size) : ObjectArray(size) {

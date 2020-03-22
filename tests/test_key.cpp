@@ -1,12 +1,5 @@
 // Made by Kaylin Devchand and Cristian Stransky
 
-// #include <stdio.h> 
-// #include <sys/socket.h> 
-// #include <arpa/inet.h> 
-// #include <unistd.h> 
-// #include <string.h> 
-// #include "../src/networks/message.h"
-// #include "../src/array/array.h"
 #include "../src/kv_store/key.h"
 #include <cassert>
 

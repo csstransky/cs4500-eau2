@@ -4,8 +4,9 @@
 #include "../helpers/object.h"
 #include "../helpers/string.h"
 #include "../kv_store/kv_store.h"
-#include "../array/array.h"
-#include "../array/column_array.h"
+#include "../kv_store/key_array.h"
+#include "../helpers/array.h"
+#include "column_array.h"
 #include "rower.h"
 
 #include <stdarg.h>
@@ -26,8 +27,7 @@ class Schema : public Object {
   char* types_;
   size_t num_cols_;
   size_t num_rows_;
-  // TODO: refactor this horrible name to types_size_
-  size_t col_array_size_; // size of types_, INCLUDES '\0' character
+  size_t types_size_; // size of types_, INCLUDES '\0' character
 
   /** Copying constructor */
   Schema(Schema& from) : Schema(from.types_) {
@@ -37,8 +37,8 @@ class Schema : public Object {
  
   /** Create an empty schema **/
   Schema() {
-    col_array_size_ = 1;
-    types_ = new char[col_array_size_];
+    types_size_ = 1;
+    types_ = new char[types_size_];
     types_[0] = '\0';
     num_cols_ = 0;
     num_rows_ = 0;
@@ -55,9 +55,9 @@ class Schema : public Object {
       assert(types[ii] == 'I' || types[ii] == 'F' || types[ii] == 'B' || types[ii] == 'S');
     }
 
-    col_array_size_ = types_length + 1;
-    this->types_ = new char[col_array_size_];
-    strncpy(types_, types, col_array_size_);
+    types_size_ = types_length + 1;
+    this->types_ = new char[types_size_];
+    strncpy(types_, types, types_size_);
     num_cols_ = types_length; 
     num_rows_ = 0;
   }
@@ -73,7 +73,7 @@ class Schema : public Object {
       return other_schema != nullptr 
           && this->num_cols_ == other_schema->num_cols_
           && this->num_rows_ == other_schema->num_rows_
-          && strncmp(this->types_, other_schema->types_, this->col_array_size_) == 0;
+          && strncmp(this->types_, other_schema->types_, this->types_size_) == 0;
   }
 
   /** Return a copy of the object; nullptr is considered an error */
@@ -85,8 +85,8 @@ class Schema : public Object {
       return sizeof(size_t) // serial_length
         + sizeof(size_t) // num_cols_
         + sizeof(size_t) // num_rows_
-        + sizeof(size_t) // col_array_size_
-        + sizeof(char) * col_array_size_; // types_
+        + sizeof(size_t) // types_size_
+        + sizeof(char) * types_size_; // types_
   }
 
   char* serialize() {
@@ -95,9 +95,9 @@ class Schema : public Object {
       serializer.serialize_size_t(serial_size);
       serializer.serialize_size_t(num_cols_);
       serializer.serialize_size_t(num_rows_);
-      serializer.serialize_size_t(col_array_size_);
-      // Important: remove '\0' from serial size with "col_array_size - 1"
-      serializer.serialize_chars(types_, col_array_size_ - 1);
+      serializer.serialize_size_t(types_size_);
+      // Important: remove '\0' from serial size with "types_size_ - 1"
+      serializer.serialize_chars(types_, types_size_ - 1);
       return serializer.get_serial();
   }
 
@@ -110,9 +110,9 @@ class Schema : public Object {
       deserializer.deserialize_size_t(); // skip serial_length
       deserializer.deserialize_size_t(); // skip num_cols_
       size_t num_rows = deserializer.deserialize_size_t();
-      size_t col_array_size = deserializer.deserialize_size_t();
-      // Important: remove '\0' from deserial size with "col_array_size - 1"
-      char* types = deserializer.deserialize_char_array(col_array_size - 1); 
+      size_t types_size = deserializer.deserialize_size_t();
+      // Important: remove '\0' from deserial size with "types_size - 1"
+      char* types = deserializer.deserialize_char_array(types_size - 1); 
       Schema* new_schema = new Schema(types);
       new_schema->num_rows_ = num_rows;
       delete[] types;
@@ -122,10 +122,9 @@ class Schema : public Object {
   /**
    * Helper function that will increase BOTH the types and col_names arrays (as they're both linked)
    */
-  void increase_size_column_arrays_() {
-    this->col_array_size_ = col_array_size_ * 2;
-
-    char* new_types = new char[col_array_size_];
+  void increase_types_array_size_() {
+    this->types_size_ = types_size_ * 2;
+    char* new_types = new char[types_size_];
     strcpy(new_types, types_);
     new_types[num_cols_ + 1] = '\0';
     delete[] types_;
@@ -137,8 +136,8 @@ class Schema : public Object {
     * in undefined behavior. */
   void add_column(char typ) {
     assert(typ == 'I' || typ == 'F' || typ == 'B' || typ == 'S');
-    if (num_cols_ + 1 >= col_array_size_) {
-      increase_size_column_arrays_();
+    if (num_cols_ + 1 >= types_size_) {
+      increase_types_array_size_();
     }
     this->types_[num_cols_] = typ;
     this->types_[num_cols_ + 1] = '\0';
