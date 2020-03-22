@@ -34,7 +34,7 @@ class Column : public Object {
   size_t size_;
   KV_Store* kv_; // not owned by Column, simply used for kv methods
   String* dataframe_name_;
-  size_t index_;
+  size_t column_index_;
   KeyArray* keys_; // owned
  
   /** Type converters: Return same column under its actual type, or
@@ -71,7 +71,7 @@ class Column : public Object {
     size_t col_index) {
     kv_ = kv;
     dataframe_name_ = dataframe_name ? dataframe_name->clone() : nullptr;
-    index_ = col_index;
+    column_index_ = col_index;
     type_ = type;
     size_ = size;
     size_t num_arrays_ = get_num_arrays();
@@ -82,7 +82,7 @@ class Column : public Object {
     size_t col_index, KeyArray* keys) { 
     kv_ = kv;
     dataframe_name_ = dataframe_name ? dataframe_name->clone() : nullptr;
-    index_ = col_index;
+    column_index_ = col_index;
     type_ = type;
     size_ = size;
     keys_ = keys->clone();
@@ -91,8 +91,7 @@ class Column : public Object {
   Key* generate_key_(size_t array_index) {
     String key_name(*dataframe_name_);
     key_name.concat("_");
-    // TODO: refactor index_ to col_index_ to make it more clear
-    key_name.concat(index_);
+    key_name.concat(column_index_);
     key_name.concat("_");
     key_name.concat(array_index);
 
@@ -118,7 +117,7 @@ class Column : public Object {
       + sizeof(char) // type_
       + sizeof(size_t) // size_
       + dataframe_name_->serial_len()
-      + sizeof(index_) // index_
+      + sizeof(column_index_) // column_index_
       + keys_->serial_len()
       + buffered_elements->serial_len();
   }
@@ -128,7 +127,7 @@ class Column : public Object {
     serializer.serialize_char(type_);
     serializer.serialize_size_t(size_);
     serializer.serialize_object(dataframe_name_);
-    serializer.serialize_size_t(index_);
+    serializer.serialize_size_t(column_index_);
     serializer.serialize_object(keys_);
     serializer.serialize_object(buffered_elements);
   }
@@ -172,7 +171,7 @@ class IntColumn : public Column {
   }
 
   IntColumn(IntColumn& other) 
-    : IntColumn(other.kv_, other.dataframe_name_, other.index_, other.size_, other.keys_, 
+    : IntColumn(other.kv_, other.dataframe_name_, other.column_index_, other.size_, other.keys_, 
       other.buffered_elements_) {
 
   }
@@ -312,7 +311,7 @@ class FloatColumn : public Column {
   }
 
   FloatColumn(FloatColumn& other) 
-    : FloatColumn(other.kv_, other.dataframe_name_, other.index_, other.size_, other.keys_, 
+    : FloatColumn(other.kv_, other.dataframe_name_, other.column_index_, other.size_, other.keys_, 
       other.buffered_elements_) {
 
   }
@@ -451,7 +450,7 @@ class BoolColumn : public Column {
   }
 
   BoolColumn(BoolColumn& other) 
-    : BoolColumn(other.kv_, other.dataframe_name_, other.index_, other.size_, other.keys_, 
+    : BoolColumn(other.kv_, other.dataframe_name_, other.column_index_, other.size_, other.keys_, 
       other.buffered_elements_) {
 
   }
@@ -596,7 +595,7 @@ class StringColumn : public Column {
   }
 
   StringColumn(StringColumn& other) 
-    : StringColumn(other.kv_, other.dataframe_name_, other.index_, other.size_, other.keys_, 
+    : StringColumn(other.kv_, other.dataframe_name_, other.column_index_, other.size_, other.keys_, 
       other.buffered_elements_) {
 
   }
