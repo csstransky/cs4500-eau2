@@ -10,6 +10,11 @@ class ColumnArray : public ObjectArray {
 public:
   /** CONSTRUCTORS & DESTRUCTORS **/
 
+  /* Creates a default Array */
+  ColumnArray() : ColumnArray(1) {
+    
+  }
+
   /* Creates an Array of desired size */
   ColumnArray(const size_t size) : ObjectArray(size) {
     

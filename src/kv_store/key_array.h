@@ -11,6 +11,11 @@ class KeyArray : public ObjectArray {
 public:
   /** CONSTRUCTORS & DESTRUCTORS **/
 
+  /* Creates a default Array */
+  KeyArray() : KeyArray(1) {
+      
+  }
+
   /* Creates an Array of desired size */
   KeyArray(const size_t size) : ObjectArray(size) {
     

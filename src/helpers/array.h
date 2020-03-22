@@ -15,10 +15,14 @@ public:
   size_t count_;
   /** CONSTRUCTORS & DESTRUCTORS **/
 
+  /* Creates a default Array */
+  Array() : Array(1) { }
+
   /* Creates an Array of desired size */
-  Array() {
+  Array(size_t size) {
+    assert(size > 0);
     count_ = 0;
-    size_ = 0;
+    size_ = size;
   }
 
   /* Clears Array from memory */
@@ -84,11 +88,12 @@ public:
   }
   /** CONSTRUCTORS & DESTRUCTORS **/
 
+  /* Creates a default Array */
+  BoolArray() : BoolArray(1) { }
+
   /* Creates an Array of desired size */
-  BoolArray(const size_t size) {
+  BoolArray(const size_t size) : Array(size) {
     elements_ = new bool[size];
-    size_ = size;
-    count_ = 0;
   }
 
   /* Copies the contents of an already existing Array */
@@ -275,11 +280,12 @@ public:
 
   /** CONSTRUCTORS & DESTRUCTORS **/
 
+  /* Creates a default Array */
+  FloatArray() : FloatArray(1) { }
+
   /* Creates an Array of desired size */
-  FloatArray(const size_t size) {
+  FloatArray(const size_t size) : Array(size) {
     elements_ = new float[size];
-    size_ = size;
-    count_ = 0;
   }
 
   /* Copies the contents of an already existing Array */
@@ -465,11 +471,12 @@ public:
 
   /** CONSTRUCTORS & DESTRUCTORS **/
 
+  /* Creates a default Array */
+  IntArray() : IntArray(1) { }
+
   /* Creates an Array of desired size */
-  IntArray(const size_t size) {
+  IntArray(const size_t size) : Array(size) {
     elements_ = new int[size];
-    size_ = size;
-    count_ = 0;
   }
 
   /* Copies the contents of an already existing Array */
@@ -654,12 +661,12 @@ public:
   }
   /** CONSTRUCTORS & DESTRUCTORS **/
 
+  /* Creates a default Array */
+  ObjectArray() : ObjectArray(1) { }
+
   /* Creates an Array of desired size */
-  ObjectArray(size_t size) {
-    assert(size > 0);
+  ObjectArray(size_t size) : Array(size) {
     elements_ = new Object*[size];
-    size_ = size;
-    count_ = 0;
   }
 
   /* Copies the contents of an already existing Array */
@@ -852,6 +859,11 @@ public:
 class StringArray : public ObjectArray {
 public:
   /** CONSTRUCTORS & DESTRUCTORS **/
+
+  /* Creates a default Array */
+  StringArray() : StringArray(1) {
+    
+  }
 
   /* Creates an Array of desired size */
   StringArray(const size_t size) : ObjectArray(size) {
