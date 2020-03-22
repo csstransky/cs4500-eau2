@@ -1004,7 +1004,7 @@ int main(int argc, char const *argv[])
     test_bool_column();
     test_string_column();
     test_column_array();
-    //test_basic_dataframe(); // TODO call Kaylin and find a way to free up memory
+    test_basic_dataframe(); // TODO call Kaylin and find a way to free up memory
     test_complex_dataframe();
     serialize_equals_test();
     serialize_clone_test();

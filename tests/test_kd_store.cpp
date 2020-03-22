@@ -120,7 +120,7 @@ void test_multiple_dataframe() {
 }
 
 int main(int argc, char** argv) {
-    //test_one_dataframe();
+    test_one_dataframe();
     test_multiple_dataframe();
     printf("All KD Store tests pass!\n");
 }
