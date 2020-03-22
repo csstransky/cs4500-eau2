@@ -19,6 +19,7 @@
  * knows the number of columns and number of rows, the type of each column,
  * optionally columns and rows can be named by strings.
  * The valid types are represented by the chars 'S', 'B', 'I' and 'F'.
+ * Authors: Kaylin Devchand & Cristian Stransky
  */
 class Schema : public Object {
  public:
@@ -492,6 +493,7 @@ class PrinterRower : public Rower {
  * A DataFrame is table composed of columns of equal length. Each column
  * holds values of the same type (I, S, B, F). A dataframe has a schema that
  * describes it.
+ * Authors: Kaylin Devchand & Cristian Stransky
  */
 class DataFrame : public Object {
  public:

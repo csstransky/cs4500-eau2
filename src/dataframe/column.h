@@ -19,20 +19,14 @@ class StringColumn;
 class KD_Store;
 class ColumnArray;
 
-size_t max_(size_t a, size_t b) {
-  return (a > b) ? a : b;
-}
-
-size_t min_(size_t a, size_t b) {
-  return (a < b) ? a : b;
-}
-
 /**************************************************************************
  * Column ::
  * Represents one column of a data frame which holds values of a single type.
  * This abstract class defines methods overriden in subclasses. There is
  * one subclass per element type. Columns are mutable, equality is pointer
- * equality. */
+ * equality. 
+ * Authors: Kaylin Devchand & Cristian Stransky
+ * */
 class Column : public Object {
  public:
 
