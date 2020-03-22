@@ -7,7 +7,7 @@
 #include <string.h> 
 #include "../src/dataframe/dataframe.h"
 #include "../src/networks/message.h"
-#include "../src/array/array.h"
+#include "../src/helpers/array.h"
 #include "../src/kv_store/key.h"
 
 void test_string() {

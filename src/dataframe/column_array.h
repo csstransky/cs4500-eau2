@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../dataframe/column.h"
+#include "../helpers/array.h"
+#include "column.h"
 
 /**
  * An Array class to which Columns can be added to and removed from.

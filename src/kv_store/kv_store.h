@@ -1,7 +1,6 @@
 #pragma once
 
-#include "../helpers/object.h"
-#include "../map/map.h"
+#include "../helpers/map.h"
 #include "key.h"
 
 class KV_Store : public Object {

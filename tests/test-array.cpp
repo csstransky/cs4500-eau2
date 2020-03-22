@@ -3,9 +3,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "../src/array/array.h"
-#include "../src/helpers/string.h"
-#include "../src/dataframe/dataframe.h"
+#include "../src/helpers/array.h"
+#include "../src/dataframe/column_array.h"
+#include "../src/kv_store/key_array.h"
 
 void FAIL(const char* m) {
   fprintf(stderr, "test %s failed\n", m);

@@ -1,12 +1,9 @@
 // Interface for Map and Tests made by @rohitppathak & @trevorstenson
 // https://github.com/rohitppathak/-softdev-2020-ai-part2
 
-#include "../src/map/map.h"
 #include <iostream>
 #include <stdlib.h>
-#include "../src/helpers/object.h"
-#include "../src/helpers/string.h"
-#include "../src/array/array.h"
+#include "../src/helpers/map.h"
 
 void FAIL() { 
     printf("Fail\n");

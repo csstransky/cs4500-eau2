@@ -4,8 +4,9 @@
 #include "../helpers/object.h"
 #include "../helpers/string.h"
 #include "../kv_store/kv_store.h"
-#include "../array/array.h"
-#include "../array/column_array.h"
+#include "../kv_store/key_array.h"
+#include "../helpers/array.h"
+#include "column_array.h"
 #include "rower.h"
 
 #include <stdarg.h>

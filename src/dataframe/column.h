@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../array/array.h"
+#include "../helpers/array.h"
 #include "../kv_store/kv_store.h"
+#include "../kv_store/key_array.h"
 
 // Number of elements each array in the array of arrays in Column have
 // TODO: change this in the future when we know the average file to store
