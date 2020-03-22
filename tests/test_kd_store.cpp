@@ -3,7 +3,6 @@
 void test_one_dataframe() {
     Key key("key", 0);
     KD_Store kd(0);
-    KD_Store kd2(0);
 
     IntColumn col(kd.get_kv(), key.get_key(), 0);
     for (int i = 0; i < 200; i++) {

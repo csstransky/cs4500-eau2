@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include "../src/array/array.h"
 #include "../src/helpers/string.h"
-// TODO: This will have to change in the future when we get the directory right
 #include "../src/dataframe/dataframe.h"
 
 void FAIL(const char* m) {

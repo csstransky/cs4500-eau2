@@ -22,6 +22,10 @@ class KD_Store : public Object {
         return df; 
     }
 
+    DataFrame* wait_and_get(Key* key) {
+        // TODO: actually deal with distributed kvs later
+    }
+
     void put(Key* key, DataFrame* df) {
         kv_->put(key, df);
     }
@@ -95,5 +99,5 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, String** ar
 DataFrame* DataFrame::from_file(Key* key, KD_Store* kd, char* file_name) {
     SoR sor(file_name, key->get_key(), kd->get_kv());
     kd->put(key, sor.get_dataframe());
-    return sor.get_dataframe()->clone();
+    return sor.get_dataframe();
 }

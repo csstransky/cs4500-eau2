@@ -4,7 +4,8 @@
 #include "../kv_store/kv_store.h"
 
 // Number of elements each array in the array of arrays in Column have
-const int ELEMENT_ARRAY_SIZE = 100;
+// TODO: change this in the future when we know the average file to store
+const int ELEMENT_ARRAY_SIZE = 100; 
 const int DEFAULT_INT_VALUE = 0;
 const float DEFAULT_FLOAT_VALUE = 0;
 const bool DEFAULT_BOOL_VALUE = 0;
@@ -26,7 +27,6 @@ size_t min_(size_t a, size_t b) {
   return (a < b) ? a : b;
 }
 
-// TODO: move all Columns to column.h 
 /**************************************************************************
  * Column ::
  * Represents one column of a data frame which holds values of a single type.
@@ -39,7 +39,7 @@ class Column : public Object {
   char type_;
   size_t size_;
   KV_Store* kv_; // not owned by Column, simply used for kv methods
-  String* dataframe_name_; // not owned by Column
+  String* dataframe_name_;
   size_t index_;
   KeyArray* keys_; // owned
  
@@ -76,7 +76,7 @@ class Column : public Object {
   void set_parent_values_(size_t size, char type, KV_Store* kv, String* dataframe_name, 
     size_t col_index) {
     kv_ = kv;
-    dataframe_name_ = dataframe_name ? dataframe_name->clone() : nullptr; // TODO: but this is not owned by the df. Does it need to be?
+    dataframe_name_ = dataframe_name ? dataframe_name->clone() : nullptr;
     index_ = col_index;
     type_ = type;
     size_ = size;
@@ -87,7 +87,7 @@ class Column : public Object {
   void set_parent_values_(size_t size, char type, KV_Store* kv, String* dataframe_name, 
     size_t col_index, KeyArray* keys) { 
     kv_ = kv;
-    dataframe_name_ = dataframe_name ? dataframe_name->clone() : nullptr; // TODO: but this is not owned by the df. Does it need to be?
+    dataframe_name_ = dataframe_name ? dataframe_name->clone() : nullptr;
     index_ = col_index;
     type_ = type;
     size_ = size;
@@ -97,10 +97,14 @@ class Column : public Object {
   Key* generate_key_(size_t array_index) {
     String key_name(*dataframe_name_);
     key_name.concat("_");
+    // TODO: refactor index_ to col_index_ to make it more clear
     key_name.concat(index_);
     key_name.concat("_");
     key_name.concat(array_index);
 
+    // TODO: This is where you'll have to make a key with a different node_index, so in the future
+    // you'll have to go through the kv's list of indexes, and somehow find a way to give the column
+    // key a different index for better parallization
     Key* new_key = new Key(&key_name, kv_->get_node_index());
     return new_key;    
   }
@@ -184,7 +188,6 @@ class IntColumn : public Column {
   }
 
   ~IntColumn() {
-    // TODO: may need to watch out for nullptr in the future
     delete dataframe_name_;
     delete buffered_elements_;
     delete keys_;

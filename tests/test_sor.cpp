@@ -43,6 +43,8 @@ void test_file(char* file_path, size_t file_columns, size_t file_rows) {
             }
         }
     }
+
+    delete dataframe;
 }
 
 void test_easy_txt(char* file_path) {
@@ -61,6 +63,8 @@ void test_easy_txt(char* file_path) {
     assert(!dataframe->get_bool(3, 0));
     String string2("true");
     assert(dataframe->get_string(0, 0)->equals(&string1));
+
+    delete dataframe;
 }
 
 void test_doc_txt(char* file_path) {
@@ -152,6 +156,8 @@ void test_doc_txt(char* file_path) {
     assert(!dataframe->get_bool(5, 6));
     assert(!dataframe->get_bool(6, 6));
     assert(!dataframe->get_bool(7, 6));
+
+    delete dataframe;
 }
 
 int main(int argh, char** argv) {

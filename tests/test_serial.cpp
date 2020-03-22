@@ -10,7 +10,6 @@
 #include "../src/array/array.h"
 #include "../src/kv_store/key.h"
 
-
 void test_string() {
    String* string1 = new String("hello there");
    assert(string1->size() == 11);
@@ -841,16 +840,15 @@ void test_basic_dataframe() {
 
 void test_complex_dataframe() {
     size_t local_node_index = 18;
-    Key string_key("string_col", local_node_index);
-    Key float_key("float_col", local_node_index);
-    Key int_key("int_col", local_node_index);
-    Key bool_key("bool_col", local_node_index);
+    // This test only works with a completely local kv, no distribution
+    Key dataframe_key("mainframe", local_node_index);
 
     KV_Store kv(local_node_index);
-    StringColumn string_column(&kv, string_key.get_key(), string_key.get_node_index());
-    FloatColumn float_column(&kv, float_key.get_key(), float_key.get_node_index());
-    BoolColumn bool_column(&kv, bool_key.get_key(), bool_key.get_node_index());
-    IntColumn int_column(&kv, int_key.get_key(), int_key.get_node_index());
+    size_t column_index = 0;
+    StringColumn string_column(&kv, dataframe_key.get_key(), column_index++);
+    FloatColumn float_column(&kv, dataframe_key.get_key(), column_index++);
+    BoolColumn bool_column(&kv, dataframe_key.get_key(), column_index++);
+    IntColumn int_column(&kv, dataframe_key.get_key(), column_index++);
 
     size_t buffered_elements_size = 83;
     size_t number_of_kv_chunks = 4;
@@ -1004,7 +1002,7 @@ int main(int argc, char const *argv[])
     test_bool_column();
     test_string_column();
     test_column_array();
-    test_basic_dataframe(); // TODO call Kaylin and find a way to free up memory
+    test_basic_dataframe(); 
     test_complex_dataframe();
     serialize_equals_test();
     serialize_clone_test();

@@ -65,6 +65,7 @@ Does our Node create generated Keys with predictable names, or are they passed i
 + Should a DataFrame split its data into different chunks across Nodes (all done in the background), or should we instead make many Keys of smaller DataFrames to split our read-in data?   
 Will our DataFrame functionality stay the same and keep constant "integrity" (all on 1 node)?  
 + (Somewhat answered on Piazza) Can we use the C++ version of Map? 
++ What is the average size of the SoR file we will need to stores? 100MB? 1GB? 100GB?
 
 ## Status
 Most of the old code has been migrated (all code that will be used), tests have been written for all of this code, and everything valgrinds nicely.

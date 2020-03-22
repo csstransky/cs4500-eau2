@@ -25,6 +25,7 @@ class Schema : public Object {
   char* types_;
   size_t num_cols_;
   size_t num_rows_;
+  // TODO: refactor this horrible name to types_size_
   size_t col_array_size_; // size of types_, INCLUDES '\0' character
 
   /** Copying constructor */
@@ -71,14 +72,12 @@ class Schema : public Object {
       return other_schema != nullptr 
           && this->num_cols_ == other_schema->num_cols_
           && this->num_rows_ == other_schema->num_rows_
-          && this->col_array_size_ == other_schema->col_array_size_ // TODO: Do we want this parameter?
           && strncmp(this->types_, other_schema->types_, this->col_array_size_) == 0;
   }
 
   /** Return a copy of the object; nullptr is considered an error */
   Schema* clone() {
-    // TODO Do we need this?
-    assert(0);
+    return new Schema(*this);
   }
 
   size_t serial_len() {
@@ -546,7 +545,6 @@ class DataFrame : public Object {
   DataFrame(Schema& schema, String* name, KV_Store* kv, ColumnArray* columns) : schema_(schema) {
     this->kv_ = kv;
     this->name_ = name->clone();
-    //this->schema_ = schema; // TODO: call Kaylin and kind a way to properly valgrind this
     this->cols_ = columns->clone();    
   }
 
@@ -562,19 +560,16 @@ class DataFrame : public Object {
 
   /** Subclasses should redefine */
   bool equals(Object* other) {
-    // TODO: do we even need this?
-    assert(0);
+    DataFrame* other_df = dynamic_cast<DataFrame*>(other);
+    return other_df != nullptr
+      && schema_.equals(&other_df->schema_)
+      && cols_->equals(other_df->cols_)
+      && name_->equals(other_df->name_);
   }
 
   /** Return a copy of the object; nullptr is considered an error */
   DataFrame* clone() {
-    // TODO: Cristian this does not work. We need this for SoR.
-    DataFrame* new_dataframe = new DataFrame(*this);
-    for (size_t ii = 0; ii < this->ncols(); ii++) {
-        Column* original_column = this->get_column(ii);
-        new_dataframe->add_column(original_column);
-    }
-    return new_dataframe;
+    return new DataFrame(schema_, name_, kv_, cols_);
   }
 
   size_t serial_len() {

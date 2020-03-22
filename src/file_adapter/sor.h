@@ -17,6 +17,8 @@ enum enum_type {INTEGER, FLOAT, BOOL, STRING, EMPTY};
 // Assignment only wants us to read the first 500 lines to find the schema of a file
 size_t MAX_SCHEMA_READ = 500;
 
+// Creates a DataFrame by reading a formatted SoR file
+// NOTE: The DataFrame is NOT deleted, and must be grabbed and deleted independently
 class SoR {
     private:
     String* get_string_from_line(vector<string> line, size_t index) {
@@ -24,7 +26,6 @@ class SoR {
             string element = line.at(index);
             return new String(element.c_str());
         }
-        // TODO, see if this still works, will be moving to empty String instead of nullptr
         else {
             return DEFAULT_STRING_VALUE.clone();
         }
@@ -384,23 +385,12 @@ class SoR {
         parse_and_add(file_path, from, len);
     }
 
-    ~SoR() {
-        delete dataframe_;
-    }
-
     /**
-     * Simply get the dataframe from a SoR, but make sure not to use this DataFrame after the SoR is
-     * deleted, as it deletes the DataFrame inside as well.
+     * Simply get the dataframe from a SoR, this will transfer ownership to the return point.
+     * NOTE: Make sure to delete this, as it is independent to the SoR deconstructor.
      */
     DataFrame* get_dataframe() {
         return dataframe_;
-    }
-
-    /** 
-     * You will have to delete this dataframe yourself later
-     */
-    DataFrame* get_dataframe_clone() {
-        return dataframe_->clone();
     }
 
     void print() {

@@ -25,7 +25,7 @@ class KV_Store : public Object {
             kv_map_->put(key->get_key(), &serial);
         } 
         else {
-            // TODO call upon another Node to put the kv
+            // TODO: call upon another Node to put the kv
             assert(0);
         }
     }
@@ -36,9 +36,16 @@ class KV_Store : public Object {
 
     // Returns a new char array, make sure to delete it later
     char* get_value_serial(Key* key) {
-        String* key_string = key->get_key();
-        Serializer* map_serial = static_cast<Serializer*>(kv_map_->get(key_string));
-        return map_serial->get_serial();
+        if (key->get_node_index() == local_node_index_) {
+            String* key_string = key->get_key();
+            Serializer* map_serial = static_cast<Serializer*>(kv_map_->get(key_string));
+            return map_serial->get_serial();
+        }
+        else {
+            // TODO: call upon another Node to get the kv
+            assert(0);
+        }
+
     }
 
     // Returns a new IntArray, make sure to delete it later

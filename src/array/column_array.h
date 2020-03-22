@@ -75,7 +75,6 @@ public:
     size_t count = deserializer.deserialize_size_t();
     ColumnArray* new_array = new ColumnArray(size);
     for (size_t ii = 0; ii < count; ii++) {
-      // TODO: We'll have to add KV stores somehow in the future, nullptr won't cut it
       Column* new_object = Column::deserialize(deserializer, kv_store);
       new_array->push(new_object);
       delete new_object;
