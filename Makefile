@@ -7,7 +7,7 @@ build: FORCE
 	@cd build && cmake .. && make
 
 run: build
-	build/src/application/trival
+	build/src/trival
 
 test: build
 	build/tests/serial_examples
@@ -29,7 +29,7 @@ valgrind:
 	valgrind build/tests/test_kv_store
 	valgrind build/tests/test_kd_store
 	valgrind build/tests/test_application
-	valgrind build/src/application/trival
+	valgrind build/src/trival
 
 clean:
 	rm -rf build
