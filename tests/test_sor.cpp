@@ -161,8 +161,8 @@ void test_doc_txt(char* file_path) {
 }
 
 int main(int argh, char** argv) {
-    char* easy_txt = const_cast<char*>("../data/easy.txt");
-    char* doc_txt = const_cast<char*>("../data/doc.txt");
+    char* easy_txt = const_cast<char*>("data/easy.txt");
+    char* doc_txt = const_cast<char*>("data/doc.txt");
 
     test_file(easy_txt, 5, 1);
     test_file(doc_txt, 8, 7);

@@ -35,4 +35,5 @@ settings.json
 datafile.txt
 tests/build/*
 *.out
+build/*
 

@@ -1408,7 +1408,7 @@ void test_from_array_string() {
 }
 
 void test_from_file() {
-  char* path = const_cast<char*>("../data/doc.txt");
+  char* path = const_cast<char*>("data/doc.txt");
 
   Key k("k", 0);
   KD_Store kd(0);
