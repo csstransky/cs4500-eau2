@@ -384,7 +384,7 @@ void test_schema() {
     assert(deserial_schema->num_cols_ == num_cols);
     assert(deserial_schema->num_rows_ == num_rows);
     assert(strcmp(deserial_schema->types_, schema_type) == 0);
-    assert(deserial_schema->col_array_size_ == schema.col_array_size_);
+    assert(deserial_schema->types_size_ == schema.types_size_);
     assert(schema.equals(deserial_schema));
 
     delete[] schema_serial;
@@ -668,7 +668,7 @@ void test_column_array() {
 
     size_t col_array_size = 10;
     size_t col_count = 4;
-    ColumnArray col_array(10);
+    ColumnArray col_array(col_array_size);
     col_array.push(&string_column);
     col_array.push(&float_column);
     col_array.push(&int_column);
