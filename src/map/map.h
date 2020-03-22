@@ -1,11 +1,75 @@
 #pragma once
 #include "../helpers/object.h"
-#include "pair.h"
 #include "../array/array.h"
 
 // NOTE: based on how much data we will be dealing with in the future, this number can change to
 // accommodate that. I chose this number initially just because I saw it in a Wikipedia article.
 const size_t DEFAULT_BUCKET_SIZE = 256;
+
+/**
+ * Represents a key and value pair, to be mainly used for Map
+ * 
+ * NOTE: I talked to prof. Vitek directly about this, and he told me that normally we'd have a 
+ * private sub class for Pair inside of Map (which is what I prefer as well), but because we aren't 
+ * using private, we're stuck making Pair public like this as its own class.
+ */ 
+class Pair : public Object {
+    public:
+        Object* key;
+        Object* value;
+
+        Pair(Object* key, Object* value) {
+            this->key = key->clone();
+            this->value = value->clone();
+        }
+
+        Pair(Pair* p) {
+            this->key = p->get_key()->clone();
+            this->value = p->get_value()->clone();
+        }
+
+        ~Pair() {
+            delete key;
+            delete value;
+        }
+
+        Object* get_key() { return key; }
+
+        Object* get_value() { return value; }
+
+        void set_value(Object* value) { 
+            delete this->value;
+            this->value = value->clone(); 
+        }
+
+        bool equals(Object* other) {
+            Pair* other_pair = dynamic_cast<Pair*>(other);                                  
+            if (other_pair == nullptr) return false;
+            return this->key->equals(other_pair->get_key()) 
+                && this->value->equals(other_pair->get_value());
+        }
+
+        Object* clone() {
+            return new Pair(this);
+        }
+
+        /**
+         * Gets a size_t representation of a Pair.
+         * 
+         * To ensure that two pairs are truly different, we're using subtraction, example:
+         * "hi"->hash() = 20
+         * "there"->hash() = 40
+         * Pair1 = {"hi", "there"} -> hash() = 20
+         * Pair2 = {"there", "hi"} -> hash() = -20
+         * 
+         * NOTE: Because this is size_t, negatives instead will be represented by a very large num
+         * 
+         * @return size_t of the subtraction between value and key
+         */
+        size_t hash() {
+            return value->hash() - key->hash();
+        }
+};
 
 /**
  * Map - data structure that is to be used for our project which maps an Object to an Object

@@ -10,7 +10,6 @@ test: build
 	build/test_sorer
 	build/test-array
 	build/test-map
-	build/test-pair
 	build/dataframe/basic_example
 	build/dataframe/parallel_map_personal_test_suite
 	build/test_kv_store
@@ -21,7 +20,6 @@ valgrind: build
 	valgrind build/test_sorer
 	valgrind build/test-array
 	valgrind build/test-map
-	valgrind build/test-pair
 	valgrind build/test_kv_store
 	valgrind build/test_kd_store
 
