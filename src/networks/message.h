@@ -10,7 +10,8 @@
 
 int MESSAGE_ID = 0;
 
-enum class MsgKind { Ack, Put, Kill, Register, Directory};
+// TODO: Add Get and Value messages
+enum class MsgKind { Ack, Put, Get, Value, Kill, Register, Directory };
 
 class Message : public Object {
     public:
