@@ -41,7 +41,7 @@ dataframe_name_ = "Main"
 column_index_ = 12
 size_ = 34
 keys_ = [Key("Main_12_0", 2), Key("Main_12_1", 2), Key("Main_12_2", 2)]
-buffered_elements_ = [1, 3, 52, 42]
+buffered_elements_ = [31, 32, 33, 34]
 
 kv_store1
 -----
