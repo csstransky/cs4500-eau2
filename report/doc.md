@@ -40,17 +40,28 @@ kv_ = kv_store1
 dataframe_name_ = "Main"
 column_index_ = 12
 size_ = 34
-keys_ = [Key("Main_12_0"), Key("Main_12_1"), Key("Main_12_2")]
+keys_ = [Key("Main_12_0", 2), Key("Main_12_1", 2), Key("Main_12_2", 2)]
 buffered_elements_ = [1, 3, 52, 42]
 
 kv_store1
 -----
+local_node_index_ = 1
 kv_map_ = {
-Key("Main_12_0") : Serializer([ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10])
-Key("Main_12_1") : Serializer([11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
-Key("Main_12_2") : Serializer([21, 22, 23, 24, 25, 26, 27, 28, 29, 30])
+    // The actual IntColumn class is serialized in here with the DataFrame
+    "Main" : Serializer('DataFrame Object')
+}
+
+kv_store2
+-----
+local_node_index_ = 2
+kv_map_ = {
+    // The contents of IntColumn are serialized elsewhere
+    "Main_12_0" : Serializer([ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10])
+    "Main_12_1" : Serializer([11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
+    "Main_12_2" : Serializer([21, 22, 23, 24, 25, 26, 27, 28, 29, 30])
 }
 ```
+
 A network call is (mostly) avoided for every push_back(...), and sometimes a network call can be avoided for a get(...). The reason `buffered_elements_` is used is to allow the creation of a DataFrame to be quicker, and allow for only **3 network calls** to store the above IntColumn (which we assume is placed in a different KV_Store than the DataFrame for this example), instead of needing to make **34 network calls** for every element. 
 
 This also has the added benefit of allowing a Row to simply use a ColumnArray for its fields, where each Column inside that ColumnArray **will not** have to make ANY network calls to set and put data into the DataFrame (especially with add_row(...), which is used often for our SoR file adapter).
