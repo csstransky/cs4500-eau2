@@ -27,7 +27,34 @@ The KVStore class is a subclass of Node. It contains a mapping of Keys to Values
 The KVStore class stores its data in an String to Object map. It has a put method that takes in an object, serializes the object, then puts it into the map. There are five get methods. One get methods just returns the serialized object. The other four convert the serialized object into the four different array types (int, float, bool, String). The KVStore also stores its local node index and that can be returned with a getter.
 
 ### Dataframe Layer
-The DataFrame layer consists of the DataFrame class and supporting classes. The implementation of the Dataframe class is the same as previous assignments with row and column names stripped. The column classes contain an additional field that points to the KVStore. The data in the Column classes is represented as distributed arrays. The column classes contain a list of keys where each key maps to a Value blob of 1000 elements. The Value blobs can be on any KVStore in the network. To retrieve data, the get method of the KVStore is called with the key. Only full 100 blocks are distributed. If a block contains less than 100 elements it is kept as a local array in the Column. The Column classes also have a buffered elements array. This is the last blob of elements and is used when constructing a Column so that every time an element is added KVStore put and get do not need to be called. Columns create keys for their blobs by concating the dataframe name, column index in the dataframe, and blob index.
+The DataFrame layer consists of the DataFrame class and supporting classes. The implementation of the Dataframe class is the same as previous assignments with row and column names stripped. The column classes contain an additional field that points to the KVStore. The data in the Column classes is represented as distributed arrays. The column classes contain a list of keys where each key maps to a Value blob of 1000 elements. The Value blobs can be on any KVStore in the network. To retrieve data, the get method of the KVStore is called with the key. Only full 100 blocks are distributed. If a block contains less than 100 elements it is kept as a local array in the Column. 
+
+The Column classes also have a buffered elements array. This is the last blob of elements and is used when constructing a Column so that every time an element is added, KVStore put and get do not need to be called. Columns create keys for their blobs by concating the dataframe name, column index in the dataframe, and blob index. Example:
+```
+ELEMENT_ARRAY_SIZE = 10;
+
+IntColumn
+-----
+type_ = 'I'
+kv_ = kv_store1
+dataframe_name_ = "Main"
+column_index_ = 12
+size_ = 34
+keys_ = [Key("Main_12_0"), Key("Main_12_1"), Key("Main_12_2")]
+buffered_elements_ = [1, 3, 52, 42]
+
+kv_store1
+-----
+kv_map_ = {
+Key("Main_12_0") : Serializer([ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10])
+Key("Main_12_1") : Serializer([11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
+Key("Main_12_2") : Serializer([21, 22, 23, 24, 25, 26, 27, 28, 29, 30])
+}
+```
+A network call is (mostly) avoided for every push_back(...), and sometimes a network call can be avoided for a get(...). The reason `buffered_elements_` is used is to allow the creation of a DataFrame to be quicker, and allow for only **3 network calls** to store the above IntColumn (which we assume is placed in a different KV_Store than the DataFrame for this example), instead of needing to make **34 network calls** for every element. 
+
+This also has the added benefit of allowing a Row to simply use a ColumnArray for its fields, where each Column inside that ColumnArray **will not** have to make ANY network calls to set and put data into the DataFrame (especially with add_row(...), which is used often for our SoR file adapter).
+
 
 ### Application Layer
 The Application class contains the KDStore of the node as a field. It also has the ability to retrieve the node id from the KDStore. The Application also contains a run method to run the application. This method is not implemented in Application and is to be implemented by subclasses of Application. To create a specific Application, a subclass of Application is created and the run method and helper methods are implemented. The same application can run on different nodes or different applications can be created. No application runs on the RServer.
@@ -54,7 +81,7 @@ class CreateDataframe : public Application {
 ```
 
 ## Open questions
-+ What is the average size of the SoR file we will need to stores? 100MB? 1GB? 100GB?
++ What is the average size of the SoR file we will need to store? 100MB? 1GB? 100GB?
 
 ## Status
-All of our code valgrinds. The KVStore is complete in the contex of one node. The trival class example given in the assignment description works.
+All of our code valgrinds. The KVStore is complete in the contex of one node. The trival class example given in the assignment description for Milestone 2 works.
