@@ -85,3 +85,25 @@ class CreateDataframe : public Application {
 
 ## Status
 All of our code valgrinds. The KVStore is complete in the contex of one node. The trival class example given in the assignment description for Milestone 2 works.
+
+Steps to run our code:
+1. builds the needed directory of executables  
+``` 
+make
+```          
+2. runs the trival application for Milestone 2  
+```
+make run
+```
+3. runs the tests for all of our code  
+```
+make test
+```
+4. runs a valgrind check on all our code (may take a while for `test_application` & `trival`)
+```
+make valgrind
+```
+5. removes the directory with executables  
+```
+make clean
+```
