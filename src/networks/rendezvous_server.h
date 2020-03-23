@@ -19,7 +19,11 @@
 class RServer : public Server {
     public:
 
-    RServer(const char* ip_address) : Server(ip_address) {}
+    int* kv_indexes_;
+
+    RServer(const char* ip_address) : Server(ip_address) {
+        kv_indexes_ = new int[MAX_CLIENTS]; // TODO, actually set this up correctly
+    }
 
     ~RServer() {}
     

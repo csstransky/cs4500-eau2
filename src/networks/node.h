@@ -23,7 +23,8 @@ class Node : public Server {
     // Address of server
     struct sockaddr_in server_address_;
     String* server_ip_;
-    String** other_nodes_;
+    StringArray* other_nodes_; // TODO: Get StringArray working
+    IntArray* kv_indexes_; // TODO: get this guy set up
     size_t num_other_nodes_;
     bool kill_;
 
@@ -40,10 +41,7 @@ class Node : public Server {
  
         delete server_ip_;
         if (other_nodes_) {
-            for (int i = 0; i < num_other_nodes_; i++) {
-                delete other_nodes_[i];
-            }
-            delete[] other_nodes_;
+            delete other_nodes_;
         }
     }
 
@@ -66,8 +64,9 @@ class Node : public Server {
         }
     }
 
-    void register_with_server_() {
-        Message* m = new Register(my_ip_, server_ip_);
+    void register_with_server_(size_t local_node_index) {
+        // TODO add node index here
+        Message* m = new Register(my_ip_, server_ip_, local_node_index);
         printf("Sending ip\n");
         send_message(server_socket_, m);
         printf("\n");
@@ -75,13 +74,13 @@ class Node : public Server {
     
     }
 
-    void connect_to_server() {
+    void connect_to_server(size_t local_node_index) {
         server_socket_ = get_new_socket_();
         if (connect(server_socket_, (struct sockaddr *)&server_address_, sizeof(server_address_)) < 0) { 
             printf("\nConnection Failed \n"); 
             assert(0);
         }
-        register_with_server_();
+        register_with_server_(local_node_index);
     }
 
     // -1 is the server
@@ -95,17 +94,11 @@ class Node : public Server {
             case MsgKind::Directory: {
                 printf("Received Directory Message\n\n");
                 Directory* dir_message = dynamic_cast<Directory*>(message);
-                for (int i = 0; i < num_other_nodes_; i++) {
-                    delete other_nodes_[i];
-                }
-                delete[] other_nodes_;
-                num_other_nodes_ = dir_message->get_num();
-                String** temp_addresses = dir_message->get_addresses();
-                other_nodes_ = new String*[num_other_nodes_];
-                for (int i = 0; i < num_other_nodes_; i++) {
-                    other_nodes_[i] = temp_addresses[i]->clone();
-                }
-
+                delete other_nodes_;
+                other_nodes_ = dir_message->get_addresses();
+                delete kv_indexes_;
+                kv_indexes_ = dir_message->get_kv_indexes();
+                local_kv_index_ = dir_message->get_local_kv_index();
                 break;
             }
             case MsgKind::Kill: {
