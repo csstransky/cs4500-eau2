@@ -198,6 +198,7 @@ class Kill : public Message {
 class Register : public Message {
     public:
 
+    // TODO" add local node index here
     Register(String* sender, String* target) {
         Message::Message_(MsgKind::Register, sender, target); 
     }
