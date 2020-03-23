@@ -6,7 +6,7 @@
 #include <string.h>
 #include "../helpers/string.h"
 #include "../helpers/object.h"
-#include "serial.h"
+#include "../helpers/serial.h"
 
 int MESSAGE_ID = 0;
 

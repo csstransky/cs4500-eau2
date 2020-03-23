@@ -1,13 +1,35 @@
-all: build test valgrind
+all: build run
 
-build:
-	cd tests && make build
+.PHONY: FORCE
 
-test:
-	cd tests && make
+build: FORCE
+	@mkdir -p build
+	@cd build && cmake .. && make
+
+run: build
+	build/src/trival
+
+test: build
+	build/tests/serial_examples
+	build/tests/test_serial
+	build/tests/test_sorer
+	build/tests/test-array
+	build/tests/test-map
+	build/tests/dataframe/basic_example
+	build/tests/dataframe/parallel_map_personal_test_suite
+	build/tests/test_kv_store
+	build/tests/test_kd_store
+	build/tests/test_application
 
 valgrind:
-	cd tests && make valgrind
+	valgrind build/tests/test_serial
+	valgrind build/tests/test_sorer
+	valgrind build/tests/test-array
+	valgrind build/tests/test-map
+	valgrind build/tests/test_kv_store
+	valgrind build/tests/test_kd_store
+	valgrind build/tests/test_application
+	valgrind build/src/trival
 
 clean:
-	rm -rf tests/build
+	rm -rf build

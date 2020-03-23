@@ -3,8 +3,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "../src/array/array.h"
-#include "../src/helpers/string.h"
+#include "../src/helpers/array.h"
+#include "../src/dataframe/column_array.h"
+#include "../src/kv_store/key_array.h"
 
 void FAIL(const char* m) {
   fprintf(stderr, "test %s failed\n", m);
@@ -210,6 +211,170 @@ void object_array_test() {
   OK("8");
 }
 
+void clone_intarray_test() {
+  IntArray arr(10);
+  arr.push(1);
+  arr.push(2);
+  arr.push(3);
+  t_true(arr.length() == 3, "9a");
+  IntArray* clone = arr.clone();
+  t_true(clone->length() == 3, "9b");
+  t_true(clone->get(0) == 1, "9c");
+  t_true(clone->get(1) == 2, "9d");
+  t_true(clone->get(2) == 3, "9e");
+
+  delete clone;
+  OK("9");
+}
+
+void clone_floatarray_test() {
+  FloatArray arr(10);
+
+  arr.push(1.5);
+  arr.push(2.7);
+  arr.push(3.9);
+  t_true(arr.length() == 3, "10a");
+  FloatArray* clone = arr.clone();
+  t_true(clone->length() == 3, "10b");
+  t_true(clone->get(0) == (float)1.5, "10c");
+  t_true(clone->get(1) == (float)2.7, "10d");
+  t_true(clone->get(2) == (float)3.9, "10e");
+
+  delete clone;
+  OK("10");
+}
+
+void clone_boolarray_test() {
+  BoolArray arr(2);
+
+  arr.push(true);
+  arr.push(1);
+  arr.push(false);
+  arr.push(0);
+  t_true(arr.length() == 4, "11a");
+  BoolArray* clone = arr.clone();
+  t_true(clone->length() == 4, "11b");
+  t_true(clone->get(0), "11c");
+  t_true(clone->get(1), "11d");
+  t_true(!clone->get(2), "11e");
+  t_true(!clone->get(3), "11e");
+
+  delete clone;
+  OK("11");
+}
+
+void clone_stringarray_test() {
+  String * x = new String("Hello");
+  String * y = new String("World");
+  String * z = new String("!");
+  StringArray* arr = new StringArray(10);
+
+  arr->push(x);
+  arr->push(y);
+  arr->push(z);
+  t_true(arr->length() == 3, "12a");
+  StringArray* clone = arr->clone();
+  t_true(clone->length() == 3, "12b");
+  delete x;
+  delete y;
+  delete z;
+  delete arr;
+
+  String a("Hello");
+  String b("World");
+  String c("!");
+  t_true(clone->get(0)->equals(&a), "12c");
+  t_true(clone->get(1)->equals(&b), "12d");
+  t_true(clone->get(2)->equals(&c), "12e");
+
+  delete clone;
+  OK("12");
+}
+
+void concat_string_test() {
+  String string1("good");
+  String string2("world");
+  string1.concat("bye ");
+  t_true(string1.size() == 8, "13a");
+  t_true(strncmp(string1.c_str(), "goodbye ", string1.size()) == 0, "13b");
+  string1.concat(&string2);
+  t_true(string1.size() == 13, "13c");
+  t_true(strncmp(string1.c_str(), "goodbye world", string1.size()) == 0, "13d");
+  t_true(strncmp(string2.c_str(), "world", string2.size()) == 0, "13e");  
+  string1.concat(243);
+  t_true(string1.size() == 16, "13f");
+  t_true(strncmp(string1.c_str(), "goodbye world243", string1.size()) == 0, "13g");
+
+  OK("13");
+}
+
+void basic_columnarray_test() {
+  Column col_col;
+  IntColumn int_col;
+  int_col.push_back(3);
+  FloatColumn float_col;
+  float_col.push_back(232.3);
+  BoolColumn bool_col;
+  bool_col.push_back(true);
+  StringColumn string_col;
+  String str("hell");
+  string_col.push_back(&str);
+  ColumnArray arr(10);
+  arr.push(&col_col);
+  arr.push(&int_col);
+  arr.push(&float_col);
+  arr.push(&bool_col);
+  arr.push(&string_col);
+
+  t_true(arr.length() == 5, "14a");
+  // Test to show that a normal Column does not work, and must be IntColumn, FloatColumn, etc.
+  t_true(arr.get(0) == nullptr, "14b");
+  t_true(arr.get(1)->as_int()->get(0) == 3, "14c");
+  t_true(arr.get(2)->as_float()->get(0) == (float)232.3, "14d");
+  t_true(arr.get(3)->as_bool()->get(0), "14e");
+  t_true(arr.get(4)->as_string()->get(0)->equals(&str), "14f");
+
+  Column* v = arr.pop();
+  delete v;
+  t_true(arr.length() == 4, "14g");
+  arr.clear();
+  t_true(arr.length() == 0, "14h");
+
+  OK("14");
+}
+
+void basic_keyarray_test() {
+  KeyArray arr;
+  size_t num_keys = 101;
+  for (size_t ii = 0; ii < num_keys; ii++) {
+    String key_string("key");
+    key_string.concat(ii);
+    Key temp_key(&key_string, ii);
+    arr.push(&temp_key);
+  }
+
+  t_true(arr.length() == num_keys, "15a");
+  for (size_t ii = 0; ii < num_keys; ii++) {
+    String test_string("15b_");
+    test_string.concat(ii);
+    test_string.concat("_a");
+    t_true(arr.get(ii)->get_node_index() == ii, test_string.c_str());
+    
+    String key_string("key");
+    key_string.concat(ii);
+    test_string.concat("_b");
+    t_true(arr.get(ii)->get_key()->equals(&key_string), test_string.c_str());
+  }
+
+  Key* v = arr.pop();
+  delete v;
+  t_true(arr.length() == num_keys - 1, "15c");
+  arr.clear();
+  t_true(arr.length() == 0, "15d");
+
+  OK("15");
+}
+
 int main() {
   basic_object_test();
   basic_string_test();
@@ -222,6 +387,15 @@ int main() {
   complex_stringarray_test();
 
   object_array_test();
+
+  clone_intarray_test();
+  clone_floatarray_test();
+  clone_boolarray_test();
+  clone_stringarray_test();
+
+  concat_string_test();
+  basic_columnarray_test();
+  basic_keyarray_test();
 
   exit(0);
 }

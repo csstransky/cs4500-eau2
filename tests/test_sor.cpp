@@ -1,10 +1,12 @@
 // Made by Kaylin Devchand and Cristian Stransky
 
-#include "../src/file_adapter/sor.h"
+#include "../src/helpers/sor.h"
 #include <assert.h>
 
 void test_file(char* file_path, size_t file_columns, size_t file_rows) {
-    SoR sor(file_path);
+    KV_Store kv(0);
+    String name("data");
+    SoR sor(file_path, &name, &kv);
     DataFrame* dataframe = sor.get_dataframe();
     Schema schema = dataframe->get_schema();
 
@@ -41,10 +43,14 @@ void test_file(char* file_path, size_t file_columns, size_t file_rows) {
             }
         }
     }
+
+    delete dataframe;
 }
 
 void test_easy_txt(char* file_path) {
-    SoR sor(file_path);
+    KV_Store kv(0);
+    String name("data");
+    SoR sor(file_path, &name, &kv);
     DataFrame* dataframe = sor.get_dataframe();
 
     char* schema_types = dataframe->get_schema().types_;
@@ -57,10 +63,14 @@ void test_easy_txt(char* file_path) {
     assert(!dataframe->get_bool(3, 0));
     String string2("true");
     assert(dataframe->get_string(0, 0)->equals(&string1));
+
+    delete dataframe;
 }
 
 void test_doc_txt(char* file_path) {
-    SoR sor(file_path);
+    KV_Store kv(0);
+    String name("data");
+    SoR sor(file_path, &name, &kv);
     DataFrame* dataframe = sor.get_dataframe();
 
     char* schema_types = dataframe->get_schema().types_;
@@ -71,7 +81,7 @@ void test_doc_txt(char* file_path) {
     assert(dataframe->get_int(1, 0) == 11);
     String string1("true");
     assert(dataframe->get_string(2, 0)->equals(&string1));
-    assert(dataframe->get_string(3, 0) == nullptr);
+    assert(dataframe->get_string(3, 0)->equals(&DEFAULT_STRING_VALUE));
     assert(!dataframe->get_bool(4, 0));
     assert(!dataframe->get_bool(5, 0));
     assert(!dataframe->get_bool(6, 0));
@@ -130,7 +140,7 @@ void test_doc_txt(char* file_path) {
     assert(dataframe->get_int(1, 5) == 0);
     String string14("\"I guess this'll\"worktoo");
     assert(dataframe->get_string(2, 5)->equals(&string14));
-    assert(dataframe->get_string(3, 5) == nullptr);
+    assert(dataframe->get_string(3, 5)->equals(&DEFAULT_STRING_VALUE));
     assert(!dataframe->get_bool(4, 5));
     assert(!dataframe->get_bool(5, 5));
     assert(!dataframe->get_bool(6, 5));
@@ -141,16 +151,18 @@ void test_doc_txt(char* file_path) {
     assert(dataframe->get_int(1, 6) == 0);
     String string17("reallyno");
     assert(dataframe->get_string(2, 6)->equals(&string17));
-    assert(dataframe->get_string(3, 6) == nullptr);
+    assert(dataframe->get_string(3, 6)->equals(&DEFAULT_STRING_VALUE));
     assert(!dataframe->get_bool(4, 6));
     assert(!dataframe->get_bool(5, 6));
     assert(!dataframe->get_bool(6, 6));
     assert(!dataframe->get_bool(7, 6));
+
+    delete dataframe;
 }
 
 int main(int argh, char** argv) {
-    char* easy_txt = const_cast<char*>("../data/easy.txt");
-    char* doc_txt = const_cast<char*>("../data/doc.txt");
+    char* easy_txt = const_cast<char*>("data/easy.txt");
+    char* doc_txt = const_cast<char*>("data/doc.txt");
 
     test_file(easy_txt, 5, 1);
     test_file(doc_txt, 8, 7);

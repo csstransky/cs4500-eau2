@@ -17,6 +17,8 @@ enum enum_type {INTEGER, FLOAT, BOOL, STRING, EMPTY};
 // Assignment only wants us to read the first 500 lines to find the schema of a file
 size_t MAX_SCHEMA_READ = 500;
 
+// Creates a DataFrame by reading a formatted SoR file
+// NOTE: The DataFrame is NOT deleted, and must be grabbed and deleted independently
 class SoR {
     private:
     String* get_string_from_line(vector<string> line, size_t index) {
@@ -25,7 +27,7 @@ class SoR {
             return new String(element.c_str());
         }
         else {
-            return (String*)DEFAULT_STRING_VALUE;
+            return DEFAULT_STRING_VALUE.clone();
         }
     }
 
@@ -369,45 +371,26 @@ class SoR {
 
     DataFrame* dataframe_;
 
-    SoR(char* file_path) : SoR(file_path, 0, get_file_size(file_path)) { }
+    SoR(char* file_path, String* name, KV_Store* kv) : SoR(file_path, 0, get_file_size(file_path), name, kv) { }
 
-    SoR(char* file_path, size_t from, size_t len) {
+    SoR(char* file_path, size_t from, size_t len, String* name, KV_Store* kv) {
         // get column types of the first 500 lines (using max column)
         char* cols_types = get_column_types(file_path);
         Schema schema_(cols_types);
         delete[] cols_types;
 
-        dataframe_ = new DataFrame(schema_);
+        dataframe_ = new DataFrame(schema_, name, kv);
 
         // parse again to add each element
         parse_and_add(file_path, from, len);
     }
 
-    ~SoR() {
-        delete dataframe_;
-    }
-
     /**
-     * Simply get the dataframe from a SoR, but make sure not to use this DataFrame after the SoR is
-     * deleted, as it deletes the DataFrame inside as well.
+     * Simply get the dataframe from a SoR, this will transfer ownership to the return point.
+     * NOTE: Make sure to delete this, as it is independent to the SoR deconstructor.
      */
     DataFrame* get_dataframe() {
         return dataframe_;
-    }
-
-    /** 
-     * You will have to delete this yourself, but be careful because the String values are created
-     * and deleted from the SoR, so be careful not to delete the SoR first.
-     */
-    DataFrame* get_dataframe_clone() {
-        Schema new_schema("");
-        DataFrame* new_dataframe = new DataFrame(new_schema);
-        for (size_t ii = 0; ii < this->dataframe_->ncols(); ii++) {
-            Column* new_column = this->dataframe_->get_column(ii);
-            // We don't care about Column names currently, so all Column names are nullptr
-            new_dataframe->add_column(new_column);
-        }
-        return new_dataframe;
     }
 
     void print() {

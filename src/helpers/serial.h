@@ -3,9 +3,9 @@
 #pragma once
 #include <stdlib.h> 
 #include <string.h> 
-#include "../helpers/object.h"
+#include "object.h"
 
-class Serializer {
+class Serializer : public Object {
     public:
 
     size_t serial_index_;
@@ -16,6 +16,17 @@ class Serializer {
         serial_index_ = 0;
         serial_size_ = serial_size;
         serial_ = new char[serial_size];
+    }
+
+    Serializer(Serializer& from) {
+        serial_index_ = from.serial_index_;
+        serial_size_ = from.serial_size_;
+        serial_ = new char[serial_size_];
+        memcpy(serial_, from.serial_, serial_size_);
+    }
+
+    ~Serializer() {
+        delete[] serial_;
     }
 
     void serialize_size_t(size_t size_t_value) {
@@ -36,6 +47,11 @@ class Serializer {
     void serialize_bool(bool bool_value) {
         memcpy(serial_ + serial_index_, &bool_value, sizeof(bool));
         serial_index_ += sizeof(bool);
+    }
+
+    void serialize_char(char char_value) {
+        memcpy(serial_ + serial_index_, &char_value, sizeof(char));
+        serial_index_ += sizeof(char);
     }
 
     /**
@@ -61,10 +77,25 @@ class Serializer {
     }
 
     /**
-     * NOTE: You are getting the NEW character array with this function, so make sure to delete it
+     * NOTE: You are getting a NEW character array with this function, so make sure to delete it
      */
     char* get_serial() {
-        return serial_;
+        char* new_serial = new char[serial_size_];
+        memcpy(new_serial, serial_, serial_size_);
+        return new_serial;
+    }
+
+    bool equals(Object* other) {
+        Serializer* other_serial = dynamic_cast<Serializer*>(other);
+        return other == this
+            || (other_serial != nullptr
+                && this->serial_size_ == other_serial->serial_size_
+                && this->serial_index_ == other_serial->serial_index_
+                && strncmp(this->serial_, other_serial->serial_, serial_size_) == 0);
+    }
+
+    Serializer* clone() {
+        return new Serializer(*this);
     }
 };
 
@@ -83,6 +114,14 @@ class Deserializer {
     Deserializer(char* serial, size_t serial_index) {
         serial_ = serial;
         serial_index_ = serial_index;
+    }
+
+    size_t get_serial_index() {
+        return serial_index_;
+    }
+
+    void set_serial_index(size_t index) {
+        serial_index_ = index;
     }
 
     size_t deserialize_size_t() {
@@ -111,6 +150,13 @@ class Deserializer {
         memcpy(&bool_value, &serial_[serial_index_], sizeof(bool));
         serial_index_ += sizeof(bool);
         return bool_value;
+    }
+
+    char deserialize_char() {
+        char char_value;
+        memcpy(&char_value, &serial_[serial_index_], sizeof(char));
+        serial_index_ += sizeof(char);
+        return char_value;
     }
 
     // NOTE: The char_array_size does NOT include the null terminator at the end

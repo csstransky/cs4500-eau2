@@ -3,7 +3,7 @@
 #include <cstring>
 #include <string>
 #include <cassert>
-#include "../networks/serial.h"
+#include "serial.h"
 #include "object.h"
 
 /** An immutable string class that wraps a character array.
@@ -82,6 +82,35 @@ public:
         for (size_t i = 0; i < size_; ++i)
             hash = cstr_[i] + (hash << 6) + (hash << 16) - hash;
         return hash;
+    }
+
+    void concat(char* chars) {
+        size_t chars_len = strlen(chars);
+        char* temp_cstr = new char[size_ + chars_len + 1]; // ensure that we copy the terminator
+        memcpy(temp_cstr, cstr_, size_);
+        memcpy(temp_cstr + size_, chars, chars_len + 1);
+        delete[] cstr_;
+        cstr_ = temp_cstr;
+        size_ += chars_len;
+    }
+
+    void concat(const char* chars) {
+        concat(const_cast<char*>(chars));
+    }
+
+    void concat(size_t size_value) {
+        char str[21]; // max char array is "18446744073709551615\0", so 21 chars
+        snprintf(str, sizeof(str), "%zu", size_value);
+        concat(str);
+    }
+
+    void concat(String* other) {
+        char* temp_cstr = new char[size_ + other->size_ + 1]; // ensure that we copy the terminator
+        memcpy(temp_cstr, cstr_, size_);
+        memcpy(temp_cstr + size_, other->cstr_, other->size_ + 1);
+        delete[] cstr_;
+        cstr_ = temp_cstr;
+        size_ += other->size_;
     }
 
     size_t serial_len() {

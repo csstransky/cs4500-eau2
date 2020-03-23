@@ -1,8 +1,8 @@
 //lang::CwC
 #pragma once
 
-#include "../helpers/object.h"
-#include "../helpers/string.h"
+#include "object.h"
+#include "string.h"
 #include <assert.h>
 
 /**
@@ -15,10 +15,14 @@ public:
   size_t count_;
   /** CONSTRUCTORS & DESTRUCTORS **/
 
+  /* Creates a default Array */
+  Array() : Array(1) { }
+
   /* Creates an Array of desired size */
-  Array() {
+  Array(size_t size) {
+    assert(size > 0);
     count_ = 0;
-    size_ = 0;
+    size_ = size;
   }
 
   /* Clears Array from memory */
@@ -52,10 +56,9 @@ public:
 
   // NOTE: Only the base serial size, NOT including the elements of the array
   size_t base_array_serial_size_() {
-    // Includes the total size of the serial message, the size, and the count; NOT elements
-    return sizeof(size_t)
-      + sizeof(size_t)
-      + sizeof(size_t);
+    return sizeof(size_t) // serial_length
+      + sizeof(size_t) // size_
+      + sizeof(size_t); // count_
   }
 
   void serialize_array_(Serializer& serializer) {
@@ -85,15 +88,16 @@ public:
   }
   /** CONSTRUCTORS & DESTRUCTORS **/
 
+  /* Creates a default Array */
+  BoolArray() : BoolArray(1) { }
+
   /* Creates an Array of desired size */
-  BoolArray(const size_t size) {
+  BoolArray(const size_t size) : Array(size) {
     elements_ = new bool[size];
-    size_ = size;
-    count_ = 0;
   }
 
   /* Copies the contents of an already existing Array */
-  BoolArray(BoolArray* const arr) : BoolArray(arr->length()) {
+  BoolArray(BoolArray* const arr) : BoolArray(arr->size_) {
     for (size_t i = 0; i < arr->length(); i++) {
       elements_[i] = arr->get(i);
     }
@@ -126,6 +130,10 @@ public:
     }
 
     return true;
+  }
+
+  BoolArray* clone() {
+    return new BoolArray(this);
   }
 
   /* Inherited from Object, generates a hash for an Array */
@@ -272,15 +280,16 @@ public:
 
   /** CONSTRUCTORS & DESTRUCTORS **/
 
+  /* Creates a default Array */
+  FloatArray() : FloatArray(1) { }
+
   /* Creates an Array of desired size */
-  FloatArray(const size_t size) {
+  FloatArray(const size_t size) : Array(size) {
     elements_ = new float[size];
-    size_ = size;
-    count_ = 0;
   }
 
   /* Copies the contents of an already existing Array */
-  FloatArray(FloatArray* const arr) : FloatArray(arr->length()) {
+  FloatArray(FloatArray* const arr) : FloatArray(arr->size_) {
     for (size_t i = 0; i < arr->length(); i++) {
       elements_[i] = arr->get(i);
     }
@@ -313,6 +322,10 @@ public:
     }
 
     return true;
+  }
+
+  FloatArray* clone() {
+    return new FloatArray(this);
   }
 
   /* Inherited from Object, generates a hash for an Array */
@@ -395,7 +408,7 @@ public:
 
   /* Replaces a float at the given index with the given float, returns the replaced float */
   /* Throws an error if not found or out of range or no elements in array*/
-  float replace(size_t index, int to_add) {
+  float replace(size_t index, float to_add) {
     assert(count_ > 0 && index < count_);
 
     float e = elements_[index];
@@ -458,15 +471,16 @@ public:
 
   /** CONSTRUCTORS & DESTRUCTORS **/
 
+  /* Creates a default Array */
+  IntArray() : IntArray(1) { }
+
   /* Creates an Array of desired size */
-  IntArray(const size_t size) {
+  IntArray(const size_t size) : Array(size) {
     elements_ = new int[size];
-    size_ = size;
-    count_ = 0;
   }
 
   /* Copies the contents of an already existing Array */
-  IntArray(IntArray* arr) : IntArray(arr->length()) {
+  IntArray(IntArray* arr) : IntArray(arr->size_) {
     for (size_t i = 0; i < arr->length(); i++) {
       elements_[i] = arr->get(i);
     }
@@ -499,6 +513,10 @@ public:
     }
 
     return true;
+  }
+
+  IntArray* clone() {
+    return new IntArray(this);
   }
 
   /* Inherited from Object, generates a hash for an Array */
@@ -643,11 +661,12 @@ public:
   }
   /** CONSTRUCTORS & DESTRUCTORS **/
 
+  /* Creates a default Array */
+  ObjectArray() : ObjectArray(1) { }
+
   /* Creates an Array of desired size */
-  ObjectArray(size_t size) {
+  ObjectArray(size_t size) : Array(size) {
     elements_ = new Object*[size];
-    size_ = size;
-    count_ = 0;
   }
 
   /* Copies the contents of an already existing Array */
@@ -694,6 +713,10 @@ public:
     }
 
     return true;
+  }
+
+  ObjectArray* clone() {
+    return new ObjectArray(this);
   }
 
   /* Inherited from Object, generates a hash for an Array */
@@ -757,7 +780,7 @@ public:
       increase_array_();
     }
 
-    elements_[count_] = to_add->clone();
+    elements_[count_] = to_add ? to_add->clone() : nullptr;
     return count_++;
   }
 
@@ -780,13 +803,9 @@ public:
     assert(count_ > 0 && index < count_);
 
     Object* e = elements_[index];
-    elements_[index] = to_add->clone();
+    elements_[index] = to_add ? to_add->clone() : nullptr;
 
     return e;
-  }
-
-  Object* clone() {
-    return new ObjectArray(this);
   }
 
   size_t serial_len() {
@@ -841,6 +860,11 @@ class StringArray : public ObjectArray {
 public:
   /** CONSTRUCTORS & DESTRUCTORS **/
 
+  /* Creates a default Array */
+  StringArray() : StringArray(1) {
+    
+  }
+
   /* Creates an Array of desired size */
   StringArray(const size_t size) : ObjectArray(size) {
     
@@ -858,7 +882,11 @@ public:
 
   /** ARRAY METHODS **/
 
-    /* Adds an StringArray to existing contents */
+  StringArray* clone() {
+    return new StringArray(this);
+  }
+
+  /* Adds an StringArray to existing contents */
   void concat(StringArray* const arr) {
     ObjectArray::concat(arr);
   }

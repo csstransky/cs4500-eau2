@@ -1,12 +1,9 @@
 // Interface for Map and Tests made by @rohitppathak & @trevorstenson
 // https://github.com/rohitppathak/-softdev-2020-ai-part2
 
-#include "../src/map/map.h"
 #include <iostream>
 #include <stdlib.h>
-#include "../src/helpers/object.h"
-#include "../src/helpers/string.h"
-#include "../src/array/array.h"
+#include "../src/helpers/map.h"
 
 void FAIL() { 
     printf("Fail\n");
@@ -14,6 +11,30 @@ void FAIL() {
 }
 void t_true(bool p) { if (!p) FAIL(); }
 void t_false(bool p) { if (p) FAIL(); }
+
+void testPair() {
+    String* a = new String("a");
+    String* b = new String("b");
+    String* c = new String("c");
+    Pair * pair1 = new Pair(a, b);
+
+    t_true(pair1->get_key()->equals(a));
+    t_true(pair1->get_value()->equals(b));
+
+    Pair * pair2 = new Pair(a, b);
+    t_true(pair1->equals(pair2));
+
+    pair1->set_value(c);
+    t_true(pair1->get_value()->equals(c));
+    t_false(pair1->equals(pair2));
+    t_false(pair1->hash() == pair2->hash());
+
+    delete a;
+    delete b;
+    delete pair1;
+    delete pair2;
+    delete c;
+}
 
 void testBasicSOMap () {
     SOMap* map = new SOMap();
@@ -170,11 +191,35 @@ void testBasicSSMap () {
     delete values;
 }
 
-void testErrors() {
-    
-}
+void testIncreaseMap() {
+    SSMap* map = new SSMap();
+    assert(map->isEmpty());
+    assert(map->size() == 0);
+    String value("value");
+    int size = 1000;
+
+    char buf[20];
+    for (int i = 0; i < size; i++) {
+        snprintf(buf, 20, "k_%d", i);
+        String s(buf);
+        map->put(&s, &value);
+    }
+
+    assert(map->size() == size);
+
+    for (int i = 0; i < size; i++) {
+        snprintf(buf, 20, "k_%d", i);
+        String s(buf);
+        String* result = map->get(&s);
+        assert(result->equals(&value));
+    }
+
+    delete map;
+} 
 
 int main() {
+    testPair();
     testBasicSOMap();
     testBasicSSMap();
+    testIncreaseMap();
 }
