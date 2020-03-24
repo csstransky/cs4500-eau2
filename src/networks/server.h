@@ -25,7 +25,7 @@ const char* IP_DEFAULT = "Not registered";
 
 class Server {
     public:
-    String** client_ip_list_;
+    String** connected_client_ips_; // list of CONNECTED IPs
     int connection_socket_; 
     int* client_sockets_;
     struct sockaddr_in my_address_; 
@@ -36,13 +36,13 @@ class Server {
 
     Server(const char* ip_address) {
         // Create client ip list and sockets
-        client_ip_list_ = new String*[MAX_CLIENTS];
+        connected_client_ips_ = new String*[MAX_CLIENTS];
         client_sockets_ = new int[MAX_CLIENTS];
 
         // Zero all client sockets and ips
         for (int i = 0; i < MAX_CLIENTS; i++) {   
             client_sockets_[i] = 0; 
-            client_ip_list_[i] = 0;  
+            connected_client_ips_[i] = 0;  
         } 
 
         // Creating socket file descriptor
@@ -70,7 +70,7 @@ class Server {
 
     ~Server() {  
         // each ip will get freed on shutdown      
-        delete[] client_ip_list_;
+        delete[] connected_client_ips_;
         delete[] client_sockets_;
         delete my_ip_;
     }
@@ -85,7 +85,7 @@ class Server {
         for (int i = 0; i < MAX_CLIENTS; i++) {
             if (client_sockets_[i]) {
                 close(client_sockets_[i]);
-                delete client_ip_list_[i];
+                delete connected_client_ips_[i];
             }
         }
     }
@@ -169,7 +169,7 @@ class Server {
             if( client_sockets_[i] == 0 )   
             {   
                 client_sockets_[i] = new_socket; 
-                client_ip_list_[i] = new String(IP_DEFAULT);
+                connected_client_ips_[i] = new String(IP_DEFAULT);
 
                 //inform user new connection 
                 printf("New Connection. Socket fd is %d, index is %d\n\n" , new_socket, i); 
@@ -185,7 +185,7 @@ class Server {
     int find_ip_in_list_(String* ip) {
         
         for (int i = 0; i < MAX_CLIENTS; i++) {
-            if (client_ip_list_[i] && client_ip_list_[i]->equals(ip) == 0) {
+            if (connected_client_ips_[i] && connected_client_ips_[i]->equals(ip) == 0) {
                 return i;
             }
         }
@@ -236,13 +236,13 @@ class Server {
 
     virtual void remove_client_(int index) {
         printf("Client disconnected, ip %s , sd %d, index %d\n\n" ,  
-                client_ip_list_[index]->c_str() , client_sockets_[index], index);
+                connected_client_ips_[index]->c_str() , client_sockets_[index], index);
 
         //Close the socket and mark as 0 in list for reuse  
         close(client_sockets_[index]); 
         client_sockets_[index] = 0;
-        delete client_ip_list_[index];
-        client_ip_list_[index] = nullptr;   
+        delete connected_client_ips_[index];
+        connected_client_ips_[index] = nullptr;   
     }
 
     int get_new_socket_() {
@@ -287,7 +287,7 @@ class Server {
     void send_kill_() {
         for (int i = 0; i < MAX_CLIENTS; i++) {
             if (client_sockets_[i]) {
-                Message* m = new Kill(my_ip_, client_ip_list_[i]);
+                Message* m = new Kill(my_ip_, connected_client_ips_[i]);
                 printf("Sending kill to sd %d\n\n", client_sockets_[i]);
                 send_message(client_sockets_[i], m);
                 delete m;
