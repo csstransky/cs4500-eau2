@@ -6,7 +6,7 @@
 
 class KV_Store : public Node {
     public:
-    SOMap* kv_map_; // Key.key -> Serializer
+    SOMap* kv_map_; // String* -> Serializer* 
     size_t local_node_index_;
     
     KV_Store(const char* client_ip_address, const char* server_ip_address, size_t local_node_index) 
@@ -23,11 +23,15 @@ class KV_Store : public Node {
         delete kv_map_;
     }
 
+    void put_map_(String* key_name, Serializer* value) {
+        kv_map_->put(key_name, value);
+    }
+
     void put(Key* key, Object* value) {
         if (key->get_node_index() == local_node_index_) {
             Serializer serial(value->serial_len());
             serial.serialize_object(value);
-            kv_map_->put(key->get_key(), &serial);
+            put_map_(key->get_key(), &serial);
         } 
         else {
             // TODO: call upon another Node to put the kv
