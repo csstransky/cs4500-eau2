@@ -28,9 +28,9 @@ class KV_Store : public Node {
     }
 
     void put(Key* key, Object* value) {
+        Serializer serial(value->serial_len());
+        serial.serialize_object(value);
         if (key->get_node_index() == local_node_index_) {
-            Serializer serial(value->serial_len());
-            serial.serialize_object(value);
             put_map_(key->get_key(), &serial);
         } 
         else {

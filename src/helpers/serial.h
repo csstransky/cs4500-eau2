@@ -18,6 +18,13 @@ class Serializer : public Object {
         serial_ = new char[serial_size];
     }
 
+    Serializer(char* serial) {
+        memcpy(&serial_size_, &serial[0], sizeof(size_t));
+        serial_index_ = serial_size_;
+        serial_ = new char[serial_size_];
+        memcpy(&serial_, &serial[0], serial_size_); // TODO, test this, see if it works
+    }
+
     Serializer(Serializer& from) {
         serial_index_ = from.serial_index_;
         serial_size_ = from.serial_size_;
