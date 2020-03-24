@@ -84,13 +84,34 @@ class Message : public Object {
  
 class Ack : public Message {
     public:
+    String* message_;
 
-    Ack(String* sender, String* target) {
+    Ack(String* sender, String* target, String* message) {
         Message::Message_(MsgKind::Ack, sender, target); 
+        message_ = message->clone();
     }
 
     ~Ack() {
         Message::DMessage_();
+        delete message_;
+    }
+
+    String* get_message() {
+        return message_;
+    }
+
+    size_t serial_len() {
+        // includes the total serial length at the beginning
+        return Message::serial_len()
+            + message_->serial_len();
+    }
+
+    char* serialize() {
+        size_t serial_size = serial_len();
+        Serializer serializer(serial_size);
+        serialize_message_(serializer);
+        serializer.serialize_object(message_);
+        return serializer.get_serial();
     }
 
     static Ack* deserialize(char* serial) {
@@ -103,9 +124,12 @@ class Ack : public Message {
         deserializer.deserialize_size_t(); // skip kind_
         static String* sender = String::deserialize(deserializer);
         static String* target = String::deserialize(deserializer);
-        Ack* new_ack = new Ack(sender, target);
+        deserializer.deserialize_size_t(); // skip id_
+        String* message = String::deserialize(deserializer);
+        Ack* new_ack = new Ack(sender, target, message);
         delete sender;
         delete target;
+        delete message;
         return new_ack;
     }
 };

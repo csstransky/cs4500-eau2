@@ -30,21 +30,24 @@ void test_string() {
 void test_ack() {
     String* ip1 = new String("172.10.64.31");
     String* ip2 = new String("10.221.22.2");
-    Ack* ack_message = new Ack(ip1, ip2);
+    String message("Ack serialization passed!\n");
+    Ack* ack_message = new Ack(ip1, ip2, &message);
     assert(ack_message->get_kind() == MsgKind::Ack);
+    assert(ack_message->get_message()->equals(&message));
 
     char* serial = ack_message->serialize();
     Ack* ack_deserial = Ack::deserialize(serial);
     assert(ack_deserial->get_kind() == MsgKind::Ack);
     assert(ack_deserial->get_sender()->equals(ip1));
     assert(ack_deserial->get_target()->equals(ip2));
+    assert(ack_deserial->get_message()->equals(&message));
 
     delete ip1;
     delete ip2;
     delete ack_message;
     delete[] serial;
+    printf("%s", ack_deserial->get_message()->c_str());
     delete ack_deserial;
-    printf("Ack serialization passed!\n");
 }
 
 void test_kill() {
