@@ -35,15 +35,14 @@ class Node : public Server {
         server_ip_ = new String(server_ip_address);  
         kill_ = false;  
         num_other_nodes_ = 0;
-        other_nodes_ = new String*[num_other_nodes_]; 
+        other_nodes_ = nullptr;
+        other_node_indexes_ = nullptr; 
     }
 
     ~Node() {
- 
         delete server_ip_;
-        if (other_nodes_) {
-            delete other_nodes_;
-        }
+        delete other_nodes_;
+        delete other_node_indexes_;
     }
 
     void shutdown() {
@@ -97,9 +96,6 @@ class Node : public Server {
                 Directory* dir_message = dynamic_cast<Directory*>(message);
                 delete other_nodes_;
                 other_nodes_ = dir_message->get_addresses();
-                delete kv_indexes_;
-                kv_indexes_ = dir_message->get_kv_indexes();
-                local_kv_index_ = dir_message->get_local_kv_index();
                 break;
             }
             case MsgKind::Kill: {
@@ -154,7 +150,7 @@ class Node : public Server {
         // Create message
         Message* m = new Put(my_ip_, other_nodes_[index], message);
 
-        send_message_to_node(other_nodes_[index], m);
+        send_message_to_node(other_nodes_->get(index), m);
         delete m;
     }
 

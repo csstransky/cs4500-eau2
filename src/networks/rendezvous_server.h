@@ -22,58 +22,47 @@ class RServer : public Server {
     IntArray* node_indexes_;
 
     RServer(const char* ip_address) : Server(ip_address) {
-        node_indexes_ = new int[MAX_CLIENTS]; // TODO, actually set this up correctly
+        node_indexes_ = new IntArray(MAX_CLIENTS);
     }
 
-    ~RServer() {}
+    ~RServer() {
+        delete node_indexes_;
+    }
     
     void shutdown() {
         send_kill_();
         Server::shutdown();
+        node_indexes_->clear();
     }
 
     void send_directory_message_() {
-        // Create list of active client ips
-        int count = 0;
-        for (int i = 0; i < MAX_CLIENTS; i++) {
-            if (connected_client_ips_[i]) {
-                count += 1;
+        StringArray active_clients(MAX_CLIENTS);
+
+        for (int i = 0; i < connected_client_ips_->length(); i++) {
+            if (is_not_default_ip_(connected_client_ips_->get(i))) {
+                active_clients.push(connected_client_ips_->get(i));
             }
         }
 
-        String** active_clients = new String*[count];
-
-        int index = 0;
-        for (int i = 0; i < MAX_CLIENTS; i++) {
-            // Add all registered ips
-            if (connected_client_ips_[i] && is_not_default_ip_(connected_client_ips_[i])) {
-                active_clients[index] = connected_client_ips_[i];
-                index++;
-            }
-        }
-
-        for (int i = 0; i < MAX_CLIENTS; i++) {
+        for (int i = 0; i < connected_client_ips_->length(); i++) {
             // if socket is has registered send the message
-            if (connected_client_ips_[i] && is_not_default_ip_(connected_client_ips_[i])) {
+            if (is_not_default_ip_(connected_client_ips_->get(i))) {
                 // TODO fix this up
-                Message* message = new Directory(my_ip_, connected_client_ips_[i], active_clients, count);
-                //Message* message = new Register(my_ip_, connected_client_ips_[i]);
+                Message* message = new Directory(my_ip_, connected_client_ips_[i], active_clients);
                 printf("Sending Directory Message to sd %d\n", client_sockets_[i]);
-                send_message(client_sockets_[i], message);
+                send_message(client_sockets_->get(i), message);
                 delete message;
             }
         }
-
-        delete[] active_clients;
     }
 
     void decode_message_(Message* message, int client) {
         switch (message->get_kind()) {
             case MsgKind::Register: {
                 printf("Received Register Message from %s\n", message->get_sender()->c_str());
-                delete connected_client_ips_[client];
-                connected_client_ips_[client] = message->get_sender()->clone();
-                printf("Updated client ip list with %s\n\n", connected_client_ips_[client]->c_str());
+                String* old = connected_client_ips_->replace(client, message->get_sender());
+                delete old;
+                printf("Updated client ip list with %s\n\n", connected_client_ips_->get(client)->c_str());
                 send_directory_message_(); 
                 break;
             }
@@ -90,7 +79,8 @@ class RServer : public Server {
     }
 
     void remove_client_(int index) {
-        Server::remove_client_(index);  
+        Server::remove_client_(index); 
+        node_indexes_->remove(index); 
         
         // Give clients updated list of ips
         send_directory_message_();
