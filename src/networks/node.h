@@ -87,8 +87,9 @@ class Node : public Server {
     void decode_message_(Message* message, int client) {
         switch (message->get_kind()) {
             case MsgKind::Put: {
+                // TODO, fix put and
                 Put* put_message = dynamic_cast<Put*>(message);
-                printf("Message from %s, text: %s\n\n", message->get_sender()->c_str(), put_message->get_message()->c_str());
+                printf("Message from %s, text: %s\n\n", message->get_sender()->c_str(), put_message->get_key_name()->c_str());
                 break;
             }
             case MsgKind::Directory: {
@@ -148,7 +149,8 @@ class Node : public Server {
     void send_put_message_to_node(String* message, int index) {        
 
         // Create message
-        Message* m = new Put(my_ip_, other_nodes_[index], message);
+        // TODO: Actually set up a way to send messages across each other
+        Message* m = new Put(my_ip_, other_nodes_->get(index), message, nullptr);
 
         send_message_to_node(other_nodes_->get(index), m);
         delete m;

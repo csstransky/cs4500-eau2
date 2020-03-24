@@ -10,11 +10,12 @@ class KV_Store : public Node {
     size_t local_node_index_;
     
     KV_Store(const char* client_ip_address, const char* server_ip_address, size_t local_node_index) 
-        : Node(client_ip_address, server_ip_address), KV_Store(local_node_index) {
-
+        : Node(client_ip_address, server_ip_address) {
+        kv_map_ = new SOMap();
+        local_node_index_ = local_node_index;
     }
 
-    KV_Store(size_t local_node_index) {
+    KV_Store(size_t local_node_index) : Node(nullptr, nullptr) {
         kv_map_ = new SOMap();
         local_node_index_ = local_node_index;
     }

@@ -191,50 +191,38 @@ class Directory : public Message {
     StringArray* addresses_;  // owned; strings owned
     IntArray* node_indexes_;
 
-    // TODO here
-    Directory(String* sender, String* target, StringArray* addresses, size_t address_len) {
+    Directory(String* sender, String* target, StringArray* addresses, IntArray* node_indexes) {
         Message::Message_(MsgKind::Directory, sender, target); 
-        address_len_ = address_len;
-        addresses_ = new String*[address_len_];
-        for (size_t ii = 0; ii < address_len_; ii++) {
-            addresses_[ii] = addresses[ii]->clone();
-        }
+        addresses_ = addresses->clone();
+        node_indexes_ = node_indexes->clone();
     }
 
     ~Directory() {
         Message::DMessage_();
-        for (size_t ii = 0; ii < address_len_; ii++) {
-            delete addresses_[ii];
-        }
-        delete[] addresses_;
+        delete addresses_;
+        delete node_indexes_;
     }
 
-    String** get_addresses() {
+    StringArray* get_addresses() {
         return addresses_;
     }
 
-    size_t get_num() {
-        return address_len_;
+    IntArray* get_node_indexes() {
+        return node_indexes_;
     }
 
     size_t serial_len() {
-        size_t addresses_serial_len = 0;
-        for (size_t ii = 0; ii < address_len_; ii++) {
-            addresses_serial_len += addresses_[ii]->serial_len();
-        }
         return Message::serial_len() 
-            + sizeof(size_t)
-            + addresses_serial_len;
+            + addresses_->serial_len()
+            + node_indexes_->serial_len();
     }
 
     char* serialize() {
         size_t serial_size = serial_len();
         Serializer serializer(serial_size);
         serialize_message_(serializer);
-        serializer.serialize_size_t(address_len_);
-        for (size_t ii = 0; ii < address_len_; ii++){
-            serializer.serialize_object(addresses_[ii]);
-        }
+        serializer.serialize_object(addresses_);
+        serializer.serialize_object(node_indexes_);
         return serializer.get_serial();
     }
 
@@ -249,80 +237,61 @@ class Directory : public Message {
         String* sender = String::deserialize(deserializer);
         String* target = String::deserialize(deserializer);
         deserializer.deserialize_size_t(); // skip id_
-
-        size_t address_len = deserializer.deserialize_size_t();
-        String* addresses[address_len];
-        for (size_t ii = 0; ii < address_len; ii++) {
-            addresses[ii] = String::deserialize(deserializer);;
-        }
-        Directory* new_directory = new Directory(sender, target, addresses, address_len);
+        StringArray* addresses = StringArray::deserialize(deserializer);
+        IntArray* node_indexes = IntArray::deserialize(deserializer);
+        Directory* new_directory = new Directory(sender, target, addresses, node_indexes);
         delete sender;
         delete target;
-        for (size_t ii = 0; ii < address_len; ii++) {
-            delete addresses[ii];
-        }
+        delete addresses;
+        delete node_indexes;
         return new_directory;
     }
 };
 
-// TODO: get rid of this
-class DataMessage : public Message {
-    public:
-    String* key_;
-    Serializer* value_;
-    
-    // Private constructor (only visible to sub classes)
-    void DataMessage_(MsgKind kind, String* sender, String* target, String* message) {
-        Message::Message_(kind, sender, target); 
-        message_ = message->clone();
-    }
-
-    // Private deconstructor
-    void DDataMessage_() {
-        Message::DMessage_();
-        delete message_;
-    }
-
-    String* get_message() {
-        return message_;
-    }
-
-    virtual size_t serial_len() {
-        return Message::serial_len() + message_->serial_len();
-    }
-
-    virtual char* serialize() {
-        size_t serial_size = serial_len();
-        Serializer serializer(serial_size);
-        serialize_data_message_(serializer);
-        return serializer.get_serial();
-    }
-
-    void serialize_data_message_(Serializer& serializer) {
-        serialize_message_(serializer);
-        serializer.serialize_object(message_);
-    }
-};
-
-class Put : public DataMessage {
+class Put : public Message {
     public:
     String* key_name_;
     Serializer* value_;
 
-    Put(String* sender, String* target, String* key, Serializer* value) {
-        DataMessage::DataMessage_(MsgKind::Put, sender, target, message); 
+    Put(String* sender, String* target, String* key_name, Serializer* value) {
+        Message::Message_(MsgKind::Put, sender, target);
+        key_name_ = key_name->clone();
+        value_ = value->clone();
     }
 
     ~Put() {
-        DataMessage::DDataMessage_();
+        Message::DMessage_();
+        delete key_name_;
+        delete value_;
     }
 
+    String* get_key_name() {
+        return key_name_;
+    }
 
-    virtual char* serialize() {
+    Serializer* get_value() {
+        return value_;
+    }
+
+    /**
+     * NOTE: You are getting a NEW character array with this function, so make sure to delete it
+     */
+    char* get_serial() {
+        return value_->get_serial();
+    }
+
+    size_t serial_len() {
+        return Message::serial_len() 
+            + key_name_->serial_len()
+            + value_->serial_len();
+    }
+
+    char* serialize() {
         size_t serial_size = serial_len();
         Serializer serializer(serial_size);
         serialize_message_(serializer);
-        serializer.serialize_chars(value_->get_serial());
+        serializer.serialize_object(key_name_);
+        serializer.serialize_object(value_);
         return serializer.get_serial();
     }
 
@@ -337,25 +306,47 @@ class Put : public DataMessage {
         String* sender = String::deserialize(deserializer);
         String* target = String::deserialize(deserializer);
         deserializer.deserialize_size_t(); // skip id_
-        String* message = String::deserialize(deserializer);
-        Put* new_put = new Put(sender, target, message);
+        String* key_name = String::deserialize(deserializer);
+        Serializer* value = Serializer::deserialize(deserializer);
+
+        Put* new_put = new Put(sender, target, key_name, value);
         delete sender;
         delete target;
-        delete message;
+        delete key_name;
+        delete value;
         return new_put;
     }
 };
 
-class Get : public DataMessage {
+class Get : public Message {
     public:
     String* key_name_;
 
     Get(String* sender, String* target, String* key_name) {
-        DataMessage::DataMessage_(MsgKind::Get, sender, target, message); 
+        Message::Message_(MsgKind::Get, sender, target); 
+        key_name_ = key_name->clone();
     }
 
     ~Get() {
-        DataMessage::DDataMessage_();
+        Message::DMessage_();
+        delete key_name_;
+    }
+
+    String* get_key_name() {
+        return key_name_;
+    }
+
+    size_t serial_len() {
+        return Message::serial_len() 
+            + key_name_->serial_len();
+    }
+
+    char* serialize() {
+        size_t serial_size = serial_len();
+        Serializer serializer(serial_size);
+        serialize_message_(serializer);
+        serializer.serialize_object(key_name_);
+        return serializer.get_serial();
     }
 
     static Get* deserialize(char* serial) {
@@ -369,25 +360,51 @@ class Get : public DataMessage {
         String* sender = String::deserialize(deserializer);
         String* target = String::deserialize(deserializer);
         deserializer.deserialize_size_t(); // skip id_
-        String* message = String::deserialize(deserializer);
-        Get* new_get = new Get(sender, target, message);
+        String* key_name = String::deserialize(deserializer);
+        Get* new_get = new Get(sender, target, key_name);
         delete sender;
         delete target;
-        delete message;
+        delete key_name;
         return new_get;
     }
 };
 
-class Value : public DataMessage {
+class Value : public Message {
     public:
     Serializer* value_;
 
     Value(String* sender, String* target, Serializer* value) {
-        DataMessage::DataMessage_(MsgKind::Value, sender, target, message); 
+        Message::Message_(MsgKind::Value, sender, target); 
+        value_ = value->clone();
     }
 
     ~Value() {
-        DataMessage::DDataMessage_();
+        Message::DMessage_();
+        delete value_;
+    }
+
+    Serializer* get_value() {
+        return value_;
+    }
+    
+    /**
+     * NOTE: You are getting a NEW character array with this function, so make sure to delete it
+     */
+    char* get_serial() {
+        return value_->get_serial();
+    }
+
+    size_t serial_len() {
+        return Message::serial_len() 
+            + value_->serial_len();
+    }
+
+    char* serialize() {
+        size_t serial_size = serial_len();
+        Serializer serializer(serial_size);
+        serialize_message_(serializer);
+        serializer.serialize_object(value_);
+        return serializer.get_serial();
     }
 
     static Value* deserialize(char* serial) {
@@ -401,11 +418,12 @@ class Value : public DataMessage {
         String* sender = String::deserialize(deserializer);
         String* target = String::deserialize(deserializer);
         deserializer.deserialize_size_t(); // skip id_
-        String* message = String::deserialize(deserializer);
-        Value* new_value = new Value(sender, target, message);
+        Serializer* value = Serializer::deserialize(deserializer);
+
+        Value* new_value = new Value(sender, target, value);
         delete sender;
         delete target;
-        delete message;
+        delete value;
         return new_value;
     }
 };
@@ -429,6 +447,10 @@ Message* deserialize_message(char* buff) {
             return Put::deserialize(buff);
         case MsgKind::Register:
             return Register::deserialize(buff);
+        case MsgKind::Get:
+            return Get::deserialize(buff);
+        case MsgKind::Value:
+            return Value::deserialize(buff);
         default:
             assert(0);
     }

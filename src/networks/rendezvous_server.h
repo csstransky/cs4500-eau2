@@ -69,7 +69,7 @@ class RServer : public Server {
             case MsgKind::Put: {
                 printf("Received Put Message from %s with text ", message->get_sender()->c_str());
                 Put* put_message = dynamic_cast<Put*>(message);
-                printf("%s\n\n", put_message->get_message()->c_str());
+                printf("%s\n\n", put_message->get_key_name()->c_str());
                 break;
             }
             default:

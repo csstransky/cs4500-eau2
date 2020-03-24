@@ -5,6 +5,76 @@
 #include <string.h> 
 #include "object.h"
 
+// NOTE: When using deserialize methods, it MUST be done in order of the serial given to it, or
+// else segfaults will occur
+class Deserializer {
+    public: 
+    char* serial_;
+    size_t serial_index_;
+
+    Deserializer(char* serial) {
+        serial_ = serial;
+        serial_index_ = 0;
+    }
+
+    Deserializer(char* serial, size_t serial_index) {
+        serial_ = serial;
+        serial_index_ = serial_index;
+    }
+
+    size_t get_serial_index() {
+        return serial_index_;
+    }
+
+    void set_serial_index(size_t index) {
+        serial_index_ = index;
+    }
+
+    size_t deserialize_size_t() {
+        size_t size_t_value;
+        memcpy(&size_t_value, &serial_[serial_index_], sizeof(size_t));
+        serial_index_ += sizeof(size_t);
+        return size_t_value;
+    }
+
+    int deserialize_int() {
+        int int_value;
+        memcpy(&int_value, &serial_[serial_index_], sizeof(int));
+        serial_index_ += sizeof(int);
+        return int_value;
+    }
+
+    float deserialize_float() {
+        float float_value;
+        memcpy(&float_value, &serial_[serial_index_], sizeof(float));
+        serial_index_ += sizeof(float);
+        return float_value;
+    }
+
+    bool deserialize_bool() {
+        bool bool_value;
+        memcpy(&bool_value, &serial_[serial_index_], sizeof(bool));
+        serial_index_ += sizeof(bool);
+        return bool_value;
+    }
+
+    char deserialize_char() {
+        char char_value;
+        memcpy(&char_value, &serial_[serial_index_], sizeof(char));
+        serial_index_ += sizeof(char);
+        return char_value;
+    }
+
+    // NOTE: The char_array_size does NOT include the null terminator at the end
+    // NOTE: The returned char array must be deleted as well
+    char* deserialize_char_array(size_t char_array_size) {
+        char* string_chars = new char[char_array_size + 1];
+        memcpy(string_chars, &serial_[serial_index_], sizeof(char) * (char_array_size + 1));
+        serial_index_ += sizeof(char) * (char_array_size + 1);
+        return string_chars;
+    }
+};
+
 class Serializer : public Object {
     public:
 
@@ -22,7 +92,7 @@ class Serializer : public Object {
         memcpy(&serial_size_, &serial[0], sizeof(size_t));
         serial_index_ = serial_size_;
         serial_ = new char[serial_size_];
-        memcpy(&serial_, &serial[0], serial_size_); // TODO, test this, see if it works
+        memcpy(serial_, serial, serial_size_);
     }
 
     Serializer(Serializer& from) {
@@ -92,6 +162,16 @@ class Serializer : public Object {
         return new_serial;
     }
 
+    /******* METHODS FROM OBJECT ******/
+
+    size_t serial_len() {
+        return get_serial_size();
+    }
+
+    char* serialize() {
+        return get_serial();
+    }
+
     bool equals(Object* other) {
         Serializer* other_serial = dynamic_cast<Serializer*>(other);
         return other == this
@@ -104,74 +184,15 @@ class Serializer : public Object {
     Serializer* clone() {
         return new Serializer(*this);
     }
-};
 
-// NOTE: When using deserialize methods, it MUST be done in order of the serial given to it, or
-// else segfaults will occur
-class Deserializer {
-    public: 
-    char* serial_;
-    size_t serial_index_;
+    static Serializer* deserialize(Deserializer& deserial) {
+        size_t starting_index = deserial.get_serial_index();
+        size_t serial_size = deserial.deserialize_size_t();
+        deserial.set_serial_index(starting_index); // bring deserial back to the beginning
 
-    Deserializer(char* serial) {
-        serial_ = serial;
-        serial_index_ = 0;
-    }
-
-    Deserializer(char* serial, size_t serial_index) {
-        serial_ = serial;
-        serial_index_ = serial_index;
-    }
-
-    size_t get_serial_index() {
-        return serial_index_;
-    }
-
-    void set_serial_index(size_t index) {
-        serial_index_ = index;
-    }
-
-    size_t deserialize_size_t() {
-        size_t size_t_value;
-        memcpy(&size_t_value, &serial_[serial_index_], sizeof(size_t));
-        serial_index_ += sizeof(size_t);
-        return size_t_value;
-    }
-
-    int deserialize_int() {
-        int int_value;
-        memcpy(&int_value, &serial_[serial_index_], sizeof(int));
-        serial_index_ += sizeof(int);
-        return int_value;
-    }
-
-    float deserialize_float() {
-        float float_value;
-        memcpy(&float_value, &serial_[serial_index_], sizeof(float));
-        serial_index_ += sizeof(float);
-        return float_value;
-    }
-
-    bool deserialize_bool() {
-        bool bool_value;
-        memcpy(&bool_value, &serial_[serial_index_], sizeof(bool));
-        serial_index_ += sizeof(bool);
-        return bool_value;
-    }
-
-    char deserialize_char() {
-        char char_value;
-        memcpy(&char_value, &serial_[serial_index_], sizeof(char));
-        serial_index_ += sizeof(char);
-        return char_value;
-    }
-
-    // NOTE: The char_array_size does NOT include the null terminator at the end
-    // NOTE: The returned char array must be deleted as well
-    char* deserialize_char_array(size_t char_array_size) {
-        char* string_chars = new char[char_array_size + 1];
-        memcpy(string_chars, &serial_[serial_index_], sizeof(char) * (char_array_size + 1));
-        serial_index_ += sizeof(char) * (char_array_size + 1);
-        return string_chars;
+        char* serial = deserial.deserialize_char_array(serial_size);
+        Serializer* deserial_serializer = new Serializer(serial);
+        delete[] serial;
+        return deserial_serializer;
     }
 };
