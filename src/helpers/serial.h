@@ -190,7 +190,10 @@ class Serializer : public Object {
         size_t serial_size = deserial.deserialize_size_t();
         deserial.set_serial_index(starting_index); // bring deserial back to the beginning
 
-        char* serial = deserial.deserialize_char_array(serial_size);
+        // TODO: fix this in the future because we're copying when we don't need to
+        // NOTE: we include all values in serial_size, but need to ignore '\0' of usual character
+        // array with "serial_size - 1"
+        char* serial = deserial.deserialize_char_array(serial_size - 1);
         Serializer* deserial_serializer = new Serializer(serial);
         delete[] serial;
         return deserial_serializer;
