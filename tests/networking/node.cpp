@@ -36,7 +36,7 @@ int main(int argc, char const *argv[]) {
     const char* server_ip_address = get_input_server_ip_address(argc, argv);
 
     Node* node = new Node(client_ip_address, server_ip_address);
-    node->connect_to_server();
+    node->connect_to_server(0);
 
     // Create random timeout between 0 and 10
     // Adding randomness for demo
@@ -46,7 +46,7 @@ int main(int argc, char const *argv[]) {
     // Send message to random node
     String* hi = new String("hi");
     int index = rand() % node->get_num_other_nodes();
-    node->send_put_message_to_node(hi, index);
+    node->send_ack_message_to_node(hi, index);
     delete hi;
 
     timeout = -1;

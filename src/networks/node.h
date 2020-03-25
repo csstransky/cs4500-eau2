@@ -26,7 +26,6 @@ class Node : public Server {
     // list of POSSIBLE IPs to connect to
     StringArray* other_nodes_; // TODO: Get StringArray working
     IntArray* other_node_indexes_;
-    size_t num_other_nodes_;
     bool kill_;
 
     // Strictly used to test a local KV_Store
@@ -41,7 +40,6 @@ class Node : public Server {
         server_socket_ = 0; 
         server_ip_ = new String(server_ip_address);  
         kill_ = false;  
-        num_other_nodes_ = 0;
         other_nodes_ = nullptr;
         other_node_indexes_ = nullptr; 
     }
@@ -103,7 +101,9 @@ class Node : public Server {
                 printf("Received Directory Message\n\n");
                 Directory* dir_message = dynamic_cast<Directory*>(message);
                 delete other_nodes_;
-                other_nodes_ = dir_message->get_addresses();
+                other_nodes_ = dir_message->get_addresses()->clone();
+                delete other_node_indexes_;
+                other_node_indexes_ = dir_message->get_node_indexes()->clone();
                 break;
             }
             case MsgKind::Kill: {
@@ -115,6 +115,12 @@ class Node : public Server {
             case MsgKind::Register: 
                 printf("Received Register Message from %s\n\n", message->get_sender()->c_str());
                 break;
+            case MsgKind::Ack: {
+                printf("Received Ack Message from %s with text ", message->get_sender()->c_str());
+                Ack* ack_message = dynamic_cast<Ack*>(message);
+                printf("%s\n\n", ack_message->get_message()->c_str());
+                break;
+            }
             default:
                 assert(0);
         }
@@ -134,7 +140,7 @@ class Node : public Server {
     }
 
     int get_num_other_nodes() {
-        return num_other_nodes_;
+        return other_node_indexes_->length();
     }
 
     void send_message_to_node(String* node_ip, Message* message) {
@@ -153,7 +159,7 @@ class Node : public Server {
         close(socket);
     }
 
-    void send_put_message_to_node(String* message, int index) {        
+    void send_ack_message_to_node(String* message, int index) {        
 
         // Create message
         // TODO: Actually set up a way to send messages across each other

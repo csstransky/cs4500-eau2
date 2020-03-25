@@ -37,10 +37,12 @@ class RServer : public Server {
 
     void send_directory_message_() {
         StringArray active_clients(MAX_CLIENTS);
+        IntArray active_node_indexes(MAX_CLIENTS);
 
         for (int i = 0; i < connected_client_ips_->length(); i++) {
             if (is_not_default_ip_(connected_client_ips_->get(i))) {
                 active_clients.push(connected_client_ips_->get(i));
+                active_node_indexes.push(node_indexes_->get(i));
             }
         }
 
@@ -48,8 +50,8 @@ class RServer : public Server {
             // if socket is has registered send the message
             if (is_not_default_ip_(connected_client_ips_->get(i))) {
                 // TODO fix this up
-                Message* message = new Directory(my_ip_, connected_client_ips_[i], active_clients);
-                printf("Sending Directory Message to sd %d\n", client_sockets_[i]);
+                Message* message = new Directory(my_ip_, connected_client_ips_->get(i), &active_clients, &active_node_indexes);
+                printf("Sending Directory Message to sd %d\n", client_sockets_->get(i));
                 send_message(client_sockets_->get(i), message);
                 delete message;
             }
@@ -59,8 +61,13 @@ class RServer : public Server {
     void decode_message_(Message* message, int client) {
         switch (message->get_kind()) {
             case MsgKind::Register: {
+                Register* reg = dynamic_cast<Register*>(message);
                 printf("Received Register Message from %s\n", message->get_sender()->c_str());
                 String* old = connected_client_ips_->replace(client, message->get_sender());
+                while (node_indexes_->length() <= client) {
+                    node_indexes_->push(-1);
+                }
+                node_indexes_->replace(client, reg->get_node_index());
                 delete old;
                 printf("Updated client ip list with %s\n\n", connected_client_ips_->get(client)->c_str());
                 send_directory_message_(); 
