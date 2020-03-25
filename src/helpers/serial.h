@@ -89,7 +89,7 @@ class Serializer : public Object {
     }
 
     Serializer(char* serial) {
-        memcpy(&serial_size_, &serial[0], sizeof(size_t));
+        memcpy(&serial_size_, serial, sizeof(size_t));
         serial_index_ = serial_size_;
         serial_ = new char[serial_size_];
         memcpy(serial_, serial, serial_size_);
