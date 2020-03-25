@@ -29,6 +29,13 @@ class Node : public Server {
     size_t num_other_nodes_;
     bool kill_;
 
+    // Strictly used to test a local KV_Store
+    Node() : Server(){
+        server_ip_ = nullptr;
+        other_nodes_ = nullptr;
+        other_node_indexes_ = nullptr;
+    }
+
     Node(const char* client_ip_address, const char* server_ip_address) : Server(client_ip_address) {
         server_address_ = get_new_sockaddr_(server_ip_address, PORT);  
         server_socket_ = 0; 
@@ -150,7 +157,7 @@ class Node : public Server {
 
         // Create message
         // TODO: Actually set up a way to send messages across each other
-        Message* m = new Put(my_ip_, other_nodes_->get(index), message, nullptr);
+        Message* m = new Ack(my_ip_, other_nodes_->get(index), message);
 
         send_message_to_node(other_nodes_->get(index), m);
         delete m;

@@ -34,6 +34,13 @@ class Server {
     // Point of this is to store all open fds so we can monitor the open ones
     fd_set readfds_; 
 
+    // Strictly used to test a local KV_Store
+    Server() {
+        connected_client_ips_ = nullptr;
+        client_sockets_ = nullptr;
+        my_ip_ = nullptr;
+    }
+
     Server(const char* ip_address) {
         // Create client ip list and sockets
         connected_client_ips_ = new StringArray(MAX_CLIENTS);
@@ -164,7 +171,7 @@ class Server {
         client_sockets_->push(new_socket);
         String s(IP_DEFAULT);
         connected_client_ips_->push(&s);   
-        printf("New Connection. Socket fd is %d, index is %d\n\n" , new_socket, client_sockets_->length() - 1);  
+        printf("New Connection. Socket fd is %d, index is %zu\n\n" , new_socket, client_sockets_->length() - 1);  
             
     } 
 

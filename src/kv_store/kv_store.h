@@ -15,7 +15,7 @@ class KV_Store : public Node {
         local_node_index_ = local_node_index;
     }
 
-    KV_Store(size_t local_node_index) : Node(nullptr, nullptr) {
+    KV_Store(size_t local_node_index) : Node() {
         kv_map_ = new SOMap();
         local_node_index_ = local_node_index;
     }
