@@ -101,7 +101,7 @@ class Server {
             check_for_connections_();
             check_for_client_messages_();
         }
-        printf("No activity on server. Shutting down...\n");
+        printf("No activity on server.\n");
     }
 
     /**
@@ -178,7 +178,7 @@ class Server {
     int find_ip_in_list_(String* ip) {
         
         for (int i = 0; i < connected_client_ips_->length(); i++) {
-            if (connected_client_ips_->get(i)->equals(ip) == 0) {
+            if (connected_client_ips_->get(i)->equals(ip)) {
                 return i;
             }
         }
@@ -186,8 +186,20 @@ class Server {
         assert(0);
     }
 
-    virtual void decode_message_(Message* message, int client) {
+    // returns if the message was handled
+    virtual bool decode_message_(Message* message, int client) {
         // common responses to message 
+        switch (message->get_kind()) {
+            case MsgKind::Ack: {
+                printf("Received Ack Message from %s with text ", message->get_sender()->c_str());
+                Ack* ack_message = dynamic_cast<Ack*>(message);
+                printf("%s\n\n", ack_message->get_message()->c_str());
+                break;
+            }
+            default:
+                return 0;
+        }
+        return 1;
     }
 
     // nullptr is return if it is a disconnect

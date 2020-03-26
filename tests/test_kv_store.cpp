@@ -1,4 +1,7 @@
+#include <sys/wait.h>
+
 #include "../src/kv_store/kv_store.h"
+#include "../src/networks/rendezvous_server.h"
 
 void test_put_get() {
     String k("k");
@@ -198,6 +201,73 @@ void test_multiple() {
     printf("KV Store multiple objects test passed!\n");
 }
 
+void test_receive_put() {
+    int cpid;
+    String* server_ip = new String("127.0.0.1");
+    String* client_ip = new String("127.0.0.2");
+
+    // Fork to create another process
+    if ((cpid = fork())) {
+        // In parent process
+
+        // Start server
+        RServer* server = new RServer(server_ip->c_str()); 
+        server->run_server(2);
+
+        // check for registered client
+        assert(server->client_sockets_->length() == 1);
+        assert(server->connected_client_ips_->length() == 1);
+        assert(server->connected_client_ips_->get(0)->equals(client_ip));
+        assert(server->node_indexes_->length() == 1);
+        assert(server->node_indexes_->get(0) == 0);
+
+        Key key("key", 0);
+        IntArray array(1);
+        array.push(1);
+        Serializer serial(array.serial_len());
+        serial.serialize_object(&array);
+        Put message(server_ip, client_ip, key.get_key(), &serial);
+        server->send_message(client_ip, &message);
+        
+        // wait for child to finish
+        int st;
+        waitpid(cpid, &st, 0);
+        server->run_server(0.5);
+        server->shutdown();
+        delete server;
+        delete client_ip;
+        delete server_ip;
+    } else {
+        // In child process
+
+        // sleep .5s
+        sleep(0.5);
+
+        // start node
+        KV_Store* kv = new KV_Store(client_ip->c_str(), server_ip->c_str(), 0);
+        kv->connect_to_server(0);
+        kv->run_server(5);
+
+        Key* key = new Key("key", 0);
+
+        assert(kv->kv_map_->size() == 1);
+        IntArray* array = kv->get_int_array(key);
+        assert(array);
+        assert(array->get(0) == 1);
+
+        delete kv;
+        delete key;
+        delete array;
+        delete server_ip;
+        delete client_ip;
+
+        // exit
+        exit(0);
+    }
+
+    printf("KV Store receive put message test passed!\n");
+}
+
 int main(int argc, char const *argv[]) {
     test_put_get();
     test_int_array();
@@ -205,5 +275,6 @@ int main(int argc, char const *argv[]) {
     test_bool_array();
     test_string_array();
     test_multiple();
+    test_receive_put();
     printf("All KV Store test passed!\n");
 }

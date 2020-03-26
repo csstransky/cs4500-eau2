@@ -70,7 +70,6 @@ class Node : public Server {
     }
 
     void register_with_server_(size_t local_node_index) {
-        // TODO add node index here
         Message* m = new Register(my_ip_, server_ip_, local_node_index);
         printf("Sending ip\n");
         send_message(server_socket_, m);
@@ -89,14 +88,12 @@ class Node : public Server {
     }
 
     // -1 is the server
-    void decode_message_(Message* message, int client) {
+    bool decode_message_(Message* message, int client) {
+        if (Server::decode_message_(message, client)) {
+            return 1;
+        }
+
         switch (message->get_kind()) {
-            case MsgKind::Put: {
-                // TODO, fix put and
-                Put* put_message = dynamic_cast<Put*>(message);
-                printf("Message from %s, text: %s\n\n", message->get_sender()->c_str(), put_message->get_key_name()->c_str());
-                break;
-            }
             case MsgKind::Directory: {
                 printf("Received Directory Message\n\n");
                 Directory* dir_message = dynamic_cast<Directory*>(message);
@@ -112,18 +109,10 @@ class Node : public Server {
                 shutdown();
                 break;
             }
-            case MsgKind::Register: 
-                printf("Received Register Message from %s\n\n", message->get_sender()->c_str());
-                break;
-            case MsgKind::Ack: {
-                printf("Received Ack Message from %s with text ", message->get_sender()->c_str());
-                Ack* ack_message = dynamic_cast<Ack*>(message);
-                printf("%s\n\n", ack_message->get_message()->c_str());
-                break;
-            }
             default:
-                assert(0);
+                return 0;;
         }
+        return 1;
     }
 
     int set_socket_set_() {

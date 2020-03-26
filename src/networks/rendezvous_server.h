@@ -58,7 +58,10 @@ class RServer : public Server {
         }
     }
 
-    void decode_message_(Message* message, int client) {
+    bool decode_message_(Message* message, int client) {
+        if (Server::decode_message_(message, client)) {
+            return 1;
+        }
         switch (message->get_kind()) {
             case MsgKind::Register: {
                 Register* reg = dynamic_cast<Register*>(message);
@@ -73,16 +76,13 @@ class RServer : public Server {
                 send_directory_message_(); 
                 break;
             }
-            case MsgKind::Put: {
-                printf("Received Put Message from %s with text ", message->get_sender()->c_str());
-                Put* put_message = dynamic_cast<Put*>(message);
-                printf("%s\n\n", put_message->get_key_name()->c_str());
-                break;
-            }
             default:
-                printf("Received Unknown Message from %s\n\n", message->get_sender()->c_str());
+                // Nobody inherits from rserver so it has to handle the message
                 assert(0);
+                return 0;
         }
+
+        return 1;
     }
 
     void remove_client_(int index) {

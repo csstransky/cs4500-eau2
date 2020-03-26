@@ -35,8 +35,10 @@ class KV_Store : public Node {
             put_map_(key->get_key(), &serial);
         } 
         else {
-            // TODO: call upon another Node to put the kv
-            assert(0);
+            // call upon another Node to put the kv
+            int index = other_node_indexes_->index_of(key->get_node_index());
+            Put message(my_ip_, other_nodes_->get(index), key->get_key(), &serial);
+            send_message_to_node(other_nodes_->get(index), &message);
         }
     }
 
@@ -88,5 +90,24 @@ class KV_Store : public Node {
         StringArray* string_array = StringArray::deserialize(kv_serial);
         delete[] kv_serial;
         return string_array;
+    }
+
+    bool decode_message_(Message* message, int client) {
+        if (Node::decode_message_(message, client)) {
+            return 1;
+        }
+        switch (message->get_kind()) {
+            case MsgKind::Put: {
+                Put* put_message = dynamic_cast<Put*>(message);
+                printf("Message from %s, key: %s\n\n", message->get_sender()->c_str(), put_message->get_key_name()->c_str());
+                put_map_(put_message->get_key_name(), put_message->get_value());
+                break;
+            }
+
+            default:
+                // Nobody inherits from kv store so it has to handle the message
+                assert(0);
+        }
+        return 1;
     }
 };
