@@ -201,7 +201,7 @@ void test_multiple() {
     printf("KV Store multiple objects test passed!\n");
 }
 
-void test_receive_put() {
+void test_put_other_node() {
     int cpid[2];
     String* server_ip = new String("127.0.0.1");
     String* client_ip1 = new String("127.0.0.2");
@@ -226,8 +226,7 @@ void test_receive_put() {
         array->push(1);
         Serializer* serial = new Serializer(array->serial_len());
         serial->serialize_object(array);
-        Put* message = new Put(client_ip1, client_ip2, key->get_key(), serial);
-        kv->send_message_to_node(client_ip2, message);
+        kv->put(key, serial);
 
         kv->run_server(-1);
 
@@ -235,7 +234,6 @@ void test_receive_put() {
         delete key;
         delete array;
         delete serial;
-        delete message;
         delete server_ip;
         delete client_ip1;
         delete client_ip2;
@@ -304,6 +302,6 @@ int main(int argc, char const *argv[]) {
     test_bool_array();
     test_string_array();
     test_multiple();
-    test_receive_put();
+    test_put_other_node();
     printf("All KV Store test passed!\n");
 }
