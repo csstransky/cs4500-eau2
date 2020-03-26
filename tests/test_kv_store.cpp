@@ -202,41 +202,14 @@ void test_multiple() {
 }
 
 void test_receive_put() {
-    int cpid;
+    int cpid[2];
     String* server_ip = new String("127.0.0.1");
-    String* client_ip = new String("127.0.0.2");
+    String* client_ip1 = new String("127.0.0.2");
+    String* client_ip2 = new String("127.0.0.3");
 
     // Fork to create another process
-    if ((cpid = fork())) {
-        // In parent process
-
-        // Start server
-        RServer* server = new RServer(server_ip->c_str()); 
-        server->run_server(2);
-
-        // check for registered client
-        assert(server->client_sockets_->length() == 1);
-        assert(server->connected_client_ips_->length() == 1);
-        assert(server->connected_client_ips_->get(0)->equals(client_ip));
-        assert(server->node_indexes_->length() == 1);
-        assert(server->node_indexes_->get(0) == 0);
-
-        Key key("key", 0);
-        IntArray array(1);
-        array.push(1);
-        Serializer serial(array.serial_len());
-        serial.serialize_object(&array);
-        Put message(server_ip, client_ip, key.get_key(), &serial);
-        server->send_message(client_ip, &message);
+    if ((cpid[0] = fork())) {
         
-        // wait for child to finish
-        int st;
-        waitpid(cpid, &st, 0);
-        server->run_server(0.5);
-        server->shutdown();
-        delete server;
-        delete client_ip;
-        delete server_ip;
     } else {
         // In child process
 
@@ -244,9 +217,46 @@ void test_receive_put() {
         sleep(0.5);
 
         // start node
-        KV_Store* kv = new KV_Store(client_ip->c_str(), server_ip->c_str(), 0);
+        KV_Store* kv = new KV_Store(client_ip1->c_str(), server_ip->c_str(), 1);
+        kv->connect_to_server(1);
+        kv->run_server(1);
+
+        Key* key = new Key("key", 0);
+        IntArray* array = new IntArray(1);
+        array->push(1);
+        Serializer* serial = new Serializer(array->serial_len());
+        serial->serialize_object(array);
+        Put* message = new Put(client_ip1, client_ip2, key->get_key(), serial);
+        kv->send_message_to_node(client_ip2, message);
+
+        kv->run_server(-1);
+
+        delete kv;
+        delete key;
+        delete array;
+        delete serial;
+        delete message;
+        delete server_ip;
+        delete client_ip1;
+        delete client_ip2;
+
+        // exit
+        exit(0);
+    }
+
+    // Fork to create another process
+    if ((cpid[1] = fork())) {
+        
+    } else {
+        // In child process
+
+        // sleep .5s
+        sleep(0.5);
+
+        // start node
+        KV_Store* kv = new KV_Store(client_ip2->c_str(), server_ip->c_str(), 0);
         kv->connect_to_server(0);
-        kv->run_server(5);
+        kv->run_server(3);
 
         Key* key = new Key("key", 0);
 
@@ -255,15 +265,34 @@ void test_receive_put() {
         assert(array);
         assert(array->get(0) == 1);
 
+        kv->run_server(-1);
+
         delete kv;
         delete key;
         delete array;
         delete server_ip;
-        delete client_ip;
+        delete client_ip1;
+        delete client_ip2;
 
         // exit
         exit(0);
     }
+
+    // In parent process
+
+    // Start server
+    RServer* server = new RServer(server_ip->c_str()); 
+    server->run_server(5);
+    server->shutdown();
+
+    // wait for child to finish
+    int st;
+    waitpid(cpid[0], &st, 0);
+    waitpid(cpid[1], &st, 0);
+    delete server;
+    delete client_ip1;
+    delete client_ip2;
+    delete server_ip;
 
     printf("KV Store receive put message test passed!\n");
 }

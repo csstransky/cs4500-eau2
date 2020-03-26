@@ -176,14 +176,15 @@ class Server {
     } 
 
     int find_ip_in_list_(String* ip) {
-        
-        for (int i = 0; i < connected_client_ips_->length(); i++) {
-            if (connected_client_ips_->get(i)->equals(ip)) {
-                return i;
-            }
+
+        size_t index = connected_client_ips_->index_of(ip);
+
+        if (index == -1) {
+            printf("No client with given ip\n");
+            assert(0);
         }
-        printf("No client with given ip\n");
-        assert(0);
+        
+        return index;
     }
 
     // returns if the message was handled

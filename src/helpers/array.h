@@ -748,7 +748,7 @@ public:
   /* Returns the index of the given Object, -1 if Object is not found */
   size_t index_of(Object* const to_find) {
     for (size_t i = 0; i < count_; i++) {
-      if (elements_[i] == to_find) {
+      if (elements_[i]->equals(to_find)) {
         return i;
       }
     }
