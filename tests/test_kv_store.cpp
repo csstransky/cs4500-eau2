@@ -219,7 +219,9 @@ void test_put_other_node() {
         // start node
         KV_Store* kv = new KV_Store(client_ip1->c_str(), server_ip->c_str(), 1);
         kv->connect_to_server(1);
-        kv->run_server(1);
+        kv->run_server(-1);
+
+        sleep(1);
 
         Key* key = new Key("key", 0);
         IntArray* array = new IntArray(1);
@@ -228,7 +230,7 @@ void test_put_other_node() {
         serial->serialize_object(array);
         kv->put(key, serial);
 
-        kv->run_server(-1);
+        kv->shutdown();
 
         delete kv;
         delete key;
@@ -254,7 +256,9 @@ void test_put_other_node() {
         // start node
         KV_Store* kv = new KV_Store(client_ip2->c_str(), server_ip->c_str(), 0);
         kv->connect_to_server(0);
-        kv->run_server(3);
+        kv->run_server(-1);
+
+        sleep(2);
 
         Key* key = new Key("key", 0);
 
@@ -263,7 +267,7 @@ void test_put_other_node() {
         assert(array);
         assert(array->get(0) == 1);
 
-        kv->run_server(-1);
+        kv->shutdown();
 
         delete kv;
         delete key;
@@ -313,7 +317,9 @@ void test_get_other_node() {
         // start node
         KV_Store* kv = new KV_Store(client_ip1->c_str(), server_ip->c_str(), 1);
         kv->connect_to_server(1);
-        kv->run_server(1);
+        kv->run_server(-1);
+
+        sleep(1);
 
         Key* key = new Key("key", 1);
         IntArray* array = new IntArray(1);
@@ -322,7 +328,7 @@ void test_get_other_node() {
         serial->serialize_object(array);
         kv->put(key, serial);
 
-        kv->run_server(-1);
+        kv->shutdown();
 
         delete kv;
         delete key;
@@ -348,7 +354,9 @@ void test_get_other_node() {
         // start node
         KV_Store* kv = new KV_Store(client_ip2->c_str(), server_ip->c_str(), 0);
         kv->connect_to_server(0);
-        kv->run_server(3);
+        kv->run_server(-1);
+
+        sleep(2);
 
         Key* key = new Key("key", 1);
 
@@ -356,7 +364,7 @@ void test_get_other_node() {
         assert(array);
         assert(array->get(0) == 1);
 
-        kv->run_server(-1);
+        kv->shutdown();
 
         delete kv;
         delete key;

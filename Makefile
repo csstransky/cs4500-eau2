@@ -20,6 +20,7 @@ test: build
 	build/tests/test_kv_store
 	build/tests/test_kd_store
 	build/tests/test_application
+	build/tests/test_networking
 
 valgrind:
 	valgrind build/tests/test_serial
@@ -30,6 +31,7 @@ valgrind:
 	valgrind build/tests/test_kd_store
 	valgrind build/tests/test_application
 	valgrind build/src/trival
+	valgrind build/tests/test_networking
 
 clean:
 	rm -rf build
