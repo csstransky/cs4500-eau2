@@ -46,7 +46,8 @@ int main(int argc, char const *argv[]) {
     // Send message to random node
     String* hi = new String("hi");
     int index = rand() % node->get_num_other_nodes();
-    node->send_ack_message_to_node(hi, index);
+    Ack message(node->my_ip_, node->other_nodes_->get(index), hi);
+    node->send_message_to_node(&message);
     delete hi;
 
     timeout = -1;

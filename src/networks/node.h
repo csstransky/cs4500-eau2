@@ -132,7 +132,8 @@ class Node : public Server {
         return other_node_indexes_->length();
     }
 
-    void send_message_to_node(String* node_ip, Message* message) {
+    void send_message_to_node(Message* message) {
+        String* node_ip = message->get_target();
         // Create socket and connect to node
         int socket = get_new_socket_();
         sockaddr_in address = get_new_sockaddr_(node_ip->c_str(), PORT);
@@ -141,21 +142,29 @@ class Node : public Server {
             assert(0);
         }
 
-        // Send message
         send_message(socket, message);
 
         // Close connections
         close(socket);
     }
 
-    void send_ack_message_to_node(String* message, int index) {        
+    // sends a message to a node and waits for a message back from that node
+    Message* send_message_to_node_wait(Message* message) {
+        String* node_ip = message->get_target();
+        // Create socket and connect to node
+        int socket = get_new_socket_();
+        sockaddr_in address = get_new_sockaddr_(node_ip->c_str(), PORT);
+        if (connect(socket, (struct sockaddr *)&address, sizeof(address)) < 0) { 
+            printf("\nConnection Failed \n"); 
+            assert(0);
+        }
 
-        // Create message
-        // TODO: Actually set up a way to send messages across each other
-        Message* m = new Ack(my_ip_, other_nodes_->get(index), message);
+        send_message(socket, message);
 
-        send_message_to_node(other_nodes_->get(index), m);
-        delete m;
+        Message* m = receive_message_(socket);
+
+        // Close connections
+        close(socket);
     }
 
     void check_server_messages_() {

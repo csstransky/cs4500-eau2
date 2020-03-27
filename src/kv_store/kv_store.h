@@ -28,6 +28,10 @@ class KV_Store : public Node {
         kv_map_->put(key_name, value);
     }
 
+    Serializer* get_map_(String* key_name) {
+        return dynamic_cast<Serializer*>(kv_map_->get(key_name));
+    }
+
     void put(Key* key, Object* value) {
         Serializer serial(value->serial_len());
         serial.serialize_object(value);
@@ -38,7 +42,7 @@ class KV_Store : public Node {
             // call upon another Node to put the kv
             int index = other_node_indexes_->index_of(key->get_node_index());
             Put message(my_ip_, other_nodes_->get(index), key->get_key(), &serial);
-            send_message_to_node(other_nodes_->get(index), &message);
+            send_message_to_node(&message);
         }
     }
 
@@ -49,13 +53,16 @@ class KV_Store : public Node {
     // Returns a new char array, make sure to delete it later
     char* get_value_serial(Key* key) {
         if (key->get_node_index() == local_node_index_) {
-            String* key_string = key->get_key();
-            Serializer* map_serial = static_cast<Serializer*>(kv_map_->get(key_string));
+            Serializer* map_serial = get_map_(key->get_key());
             return map_serial->get_serial();
         }
         else {
-            // TODO: call upon another Node to get the kv
-            assert(0);
+            int index = other_node_indexes_->index_of(key->get_node_index());
+            Get message(my_ip_, other_nodes_->get(index), key->get_key());
+            Value* value_message = dynamic_cast<Value*>(send_message_to_node_wait(&message));
+            char* serial = value_message->get_serial();
+            delete value_message;
+            return serial;
         }
 
     }
@@ -99,11 +106,16 @@ class KV_Store : public Node {
         switch (message->get_kind()) {
             case MsgKind::Put: {
                 Put* put_message = dynamic_cast<Put*>(message);
-                printf("Message from %s, key: %s\n\n", message->get_sender()->c_str(), put_message->get_key_name()->c_str());
                 put_map_(put_message->get_key_name(), put_message->get_value());
                 break;
             }
-
+            case MsgKind::Get: {
+                Get* get_message = dynamic_cast<Get*>(message);
+                Serializer* value = get_map_(get_message->get_key_name());
+                Value value_message(my_ip_, get_message->get_sender(), value);
+                send_message(client_sockets_->get(client), &value_message);
+                break;
+            }   
             default:
                 // Nobody inherits from kv store so it has to handle the message
                 assert(0);
