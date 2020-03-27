@@ -93,6 +93,8 @@ class CreateDataframe : public Application {
 
 ## Open questions
 + What is the average size of the SoR file we will need to store? 100MB? 1GB? 100GB?
++ If we were to use get() on a kv_store that doesn't have the kv pair, is it okay if we can error out?   
+We expect that if you use get(), you know the key is already in the kv_store (wait_and_get should be used if you don't know if the key is there).
 
 ## Status
 All of our code valgrinds. The KVStore is complete in the contex of one node. The trival class example given in the assignment description for Milestone 2 works.

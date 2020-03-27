@@ -127,6 +127,11 @@ class KV_Store : public Node {
             case MsgKind::Get: {
                 Get* get_message = dynamic_cast<Get*>(message);
                 Serializer* value = get_map_(get_message->get_key_name());
+                if (!value) {
+                    // There is no key value pair, for the given key
+                    assert(0);
+                    // TODO: think of a better way to do this than an assert, maybe send an Ack message with an error message attached
+                }
                 Value value_message(my_ip_, get_message->get_sender(), value);
                 send_message(client_sockets_->get(client), &value_message);
                 break;
