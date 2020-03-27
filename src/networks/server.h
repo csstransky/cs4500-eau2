@@ -13,6 +13,7 @@
 #include "message.h"
 #include <errno.h>
 #include <assert.h>
+#include <thread>
 #include "../helpers/string.h"
 
 const int PORT = 8080;
@@ -30,6 +31,7 @@ class Server {
     IntArray* client_sockets_;
     struct sockaddr_in my_address_; 
     String* my_ip_;
+    std::thread networking_thread_;
 
     // Point of this is to store all open fds so we can monitor the open ones
     fd_set readfds_; 
@@ -78,7 +80,7 @@ class Server {
 
     // Has to be called before server is deleted
     virtual void shutdown() {
-        
+        networking_thread_.join(); 
         // close connection socket
         close(connection_socket_);
 
@@ -93,8 +95,7 @@ class Server {
         return strcmp(s->c_str(), IP_DEFAULT);
     }
 
-    // NOTE: -1 runs forever
-    virtual void run_server(int timeout) {
+    virtual void thread_run_server_(int timeout) {
         timeval timeout_val = {timeout, 0};
         timeval* timeout_pointer = (timeout < 0) ? nullptr : &timeout_val;
         while (wait_for_activty_(timeout_pointer)) {
@@ -102,6 +103,11 @@ class Server {
             check_for_client_messages_();
         }
         printf("No activity on server.\n");
+    }
+
+    // NOTE: -1 runs forever
+    void run_server(int timeout) {
+        networking_thread_ = std::thread(&Server::thread_run_server_, this, timeout);
     }
 
     /**

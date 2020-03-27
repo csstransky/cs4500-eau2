@@ -29,10 +29,21 @@ class RServer : public Server {
         delete node_indexes_;
     }
     
+    // joins the thread
     void shutdown() {
+        printf("rserver in shutdown\n");
+        networking_thread_.join(); 
         send_kill_();
-        Server::shutdown();
+
         node_indexes_->clear();
+        // close connection socket
+        close(connection_socket_);
+
+        // close all sockets
+        for (int i = 0; i < client_sockets_->length(); i++) {
+            close(client_sockets_->get(i));
+            connected_client_ips_->clear();
+        }
     }
 
     void send_directory_message_() {

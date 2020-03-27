@@ -60,7 +60,8 @@ class KV_Store : public Node {
             int index = other_node_indexes_->index_of(key->get_node_index());
             Get message(my_ip_, other_nodes_->get(index), key->get_key());
             Value* value_message = dynamic_cast<Value*>(send_message_to_node_wait(&message));
-            char* serial = value_message->get_serial();
+            Serializer* value = value_message->get_value();
+            char* serial = value->get_serial();
             delete value_message;
             return serial;
         }

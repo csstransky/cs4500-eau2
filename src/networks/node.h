@@ -51,15 +51,14 @@ class Node : public Server {
     }
 
     void shutdown() {
+        Server::shutdown();
         if (server_socket_) {
             close(server_socket_);
         }
-
-        Server::shutdown();
     }
 
     // NOTE: timeout -1 runs forever
-    void run_server(int timeout) {
+    void thread_run_server_(int timeout) {
         timeval timeout_val = {timeout, 0};
         timeval* timeout_pointer = (timeout < 0) ? nullptr : &timeout_val;
         while (wait_for_activty_(timeout_pointer) && !kill_) {
@@ -106,7 +105,6 @@ class Node : public Server {
             case MsgKind::Kill: {
                 printf("Received Kill message\n\n");
                 kill_ = true;
-                shutdown();
                 break;
             }
             default:
@@ -166,6 +164,8 @@ class Node : public Server {
 
         // Close connections
         close(socket);
+
+        return m;
     }
 
     void check_server_messages_() {
