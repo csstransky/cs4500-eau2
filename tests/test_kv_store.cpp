@@ -398,6 +398,110 @@ void test_get_other_node() {
     printf("KV Store get other node test passed!\n");
 }
 
+void test_wait_get() {
+    int cpid[2];
+    String* server_ip = new String("127.0.0.1");
+    String* client_ip1 = new String("127.0.0.2");
+    String* client_ip2 = new String("127.0.0.3");
+
+    // Fork to create another process
+    if ((cpid[0] = fork())) {
+        
+    } else {
+        // In child process
+
+        // sleep .5s
+        sleep(0.5);
+
+        // start node
+        KV_Store* kv = new KV_Store(client_ip1->c_str(), server_ip->c_str(), 1);
+        kv->connect_to_server(1);
+        kv->run_server(-1);
+
+        sleep(2);
+
+        Key* key = new Key("key", 1);
+        IntArray* array = new IntArray(1);
+        array->push(1);
+        Serializer* serial = new Serializer(array->serial_len());
+        serial->serialize_object(array);
+
+        assert(kv->get_queue_->size() == 1);
+        assert(kv->get_queue_->get(key->get_key()) > 0);
+
+        kv->put(key, serial);
+
+        assert(kv->get_queue_->size() == 0);
+
+        kv->wait_for_shutdown();
+
+        delete kv;
+        delete key;
+        delete array;
+        delete serial;
+        delete server_ip;
+        delete client_ip1;
+        delete client_ip2;
+
+        // exit
+        exit(0);
+    }
+
+    // Fork to create another process
+    if ((cpid[1] = fork())) {
+        
+    } else {
+        // In child process
+
+        // sleep .5s
+        sleep(0.5);
+
+        // start node
+        KV_Store* kv = new KV_Store(client_ip2->c_str(), server_ip->c_str(), 0);
+        kv->connect_to_server(0);
+        kv->run_server(-1);
+
+        sleep(1);
+
+        Key* key = new Key("key", 1);
+
+        char* serial = kv->wait_get_value_serial(key);
+        IntArray* array = IntArray::deserialize(serial);
+        assert(array);
+        assert(array->get(0) == 1);
+
+        kv->wait_for_shutdown();
+
+        delete kv;
+        delete key;
+        delete array;
+        delete server_ip;
+        delete client_ip1;
+        delete client_ip2;
+
+        // exit
+        exit(0);
+    }
+
+    // In parent process
+
+    // Start server
+    RServer* server = new RServer(server_ip->c_str()); 
+    server->run_server(LISTEN_TIME);
+    server->wait_for_shutdown();
+
+    // wait for child to finish
+    int st;
+    waitpid(cpid[0], &st, 0);
+    waitpid(cpid[1], &st, 0);
+    delete server;
+    delete client_ip1;
+    delete client_ip2;
+    delete server_ip;
+
+    printf("KV Store wait get test passed!\n");
+}
+
 int main(int argc, char const *argv[]) {
     test_put_get();
     test_int_array();
@@ -407,5 +511,6 @@ int main(int argc, char const *argv[]) {
     test_multiple();
     test_put_other_node();
     test_get_other_node();
+    test_wait_get();
     printf("All KV Store test passed!\n");
 }

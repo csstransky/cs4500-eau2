@@ -7,32 +7,52 @@
 class KV_Store : public Node {
     public:
     SOMap* kv_map_; // String* -> Serializer* 
+    SIMap* get_queue_;
     size_t local_node_index_;
     std::mutex kv_map_mutex_;
+    std::mutex get_queue_mutex_;
     
     KV_Store(const char* client_ip_address, const char* server_ip_address, size_t local_node_index) 
         : Node(client_ip_address, server_ip_address) {
         kv_map_ = new SOMap();
+        get_queue_ = new SIMap();
         local_node_index_ = local_node_index;
     }
 
     KV_Store(size_t local_node_index) : Node() {
         kv_map_ = new SOMap();
+        get_queue_ = new SIMap();
         local_node_index_ = local_node_index;
     }
 
     ~KV_Store() {
         delete kv_map_;
+        delete get_queue_;
     }
 
     void put_map_(String* key_name, Serializer* value) {
         kv_map_mutex_.lock();
         kv_map_->put(key_name, value);
         kv_map_mutex_.unlock();
+
+        get_queue_mutex_.lock();
+        int socket = get_queue_->remove(key_name);
+        get_queue_mutex_.unlock();
+        if (socket >= 0) {
+            // TODO: lost target ip
+            Value value_message(my_ip_, my_ip_, value);
+            send_message(socket, &value_message);
+        }
     }
 
     Serializer* get_map_(String* key_name) {
         return dynamic_cast<Serializer*>(kv_map_->get(key_name));
+    }
+
+    void put_get_queue_(String* key_name, int socket) {
+        get_queue_mutex_.lock();
+        get_queue_->put(key_name, socket);
+        get_queue_mutex_.unlock();
     }
 
     void put(Key* key, Object* value) {
@@ -62,6 +82,23 @@ class KV_Store : public Node {
         else {
             int index = other_node_indexes_->index_of(key->get_node_index());
             Get message(my_ip_, other_nodes_->get(index), key->get_key());
+            Value* value_message = dynamic_cast<Value*>(send_message_to_node_wait(&message));
+            char* serial = value_message->get_serial();
+            delete value_message;
+            return serial;
+        }
+
+    }
+
+    char* wait_get_value_serial(Key* key) {
+        if (key->get_node_index() == local_node_index_) {
+            // TODO: actually wait
+            Serializer* map_serial = get_map_(key->get_key());
+            return map_serial->get_serial();
+        }
+        else {
+            int index = other_node_indexes_->index_of(key->get_node_index());
+            WaitGet message(my_ip_, other_nodes_->get(index), key->get_key());
             Value* value_message = dynamic_cast<Value*>(send_message_to_node_wait(&message));
             char* serial = value_message->get_serial();
             delete value_message;
@@ -134,6 +171,17 @@ class KV_Store : public Node {
                 }
                 Value value_message(my_ip_, get_message->get_sender(), value);
                 send_message(client_sockets_->get(client), &value_message);
+                break;
+            }
+            case MsgKind::WaitGet: {
+                WaitGet* get_message = dynamic_cast<WaitGet*>(message);
+                Serializer* value = get_map_(get_message->get_key_name());
+                if (value) {
+                    Value value_message(my_ip_, get_message->get_sender(), value);
+                    send_message(client_sockets_->get(client), &value_message);
+                } else {
+                    put_get_queue_(get_message->get_key_name(), client_sockets_->get(client));
+                }
                 break;
             }   
             default:
