@@ -96,10 +96,8 @@ class Column : public Object {
     key_name.concat("_");
     key_name.concat(array_index);
 
-    // TODO: This is where you'll have to make a key with a different node_index, so in the future
-    // you'll have to go through the kv's list of indexes, and somehow find a way to give the column
-    // key a different index for better parallization
-    Key* new_key = new Key(&key_name, kv_->get_node_index());
+    // TODO: Cristian change get_random_node_index if you don't want it completely random
+    Key* new_key = new Key(&key_name, kv_->get_random_node_index());
     return new_key;    
   }
  

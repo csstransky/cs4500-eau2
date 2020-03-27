@@ -99,6 +99,18 @@ class KV_Store : public Node {
         return string_array;
     }
 
+    // TODO: Cristian I think you wanted a different algorithm but I forget what is was
+    size_t get_random_node_index() {
+        int num_of_nodes = get_num_other_nodes();
+        if (num_of_nodes == -1) {
+            // no network set up
+            return local_node_index_;
+        }
+        int index = rand() % num_of_nodes;
+
+        return other_node_indexes_->get(index);
+    }
+
     bool decode_message_(Message* message, int client) {
         if (Node::decode_message_(message, client)) {
             return 1;

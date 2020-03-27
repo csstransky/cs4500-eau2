@@ -128,8 +128,9 @@ class Node : public Server {
         }
     }
 
+    // returns -1 if no network
     int get_num_other_nodes() {
-        return other_node_indexes_->length();
+        return other_node_indexes_? other_node_indexes_->length() : -1;
     }
 
     void send_message_to_node(Message* message) {
