@@ -8,6 +8,7 @@ class KV_Store : public Node {
     public:
     SOMap* kv_map_; // String* -> Serializer* 
     size_t local_node_index_;
+    std::mutex kv_map_mutex_;
     
     KV_Store(const char* client_ip_address, const char* server_ip_address, size_t local_node_index) 
         : Node(client_ip_address, server_ip_address) {
@@ -25,9 +26,9 @@ class KV_Store : public Node {
     }
 
     void put_map_(String* key_name, Serializer* value) {
-        mutex_.lock();
+        kv_map_mutex_.lock();
         kv_map_->put(key_name, value);
-        mutex_.unlock();
+        kv_map_mutex_.unlock();
     }
 
     Serializer* get_map_(String* key_name) {

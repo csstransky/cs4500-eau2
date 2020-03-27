@@ -33,7 +33,6 @@ class Server {
     struct sockaddr_in my_address_; 
     String* my_ip_;
     std::thread networking_thread_;
-    std::mutex mutex_;
 
     // Point of this is to store all open fds so we can monitor the open ones
     fd_set readfds_; 
