@@ -217,9 +217,42 @@ void testIncreaseMap() {
     delete map;
 } 
 
+void testSIMap() {
+    SIMap map;
+    assert(map.isEmpty());
+    assert(map.size() == 0);
+    int size = 1000;
+
+    char buf[20];
+    for (int i = 0; i < size; i++) {
+        snprintf(buf, 20, "k_%d", i);
+        String s(buf);
+        map.put(&s, i);
+    }
+
+    assert(map.size() == size);
+
+    for (int i = 0; i < size; i++) {
+        snprintf(buf, 20, "k_%d", i);
+        String s(buf);
+        int result = map.get(&s);
+        assert(result == i);
+    }
+
+    for (int i = 0; i < size; i++) {
+        snprintf(buf, 20, "k_%d", i);
+        String s(buf);
+        int result = map.remove(&s);
+        assert(result == i);
+    }
+
+    assert(map.size() == 0);
+}
+
 int main() {
     testPair();
     testBasicSOMap();
     testBasicSSMap();
     testIncreaseMap();
+    testSIMap();
 }
