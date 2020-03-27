@@ -47,7 +47,7 @@ int main(int argc, char const *argv[]) {
     printf("index: %d\n", index);
     Ack message(node->my_ip_, node->other_nodes_->get(index), hi);
     node->send_message_to_node(&message);
-    node->shutdown();
+    node->wait_for_shutdown();
     delete hi;
 
     delete node;

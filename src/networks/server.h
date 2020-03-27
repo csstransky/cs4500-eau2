@@ -80,7 +80,7 @@ class Server {
     }
 
     // Has to be called before server is deleted
-    virtual void shutdown() {
+    virtual void wait_for_shutdown() {
         networking_thread_.join(); 
         // close connection socket
         close(connection_socket_);
@@ -103,7 +103,6 @@ class Server {
             check_for_connections_();
             check_for_client_messages_();
         }
-        printf("No activity on server.\n");
     }
 
     // NOTE: -1 runs forever
@@ -177,9 +176,7 @@ class Server {
 
         client_sockets_->push(new_socket);
         String s(IP_DEFAULT);
-        connected_client_ips_->push(&s);   
-        printf("New Connection. Socket fd is %d, index is %zu\n\n" , new_socket, client_sockets_->length() - 1);  
-            
+        connected_client_ips_->push(&s);               
     } 
 
     int find_ip_in_list_(String* ip) {
@@ -199,9 +196,7 @@ class Server {
         // common responses to message 
         switch (message->get_kind()) {
             case MsgKind::Ack: {
-                printf("Received Ack Message from %s with text ", message->get_sender()->c_str());
                 Ack* ack_message = dynamic_cast<Ack*>(message);
-                printf("%s\n\n", ack_message->get_message()->c_str());
                 break;
             }
             default:
@@ -248,8 +243,6 @@ class Server {
     }
 
     virtual void remove_client_(int index) {
-        printf("Client disconnected, ip %s , sd %d, index %d\n\n" ,  
-                connected_client_ips_->get(index)->c_str() , client_sockets_->get(index), index);
 
         // Close the socket and remove from arrays
         close(client_sockets_->remove(index));
@@ -280,7 +273,6 @@ class Server {
     }
 
     void send_message(int fd, Message* message) {
-        //printf("Sending message with type %d from %s to %s\n\n", message->get_kind(), message->get_sender(), message->get_target());
         char* serial_message = message->serialize();
         int length = message->serial_len();
         
@@ -299,7 +291,6 @@ class Server {
     void send_kill_() {
         for (int i = 0; i < client_sockets_->length(); i++) {
             Message* m = new Kill(my_ip_, connected_client_ips_->get(i));
-            printf("Sending kill to sd %d\n\n", client_sockets_->get(i));
             send_message(client_sockets_->get(i), m);
             delete m;
         }

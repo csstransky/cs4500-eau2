@@ -3,6 +3,8 @@
 #include "../src/kv_store/kv_store.h"
 #include "../src/networks/rendezvous_server.h"
 
+int LISTEN_TIME = 5;
+
 void test_put_get() {
     String k("k");
     Key key(&k, 0);
@@ -230,7 +232,7 @@ void test_put_other_node() {
         serial->serialize_object(array);
         kv->put(key, serial);
 
-        kv->shutdown();
+        kv->wait_for_shutdown();
 
         delete kv;
         delete key;
@@ -267,7 +269,7 @@ void test_put_other_node() {
         assert(array);
         assert(array->get(0) == 1);
 
-        kv->shutdown();
+        kv->wait_for_shutdown();
 
         delete kv;
         delete key;
@@ -284,8 +286,8 @@ void test_put_other_node() {
 
     // Start server
     RServer* server = new RServer(server_ip->c_str()); 
-    server->run_server(5);
-    server->shutdown();
+    server->run_server(LISTEN_TIME);
+    server->wait_for_shutdown();
 
     // wait for child to finish
     int st;
@@ -328,7 +330,7 @@ void test_get_other_node() {
         serial->serialize_object(array);
         kv->put(key, serial);
 
-        kv->shutdown();
+        kv->wait_for_shutdown();
 
         delete kv;
         delete key;
@@ -364,7 +366,7 @@ void test_get_other_node() {
         assert(array);
         assert(array->get(0) == 1);
 
-        kv->shutdown();
+        kv->wait_for_shutdown();
 
         delete kv;
         delete key;
@@ -381,8 +383,8 @@ void test_get_other_node() {
 
     // Start server
     RServer* server = new RServer(server_ip->c_str()); 
-    server->run_server(5);
-    server->shutdown();
+    server->run_server(LISTEN_TIME);
+    server->wait_for_shutdown();
 
     // wait for child to finish
     int st;
