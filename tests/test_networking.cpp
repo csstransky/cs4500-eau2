@@ -3,6 +3,8 @@
 #include "../src/networks/node.h"
 #include "../src/networks/rendezvous_server.h"
 
+int LISTEN_TIME = 5; 
+
 void test_registration() {
     int cpid;
     String* server_ip = new String("127.0.0.1");
@@ -14,7 +16,9 @@ void test_registration() {
 
         // Start server
         RServer* server = new RServer(server_ip->c_str()); 
-        server->run_server(2);
+        server->run_server(LISTEN_TIME);
+
+        sleep(1);
 
         // check for registered client
         assert(server->client_sockets_->length() == 1);
@@ -22,12 +26,11 @@ void test_registration() {
         assert(server->connected_client_ips_->get(0)->equals(client_ip));
         assert(server->node_indexes_->length() == 1);
         assert(server->node_indexes_->get(0) == 0);
-        
+        server->wait_for_shutdown();
+
         // wait for child to finish
         int st;
         waitpid(cpid, &st, 0);
-        server->run_server(0.5);
-        server->shutdown();
         delete server;
         delete client_ip;
         delete server_ip;
@@ -40,7 +43,9 @@ void test_registration() {
         // start node
         Node* node = new Node(client_ip->c_str(), server_ip->c_str());
         node->connect_to_server(0);
-        node->run_server(5);
+        node->run_server(LISTEN_TIME);
+
+        sleep(1);
 
         // check for list of nodes
         assert(node->other_nodes_->length() == 1);
@@ -48,7 +53,7 @@ void test_registration() {
         assert(node->other_node_indexes_->length() == 1);
         assert(node->other_node_indexes_->get(0) == 0);
 
-        node->shutdown();
+        node->wait_for_shutdown();
         delete node;
         delete server_ip;
         delete client_ip;
@@ -71,7 +76,9 @@ void test_kill() {
 
         // Start server
         RServer* server = new RServer(server_ip->c_str()); 
-        server->run_server(2);
+        server->run_server(LISTEN_TIME);
+
+        sleep(1);
 
         // check for registered client
         assert(server->client_sockets_->length() == 1);
@@ -80,8 +87,7 @@ void test_kill() {
         assert(server->node_indexes_->length() == 1);
         assert(server->node_indexes_->get(0) == 0);
 
-        server->run_server(0.5);
-        server->shutdown();
+        server->wait_for_shutdown();
         
         // wait for child to finish
         int st;
@@ -99,7 +105,8 @@ void test_kill() {
         Node* node = new Node(client_ip->c_str(), server_ip->c_str());
         node->connect_to_server(0);
         node->run_server(-1);
-
+        
+        node->wait_for_shutdown();
         assert(node->kill_ == true);
 
         delete node;
@@ -135,14 +142,15 @@ void test_multiple_nodes() {
             // start node
             Node* node = new Node(client_ips[i]->c_str(), server_ip->c_str());
             node->connect_to_server(0);
-            node->run_server(2);
+            node->run_server(-1);
+
+            sleep(1);
 
             // check for list of nodes
             assert(node->other_nodes_->length() == 3);
             assert(node->other_node_indexes_->length() == 3);
-            printf("Node %d passed asserts\n", i);
+            node->wait_for_shutdown();
 
-            node->run_server(-1);
             delete node;
             delete server_ip;
             for (int i = 0; i < 3; i++) {
@@ -155,16 +163,15 @@ void test_multiple_nodes() {
             exit(0);
         }
     }
-    server->run_server(3);
+    server->run_server(4);
 
+    sleep(2);
 
     // check for registered client
     assert(server->client_sockets_->length() == 3);
     assert(server->connected_client_ips_->length() == 3);
     assert(server->node_indexes_->length() == 3);
-    printf("Parent passed asserts\n");
-    server->run_server(0.5);
-    server->shutdown();
+    server->wait_for_shutdown();
     
     // wait for children to finish
     for (int i = 0; i < 3; i++) {

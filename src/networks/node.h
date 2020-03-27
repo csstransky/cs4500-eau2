@@ -50,16 +50,15 @@ class Node : public Server {
         delete other_node_indexes_;
     }
 
-    void shutdown() {
+    void wait_for_shutdown() {
+        Server::wait_for_shutdown();
         if (server_socket_) {
             close(server_socket_);
         }
-
-        Server::shutdown();
     }
 
     // NOTE: timeout -1 runs forever
-    void run_server(int timeout) {
+    void thread_run_server_(int timeout) {
         timeval timeout_val = {timeout, 0};
         timeval* timeout_pointer = (timeout < 0) ? nullptr : &timeout_val;
         while (wait_for_activty_(timeout_pointer) && !kill_) {
@@ -71,7 +70,6 @@ class Node : public Server {
 
     void register_with_server_(size_t local_node_index) {
         Message* m = new Register(my_ip_, server_ip_, local_node_index);
-        printf("Sending ip\n");
         send_message(server_socket_, m);
         printf("\n");
         delete m;
@@ -95,7 +93,6 @@ class Node : public Server {
 
         switch (message->get_kind()) {
             case MsgKind::Directory: {
-                printf("Received Directory Message\n\n");
                 Directory* dir_message = dynamic_cast<Directory*>(message);
                 delete other_nodes_;
                 other_nodes_ = dir_message->get_addresses()->clone();
@@ -104,9 +101,7 @@ class Node : public Server {
                 break;
             }
             case MsgKind::Kill: {
-                printf("Received Kill message\n\n");
                 kill_ = true;
-                shutdown();
                 break;
             }
             default:
@@ -166,6 +161,8 @@ class Node : public Server {
 
         // Close connections
         close(socket);
+
+        return m;
     }
 
     void check_server_messages_() {

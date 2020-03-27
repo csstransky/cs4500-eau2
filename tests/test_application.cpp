@@ -30,7 +30,7 @@ class Trivial : public Application {
     assert(sum==0);
     delete df; 
     delete df2;
-    delete vals;
+    delete[] vals;
   }
 };
 

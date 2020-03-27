@@ -8,3 +8,4 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 find_package(Threads REQUIRED)
 
 add_executable(trival application/trival.cpp)
+target_link_libraries (trival ${CMAKE_THREAD_LIBS_INIT})

@@ -21,7 +21,7 @@ int main(int argc, char const *argv[])
     
     RServer* server = new RServer(ip_address); 
     server->run_server(TIME_OUT);
-    server->shutdown();
+    server->wait_for_shutdown();
     delete server;
     return 0;
 } 

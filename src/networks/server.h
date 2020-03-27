@@ -13,6 +13,8 @@
 #include "message.h"
 #include <errno.h>
 #include <assert.h>
+#include <thread>
+#include <mutex>
 #include "../helpers/string.h"
 
 const int PORT = 8080;
@@ -30,6 +32,7 @@ class Server {
     IntArray* client_sockets_;
     struct sockaddr_in my_address_; 
     String* my_ip_;
+    std::thread networking_thread_;
 
     // Point of this is to store all open fds so we can monitor the open ones
     fd_set readfds_; 
@@ -77,8 +80,8 @@ class Server {
     }
 
     // Has to be called before server is deleted
-    virtual void shutdown() {
-        
+    virtual void wait_for_shutdown() {
+        networking_thread_.join(); 
         // close connection socket
         close(connection_socket_);
 
@@ -93,15 +96,18 @@ class Server {
         return strcmp(s->c_str(), IP_DEFAULT);
     }
 
-    // NOTE: -1 runs forever
-    virtual void run_server(int timeout) {
+    virtual void thread_run_server_(int timeout) {
         timeval timeout_val = {timeout, 0};
         timeval* timeout_pointer = (timeout < 0) ? nullptr : &timeout_val;
         while (wait_for_activty_(timeout_pointer)) {
             check_for_connections_();
             check_for_client_messages_();
         }
-        printf("No activity on server.\n");
+    }
+
+    // NOTE: -1 runs forever
+    void run_server(int timeout) {
+        networking_thread_ = std::thread(&Server::thread_run_server_, this, timeout);
     }
 
     /**
@@ -170,9 +176,7 @@ class Server {
 
         client_sockets_->push(new_socket);
         String s(IP_DEFAULT);
-        connected_client_ips_->push(&s);   
-        printf("New Connection. Socket fd is %d, index is %zu\n\n" , new_socket, client_sockets_->length() - 1);  
-            
+        connected_client_ips_->push(&s);               
     } 
 
     int find_ip_in_list_(String* ip) {
@@ -192,9 +196,7 @@ class Server {
         // common responses to message 
         switch (message->get_kind()) {
             case MsgKind::Ack: {
-                printf("Received Ack Message from %s with text ", message->get_sender()->c_str());
                 Ack* ack_message = dynamic_cast<Ack*>(message);
-                printf("%s\n\n", ack_message->get_message()->c_str());
                 break;
             }
             default:
@@ -241,8 +243,6 @@ class Server {
     }
 
     virtual void remove_client_(int index) {
-        printf("Client disconnected, ip %s , sd %d, index %d\n\n" ,  
-                connected_client_ips_->get(index)->c_str() , client_sockets_->get(index), index);
 
         // Close the socket and remove from arrays
         close(client_sockets_->remove(index));
@@ -273,7 +273,6 @@ class Server {
     }
 
     void send_message(int fd, Message* message) {
-        //printf("Sending message with type %d from %s to %s\n\n", message->get_kind(), message->get_sender(), message->get_target());
         char* serial_message = message->serialize();
         int length = message->serial_len();
         
@@ -292,7 +291,6 @@ class Server {
     void send_kill_() {
         for (int i = 0; i < client_sockets_->length(); i++) {
             Message* m = new Kill(my_ip_, connected_client_ips_->get(i));
-            printf("Sending kill to sd %d\n\n", client_sockets_->get(i));
             send_message(client_sockets_->get(i), m);
             delete m;
         }

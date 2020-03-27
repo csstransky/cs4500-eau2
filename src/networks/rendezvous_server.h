@@ -29,10 +29,20 @@ class RServer : public Server {
         delete node_indexes_;
     }
     
-    void shutdown() {
+    // joins the thread
+    void wait_for_shutdown() {
+        networking_thread_.join(); 
         send_kill_();
-        Server::shutdown();
+
         node_indexes_->clear();
+        // close connection socket
+        close(connection_socket_);
+
+        // close all sockets
+        for (int i = 0; i < client_sockets_->length(); i++) {
+            close(client_sockets_->get(i));
+            connected_client_ips_->clear();
+        }
     }
 
     void send_directory_message_() {
@@ -51,7 +61,6 @@ class RServer : public Server {
             if (is_not_default_ip_(connected_client_ips_->get(i))) {
                 // TODO fix this up
                 Message* message = new Directory(my_ip_, connected_client_ips_->get(i), &active_clients, &active_node_indexes);
-                printf("Sending Directory Message to sd %d\n", client_sockets_->get(i));
                 send_message(client_sockets_->get(i), message);
                 delete message;
             }
@@ -65,14 +74,12 @@ class RServer : public Server {
         switch (message->get_kind()) {
             case MsgKind::Register: {
                 Register* reg = dynamic_cast<Register*>(message);
-                printf("Received Register Message from %s\n", message->get_sender()->c_str());
                 String* old = connected_client_ips_->replace(client, message->get_sender());
                 while (node_indexes_->length() <= client) {
                     node_indexes_->push(-1);
                 }
                 node_indexes_->replace(client, reg->get_node_index());
                 delete old;
-                printf("Updated client ip list with %s\n\n", connected_client_ips_->get(client)->c_str());
                 send_directory_message_(); 
                 break;
             }
