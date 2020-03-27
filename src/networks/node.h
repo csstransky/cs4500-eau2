@@ -51,6 +51,8 @@ class Node : public Server {
     }
 
     void wait_for_shutdown() {
+        // TODO: Add a send_done_message() function here that sends a message to the RServer increasing its node complete count
+        send_message()
         Server::wait_for_shutdown();
         if (server_socket_) {
             close(server_socket_);
