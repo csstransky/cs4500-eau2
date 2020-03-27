@@ -12,7 +12,7 @@
 int MESSAGE_ID = 0;
 
 // TODO: Add Get and Value messages
-enum class MsgKind { Ack, Put, Get, Value, Kill, Register, Directory };
+enum class MsgKind { Ack, Put, Get, WaitGet, Value, Kill, Register, Directory };
 
 class Message : public Object {
     public:
@@ -393,6 +393,34 @@ class Get : public Message {
     }
 };
 
+class WaitGet : public Get {
+    public:
+
+    WaitGet(String* sender, String* target, String* key_name_) : Get(sender, target, key_name_) {
+        kind_ = MsgKind::WaitGet;
+    }
+
+    static WaitGet* deserialize(char* serial) {
+        Deserializer deserializer(serial);
+        return deserialize(deserializer);
+    }
+
+    static WaitGet* deserialize(Deserializer& deserializer) {
+        deserializer.deserialize_size_t(); // skip serial size
+        deserializer.deserialize_size_t(); // skip kind_
+        String* sender = String::deserialize(deserializer);
+        String* target = String::deserialize(deserializer);
+        deserializer.deserialize_size_t(); // skip id_
+        String* key_name = String::deserialize(deserializer);
+        WaitGet* new_get = new WaitGet(sender, target, key_name);
+        delete sender;
+        delete target;
+        delete key_name;
+        return new_get;
+    }
+
+};
+
 class Value : public Message {
     public:
     Serializer* value_;
@@ -473,6 +501,8 @@ Message* deserialize_message(char* buff) {
             return Register::deserialize(buff);
         case MsgKind::Get:
             return Get::deserialize(buff);
+        case MsgKind::WaitGet:
+            return WaitGet::deserialize(buff);
         case MsgKind::Value:
             return Value::deserialize(buff);
         default:
