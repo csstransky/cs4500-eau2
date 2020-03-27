@@ -18,15 +18,32 @@
 
 class RServer : public Server {
     public:
-
+    // keeps track of how many Nodes are done with their Application
+    size_t node_complete_count_; 
     IntArray* node_indexes_;
 
     RServer(const char* ip_address) : Server(ip_address) {
         node_indexes_ = new IntArray(MAX_CLIENTS);
+        node_complete_count_ = 0;
     }
 
     ~RServer() {
         delete node_indexes_;
+    }
+
+    // Checks to see if all Nodes connected to this RServer are complete with their Application.
+    bool are_nodes_complete() {
+        // TODO: Actually get RServet to increase node_complete_count_, then we can have auto closing RServer
+        return node_complete_count_ > 0 && node_complete_count_ >= node_indexes_->length();
+    }
+
+    void thread_run_server_(int timeout) {
+        timeval timeout_val = {timeout, 0};
+        timeval* timeout_pointer = (timeout < 0) ? nullptr : &timeout_val;
+        while (wait_for_activty_(timeout_pointer) && !are_nodes_complete()) {
+            check_for_connections_();
+            check_for_client_messages_();
+        }
     }
     
     // joins the thread
