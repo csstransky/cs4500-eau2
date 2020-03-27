@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <thread>
+#include <mutex>
 #include "../helpers/string.h"
 
 const int PORT = 8080;
@@ -32,6 +33,7 @@ class Server {
     struct sockaddr_in my_address_; 
     String* my_ip_;
     std::thread networking_thread_;
+    std::mutex mutex_;
 
     // Point of this is to store all open fds so we can monitor the open ones
     fd_set readfds_; 

@@ -25,7 +25,9 @@ class KV_Store : public Node {
     }
 
     void put_map_(String* key_name, Serializer* value) {
+        mutex_.lock();
         kv_map_->put(key_name, value);
+        mutex_.unlock();
     }
 
     Serializer* get_map_(String* key_name) {
