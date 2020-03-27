@@ -22,7 +22,7 @@ test: build
 	build/tests/test_application
 	build/tests/test_networking
 
-valgrind:
+valgrind: build
 	valgrind build/tests/test_serial
 	valgrind build/tests/test_sorer
 	valgrind build/tests/test-array
