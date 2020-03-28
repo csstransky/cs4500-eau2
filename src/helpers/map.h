@@ -506,7 +506,7 @@ class SSMap : public Map {
         }
 };
 
-class SIMap : public Map {
+class SIAMap : public Map {
     public:
         bool containsValue(int value) {
             IntArray int_value(1);
@@ -514,26 +514,15 @@ class SIMap : public Map {
             return Map::containsValue(&int_value);
         }
 
-        int get(String* key) {
-            IntArray* int_value = dynamic_cast<IntArray*>(Map::get(key));
-            return int_value->get(0);
-        }
- 
-        // NOTE: an integer that's not already there will return a -1
-        int put(String* key, int value) {
-            IntArray int_array(1);
-            int_array.push(value);
-            IntArray* temp_int_array = dynamic_cast<IntArray*>(Map::put(key, &int_array));
-            int int_value = temp_int_array ? temp_int_array->get(0) : -1;
-            delete temp_int_array;
-            return int_value;
+        IntArray* get(String* key) {
+            return dynamic_cast<IntArray*>(Map::get(key));
         }
 
-        // NOTE: an integer that's not already there will return a -1
-        int remove(String* key) {
-            IntArray* int_array = dynamic_cast<IntArray*>(Map::remove(key));
-            int int_value = int_array ? int_array->get(0) : -1;
-            delete int_array;
-            return int_value;
+        IntArray* put(String* key, IntArray* value) {
+            return dynamic_cast<IntArray*>(Map::put(key, value));
+        }
+
+        IntArray* remove(String* key) {
+            return dynamic_cast<IntArray*>(Map::remove(key));
         }
 };
