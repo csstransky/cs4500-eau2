@@ -1,5 +1,7 @@
 #pragma once
 
+#include <condition_variable>
+
 #include "../helpers/map.h"
 #include "key.h"
 #include "../networks/node.h"
@@ -11,6 +13,7 @@ class KV_Store : public Node {
     size_t local_node_index_;
     std::mutex kv_map_mutex_;
     std::mutex get_queue_mutex_;
+    std::condition_variable cv_;
     
     KV_Store(const char* client_ip_address, const char* server_ip_address, size_t local_node_index) 
         : Node(client_ip_address, server_ip_address) {
@@ -31,17 +34,19 @@ class KV_Store : public Node {
     }
 
     void put_map_(String* key_name, Serializer* value) {
-        kv_map_mutex_.lock();
+        std::unique_lock<std::mutex> lock(kv_map_mutex_);
         kv_map_->put(key_name, value);
-        kv_map_mutex_.unlock();
+        lock.unlock();
 
-        get_queue_mutex_.lock();
+        std::unique_lock<std::mutex> lck(get_queue_mutex_);
         int socket = get_queue_->remove(key_name);
-        get_queue_mutex_.unlock();
-        if (socket >= 0) {
+        lck.unlock();
+        if (socket > 0) {
             // TODO: lost target ip
             Value value_message(my_ip_, my_ip_, value);
             send_message(socket, &value_message);
+        } else if (socket == 0) {
+            cv_.notify_one();
         }
     }
 
@@ -50,9 +55,8 @@ class KV_Store : public Node {
     }
 
     void put_get_queue_(String* key_name, int socket) {
-        get_queue_mutex_.lock();
+        std::unique_lock<std::mutex> lock(get_queue_mutex_);
         get_queue_->put(key_name, socket);
-        get_queue_mutex_.unlock();
     }
 
     void put(Key* key, Object* value) {
@@ -94,6 +98,16 @@ class KV_Store : public Node {
         if (key->get_node_index() == local_node_index_) {
             // TODO: actually wait
             Serializer* map_serial = get_map_(key->get_key());
+
+            if (!map_serial) {
+                // file descriptor 0 is stdin so this shouldn't be a socket descriptor
+                get_queue_->put(key->get_key(), 0);
+                std::unique_lock<std::mutex> lock(kv_map_mutex_);
+                cv_.wait(lock);
+                lock.unlock();
+                map_serial = get_map_(key->get_key());
+            }
+
             return map_serial->get_serial();
         }
         else {
