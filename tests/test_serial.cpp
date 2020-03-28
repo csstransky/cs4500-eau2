@@ -165,23 +165,23 @@ void test_wait_get() {
     String ip1("172.10.64.31");
     String ip2("10.221.22.2");
     String key("keykey");
-    WaitGet get_message(&ip1, &ip2, &key);
+    WaitAndGet get_message(&ip1, &ip2, &key);
     assert(get_message.get_sender()->equals(&ip1));
     assert(get_message.get_target()->equals(&ip2));
     assert(get_message.get_key_name()->equals(&key));
-    assert(get_message.get_kind() == MsgKind::WaitGet);
+    assert(get_message.get_kind() == MsgKind::WaitAndGet);
 
     char* get_serial = get_message.serialize();
     Message* message = deserialize_message(get_serial);
-    WaitGet* get_deserial = reinterpret_cast<WaitGet*>(message);
+    WaitAndGet* get_deserial = reinterpret_cast<WaitAndGet*>(message);
     assert(get_deserial->get_sender()->equals(&ip1));
     assert(get_deserial->get_target()->equals(&ip2));
     assert(get_deserial->get_key_name()->equals(&key));
-    assert(get_deserial->get_kind() == MsgKind::WaitGet);
+    assert(get_deserial->get_kind() == MsgKind::WaitAndGet);
 
     delete[] get_serial;
     delete get_deserial;
-    printf("WaitGet serialization passed!\n");
+    printf("WaitAndGet serialization passed!\n");
 }
 
 void test_value() {
