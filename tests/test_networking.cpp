@@ -218,7 +218,6 @@ void test_completion() {
             assert(node->other_nodes_->length() == 3);
             assert(node->other_node_indexes_->length() == 3);
             assert(!node->kill_);
-            printf("Node[%d] Finished\n", i);
             node->wait_for_shutdown();
             assert(node->kill_);
 
