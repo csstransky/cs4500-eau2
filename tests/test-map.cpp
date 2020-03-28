@@ -247,6 +247,7 @@ void testSIAMap() {
         String s(buf);
         IntArray* result = map.remove(&s);
         assert(result->get(0) == i);
+        delete result;
     }
 
     assert(map.size() == 0);
