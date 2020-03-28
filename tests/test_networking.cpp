@@ -189,11 +189,78 @@ void test_multiple_nodes() {
     printf("Networking multiple nodes test passed!\n");
 }
 
+void test_completion() {
+    int cpid[3];
+    String* server_ip = new String("127.0.0.1");
+    String** client_ips = new String*[3];
+    client_ips[0] = new String("127.0.0.2");
+    client_ips[1] = new String("127.0.0.3");
+    client_ips[2] = new String("127.0.0.4");
+        // Start server
+    RServer* server = new RServer(server_ip->c_str()); 
+
+    for (int i = 0; i < 3; i++) {
+        if ((cpid[i] = fork())) {
+            // do nothing now
+        } else {
+            // In child process
+
+            // start node
+            Node* node = new Node(client_ips[i]->c_str(), server_ip->c_str());
+            node->connect_to_server(0);
+            node->run_server(-1);
+
+            // We want to show this happening in order (not all at once), and we want enough time
+            // to be able to connect to a running RServer
+            sleep(i + 1);
+
+            // check for list of nodes
+            assert(node->other_nodes_->length() == 3);
+            assert(node->other_node_indexes_->length() == 3);
+            assert(!node->kill_);
+            printf("Node[%d] Finished\n", i);
+            node->wait_for_shutdown();
+            assert(node->kill_);
+
+            delete node;
+            delete server_ip;
+            for (int i = 0; i < 3; i++) {
+                delete client_ips[i];
+            }
+            delete[] client_ips;
+            delete server;
+
+            // exit
+            exit(0);
+        }
+    }
+    server->run_server();
+    server->wait_for_shutdown();
+
+    // wait for children to finish
+    for (int i = 0; i < 3; i++) {
+        int st;
+        waitpid(cpid[i], &st, 0);
+    }
+
+    delete server;
+    for (int i = 0; i < 3; i++) {
+        delete client_ips[i];
+    }
+    delete[] client_ips;
+    delete server_ip;
+
+
+    printf("Automatic server completion passed!\n");
+}
+
+
 
 int main(int argc, char** argv) {
     test_registration();
     test_kill();
     test_multiple_nodes();
+    test_completion();
     printf("All networking tests pass!\n");
     return 0;
 }
