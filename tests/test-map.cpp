@@ -217,17 +217,20 @@ void testIncreaseMap() {
     delete map;
 } 
 
-void testSIMap() {
-    SIMap map;
+void testSIAMap() {
+    SIAMap map;
     assert(map.isEmpty());
     assert(map.size() == 0);
     int size = 1000;
 
     char buf[20];
+    
     for (int i = 0; i < size; i++) {
         snprintf(buf, 20, "k_%d", i);
         String s(buf);
-        map.put(&s, i);
+        IntArray temp_array(size);
+        temp_array.push(i);
+        map.put(&s, &temp_array);
     }
 
     assert(map.size() == size);
@@ -235,15 +238,15 @@ void testSIMap() {
     for (int i = 0; i < size; i++) {
         snprintf(buf, 20, "k_%d", i);
         String s(buf);
-        int result = map.get(&s);
-        assert(result == i);
+        IntArray* result = map.get(&s);
+        assert(result->get(0) == i);
     }
 
     for (int i = 0; i < size; i++) {
         snprintf(buf, 20, "k_%d", i);
         String s(buf);
-        int result = map.remove(&s);
-        assert(result == i);
+        IntArray* result = map.remove(&s);
+        assert(result->get(0) == i);
     }
 
     assert(map.size() == 0);
@@ -254,5 +257,5 @@ int main() {
     testBasicSOMap();
     testBasicSSMap();
     testIncreaseMap();
-    testSIMap();
+    testSIAMap();
 }
