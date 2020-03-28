@@ -96,7 +96,6 @@ class KV_Store : public Node {
 
     char* wait_get_value_serial(Key* key) {
         if (key->get_node_index() == local_node_index_) {
-            // TODO: actually wait
             Serializer* map_serial = get_map_(key->get_key());
 
             if (!map_serial) {
