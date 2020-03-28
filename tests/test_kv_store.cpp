@@ -475,6 +475,7 @@ void test_wait_get() {
         delete kv;
         delete key;
         delete array;
+        delete[] serial;
         delete server_ip;
         delete client_ip1;
         delete client_ip2;
@@ -576,6 +577,7 @@ void test_wait_local_get() {
         delete kv;
         delete key;
         delete array;
+        delete[] serial;
         delete server_ip;
         delete client_ip1;
         delete client_ip2;

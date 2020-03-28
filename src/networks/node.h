@@ -73,7 +73,6 @@ class Node : public Server {
     void register_with_server_(size_t local_node_index) {
         Message* m = new Register(my_ip_, server_ip_, local_node_index);
         send_message(server_socket_, m);
-        printf("\n");
         delete m;
     
     }
