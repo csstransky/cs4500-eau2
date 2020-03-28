@@ -1,4 +1,9 @@
+#include <sys/wait.h>
+
 #include "../src/kv_store/kd_store.h"
+#include "../src/networks/rendezvous_server.h"
+
+int LISTEN_TIME = 5;
 
 void test_one_dataframe() {
     Key key("key", 0);
@@ -118,8 +123,404 @@ void test_multiple_dataframe() {
     printf("KD Store multiple dataframe tests pass!\n");
 }
 
+void test_put_other_node() {
+    int cpid[2];
+    String* server_ip = new String("127.0.0.1");
+    String* client_ip1 = new String("127.0.0.2");
+    String* client_ip2 = new String("127.0.0.3");
+
+    // Fork to create another process
+    if ((cpid[0] = fork())) {
+        
+    } else {
+        // In child process
+
+        // sleep .5s
+        sleep(0.5);
+
+        // start node
+        KD_Store* kd = new KD_Store(1, client_ip1->c_str(), server_ip->c_str());
+
+        sleep(1);
+
+        Key* key = new Key("key", 0);
+        int* array = new int[10];
+        for (int i = 0; i < 10; i++) {
+            array[i] = i+1;
+        }
+        DataFrame* df = DataFrame::from_array(key, kd, 10, array);
+
+        kd->application_complete();
+
+        delete kd;
+        delete key;
+        delete[] array;
+        delete df;
+        delete server_ip;
+        delete client_ip1;
+        delete client_ip2;
+
+        // exit
+        exit(0);
+    }
+
+    // Fork to create another process
+    if ((cpid[1] = fork())) {
+        
+    } else {
+        // In child process
+
+        // sleep .5s
+        sleep(0.5);
+
+        // start node
+        KD_Store* kd = new KD_Store(0, client_ip2->c_str(), server_ip->c_str());
+
+        sleep(2);
+
+        Key* key = new Key("key", 0);
+
+        assert(kd->kv_->kv_map_->size() == 1);
+        DataFrame* df = kd->get(key);
+        assert(df);
+        for (int i = 0; i < 10; i++) {
+            assert(df->get_int(0, i) == i+1);
+        }
+
+        kd->application_complete();
+
+        delete kd;
+        delete key;
+        delete df;
+        delete server_ip;
+        delete client_ip1;
+        delete client_ip2;
+
+        // exit
+        exit(0);
+    }
+
+    // In parent process
+
+    // Start server
+    RServer* server = new RServer(server_ip->c_str()); 
+    server->run_server(LISTEN_TIME);
+    server->wait_for_shutdown();
+
+    // wait for child to finish
+    int st;
+    waitpid(cpid[0], &st, 0);
+    waitpid(cpid[1], &st, 0);
+    delete server;
+    delete client_ip1;
+    delete client_ip2;
+    delete server_ip;
+
+    printf("KD Store put test passed!\n");
+}
+
+void test_get_other_node() {
+    int cpid[2];
+    String* server_ip = new String("127.0.0.1");
+    String* client_ip1 = new String("127.0.0.2");
+    String* client_ip2 = new String("127.0.0.3");
+
+    // Fork to create another process
+    if ((cpid[0] = fork())) {
+        
+    } else {
+        // In child process
+
+        // sleep .5s
+        sleep(0.5);
+
+        // start node
+        KD_Store* kd = new KD_Store(1, client_ip1->c_str(), server_ip->c_str());
+
+        sleep(1);
+
+        Key* key = new Key("key", 1);
+        int* array = new int[10];
+        for (int i = 0; i < 10; i++) {
+            array[i] = i+1;
+        }
+        DataFrame* df = DataFrame::from_array(key, kd, 10, array);
+
+        kd->application_complete();
+
+        delete kd;
+        delete key;
+        delete[] array;
+        delete df;
+        delete server_ip;
+        delete client_ip1;
+        delete client_ip2;
+
+        // exit
+        exit(0);
+    }
+
+    // Fork to create another process
+    if ((cpid[1] = fork())) {
+        
+    } else {
+        // In child process
+
+        // sleep .5s
+        sleep(0.5);
+
+        // start node
+        KD_Store* kd = new KD_Store(0, client_ip2->c_str(), server_ip->c_str());
+
+        sleep(2);
+
+        Key* key = new Key("key", 1);
+
+        DataFrame* df = kd->get(key);
+        assert(df);
+        for (int i = 0; i < 10; i++) {
+            assert(df->get_int(0, i) == i+1);
+        }
+
+        kd->application_complete();
+
+        delete kd;
+        delete key;
+        delete df;
+        delete server_ip;
+        delete client_ip1;
+        delete client_ip2;
+
+        // exit
+        exit(0);
+    }
+
+    // In parent process
+
+    // Start server
+    RServer* server = new RServer(server_ip->c_str()); 
+    server->run_server(LISTEN_TIME);
+    server->wait_for_shutdown();
+
+    // wait for child to finish
+    int st;
+    waitpid(cpid[0], &st, 0);
+    waitpid(cpid[1], &st, 0);
+    delete server;
+    delete client_ip1;
+    delete client_ip2;
+    delete server_ip;
+
+    printf("KD Store get other node test passed!\n");
+}
+
+void test_wait_get() {
+    int cpid[2];
+    String* server_ip = new String("127.0.0.1");
+    String* client_ip1 = new String("127.0.0.2");
+    String* client_ip2 = new String("127.0.0.3");
+
+    // Fork to create another process
+    if ((cpid[0] = fork())) {
+        
+    } else {
+        // In child process
+
+        // sleep .5s
+        sleep(0.5);
+
+        // start node
+        KD_Store* kd = new KD_Store(1, client_ip1->c_str(), server_ip->c_str());
+
+        sleep(2);
+
+        Key* key = new Key("key", 1);
+        int* array = new int[10];
+        for (int i = 0; i < 10; i++) {
+            array[i] = i+1;
+        }
+
+        assert(kd->kv_->get_queue_->size() == 1);
+        assert(kd->kv_->get_queue_->get(key->get_key()) > 0);
+
+        DataFrame* df = DataFrame::from_array(key, kd, 10, array);
+
+        assert(kd->kv_->get_queue_->size() == 0);
+
+        kd->application_complete();
+
+
+        delete kd;
+        delete key;
+        delete[] array;
+        delete df;
+        delete server_ip;
+        delete client_ip1;
+        delete client_ip2;
+
+        // exit
+        exit(0);
+    }
+
+    // Fork to create another process
+    if ((cpid[1] = fork())) {
+        
+    } else {
+        // In child process
+
+        // sleep .5s
+        sleep(0.5);
+
+        // start node
+        KD_Store* kd = new KD_Store(0, client_ip2->c_str(), server_ip->c_str());
+
+        sleep(1);
+
+        Key* key = new Key("key", 1);
+
+        DataFrame* df = kd->wait_and_get(key);
+        assert(df);
+        for (int i = 0; i < 10; i++) {
+            assert(df->get_int(0, i) == i+1);
+        }
+
+        kd->application_complete();
+
+        delete kd;
+        delete key;
+        delete df;
+        delete server_ip;
+        delete client_ip1;
+        delete client_ip2;
+
+        // exit
+        exit(0);
+    }
+
+    // In parent process
+
+    // Start server
+    RServer* server = new RServer(server_ip->c_str()); 
+    server->run_server(LISTEN_TIME);
+    server->wait_for_shutdown();
+
+    // wait for child to finish
+    int st;
+    waitpid(cpid[0], &st, 0);
+    waitpid(cpid[1], &st, 0);
+    delete server;
+    delete client_ip1;
+    delete client_ip2;
+    delete server_ip;
+
+    printf("KD Store wait get test passed!\n");
+}
+
+void test_wait_local_get() {
+    int cpid[2];
+    String* server_ip = new String("127.0.0.1");
+    String* client_ip1 = new String("127.0.0.2");
+    String* client_ip2 = new String("127.0.0.3");
+
+    // Fork to create another process
+    if ((cpid[0] = fork())) {
+        
+    } else {
+        // In child process
+
+        // sleep .5s
+        sleep(0.5);
+
+        // start node
+        KD_Store* kd = new KD_Store(1, client_ip1->c_str(), server_ip->c_str());
+
+        sleep(2);
+
+        Key* key = new Key("key", 0);
+        int* array = new int[10];
+        for (int i = 0; i < 10; i++) {
+            array[i] = i+1;
+        }
+
+        DataFrame* df = DataFrame::from_array(key, kd, 10, array);
+
+        assert(kd->kv_->get_queue_->size() == 0);
+
+        kd->application_complete();
+
+
+        delete kd;
+        delete key;
+        delete[] array;
+        delete df;
+        delete server_ip;
+        delete client_ip1;
+        delete client_ip2;
+
+        // exit
+        exit(0);
+    }
+
+    // Fork to create another process
+    if ((cpid[1] = fork())) {
+        
+    } else {
+        // In child process
+
+        // sleep .5s
+        sleep(0.5);
+
+        // start node
+        KD_Store* kd = new KD_Store(0, client_ip2->c_str(), server_ip->c_str());
+
+        sleep(1);
+
+        Key* key = new Key("key", 0);
+
+        DataFrame* df = kd->wait_and_get(key);
+        assert(df);
+        for (int i = 0; i < 10; i++) {
+            assert(df->get_int(0, i) == i+1);
+        }
+
+        kd->application_complete();
+
+        delete kd;
+        delete key;
+        delete df;
+        delete server_ip;
+        delete client_ip1;
+        delete client_ip2;
+
+        // exit
+        exit(0);
+    }
+
+    // In parent process
+
+    // Start server
+    RServer* server = new RServer(server_ip->c_str()); 
+    server->run_server(LISTEN_TIME);
+    server->wait_for_shutdown();
+
+    // wait for child to finish
+    int st;
+    waitpid(cpid[0], &st, 0);
+    waitpid(cpid[1], &st, 0);
+    delete server;
+    delete client_ip1;
+    delete client_ip2;
+    delete server_ip;
+
+    printf("KD Store wait local get test passed!\n");
+}
+
 int main(int argc, char** argv) {
     test_one_dataframe();
     test_multiple_dataframe();
+    test_put_other_node();
+    test_get_other_node();
+    test_wait_get();
+    test_wait_local_get();
     printf("All KD Store tests pass!\n");
 }
