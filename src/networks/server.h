@@ -110,6 +110,11 @@ class Server {
         networking_thread_ = std::thread(&Server::thread_run_server_, this, timeout);
     }
 
+    // NOTE: runs server indefinitely
+    void run_server() {
+        run_server(-1);
+    }
+
     /**
      * Update the list of open file descriptors. Returns the max file descriptor, which is needed
      * for select in wait_activity.
