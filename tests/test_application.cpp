@@ -140,7 +140,6 @@ void test_demo() {
     } else {
       // child process
       Demo* demo = new Demo(i, client_ips[i], server_ip);
-      sleep(3 - i);
       demo->run_();
       delete demo;
       delete server;
