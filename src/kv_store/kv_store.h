@@ -188,16 +188,7 @@ class KV_Store : public Node {
         return string_array;
     }
 
-    // TODO: Cristian I think you wanted a different algorithm but I forget what is was
-    // Answer: 10 columns in dataframe, 4 kv_stores: 0 1 2 3 0 1 2 3 0 1
-    size_t get_random_node_index() {
-        int num_of_nodes = get_num_other_nodes();
-        if (num_of_nodes == -1) {
-            // no network set up
-            return local_node_index_;
-        }
-        int index = rand() % num_of_nodes;
-
+    size_t get_node_index(size_t index) {
         return other_node_indexes_->get(index);
     }
 

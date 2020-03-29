@@ -37,6 +37,7 @@ class Column : public Object {
   String* dataframe_name_;
   size_t column_index_;
   KeyArray* keys_; // owned
+  int node_for_chunk_;
  
   /** Type converters: Return same column under its actual type, or
    *  nullptr if of the wrong type.  */
@@ -77,6 +78,7 @@ class Column : public Object {
     size_ = size;
     size_t num_arrays_ = get_num_arrays();
     keys_ = new KeyArray(num_arrays_);
+    node_for_chunk_ = 0;
   }
 
   void set_parent_values_(size_t size, char type, KV_Store* kv, String* dataframe_name, 
@@ -87,6 +89,7 @@ class Column : public Object {
     type_ = type;
     size_ = size;
     keys_ = keys->clone();
+    node_for_chunk_ = 0;
   }
 
   Key* generate_key_(size_t array_index) {
@@ -97,7 +100,8 @@ class Column : public Object {
     key_name.concat(array_index);
 
     // TODO: Cristian change get_random_node_index if you don't want it completely random
-    Key* new_key = new Key(&key_name, kv_->get_random_node_index());
+    size_t home_index = kv_->get_node_index(node_for_chunk_++ % kv_->get_num_other_nodes());
+    Key* new_key = new Key(&key_name, home_index);
     return new_key;    
   }
  
