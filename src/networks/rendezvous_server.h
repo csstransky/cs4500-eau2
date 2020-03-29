@@ -76,7 +76,6 @@ class RServer : public Server {
         for (int i = 0; i < connected_client_ips_->length(); i++) {
             // if socket is has registered send the message
             if (is_not_default_ip_(connected_client_ips_->get(i))) {
-                // TODO fix this up
                 Message* message = new Directory(my_ip_, connected_client_ips_->get(i), &active_clients, &active_node_indexes);
                 send_message(client_sockets_->get(i), message);
                 delete message;
