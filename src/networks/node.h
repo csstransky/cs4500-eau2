@@ -50,9 +50,17 @@ class Node : public Server {
         delete other_node_indexes_;
     }
 
+    // Node needs to tell the RServer that it's complete with its task, so that this Node is ready
+    // to shutdown.
+    // When all Nodes are complete, they will receive a Kill message to shutdown.
+    void signal_complete_to_server_() {
+        Message* m = new Complete(my_ip_, server_ip_);
+        send_message(server_socket_, m);
+        delete m;
+    }
+
     void wait_for_shutdown() {
-        // TODO: Add a send_done_message() function here that sends a message to the RServer increasing its node complete count
-        //send_message()
+        signal_complete_to_server_();
         Server::wait_for_shutdown();
         if (server_socket_) {
             close(server_socket_);
@@ -106,7 +114,7 @@ class Node : public Server {
                 break;
             }
             default:
-                return 0;;
+                return 0;
         }
         return 1;
     }

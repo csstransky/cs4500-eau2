@@ -40,7 +40,7 @@ class RServer : public Server {
     void thread_run_server_(int timeout) {
         timeval timeout_val = {timeout, 0};
         timeval* timeout_pointer = (timeout < 0) ? nullptr : &timeout_val;
-        while (wait_for_activty_(timeout_pointer) && !are_nodes_complete()) {
+        while (!are_nodes_complete() && wait_for_activty_(timeout_pointer)) {
             check_for_connections_();
             check_for_client_messages_();
         }
@@ -85,6 +85,9 @@ class RServer : public Server {
     }
 
     bool decode_message_(Message* message, int client) {
+        // TODO: I get the idea here, but it might be easier to simply include all the code together in one switch case,
+        // and then any messages with shared attributes (like Ack) are abstracted in server that wasy (handle_ack_() can
+        // be a function in Server, but both dudes use it, something like that)
         if (Server::decode_message_(message, client)) {
             return 1;
         }
@@ -100,9 +103,12 @@ class RServer : public Server {
                 send_directory_message_(); 
                 break;
             }
+            case MsgKind::Complete: {
+                node_complete_count_++;
+                break;
+            }
             default:
                 // Nobody inherits from rserver so it has to handle the message
-                assert(0);
                 return 0;
         }
 

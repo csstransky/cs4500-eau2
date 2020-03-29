@@ -12,7 +12,7 @@
 int MESSAGE_ID = 0;
 
 // TODO: Add Get and Value messages
-enum class MsgKind { Ack, Put, Get, WaitAndGet, Value, Kill, Register, Directory };
+enum class MsgKind { Ack, Put, Get, WaitAndGet, Value, Kill, Register, Directory, Complete };
 
 class Message : public Object {
     public:
@@ -158,6 +158,34 @@ class Kill : public Message {
         String* sender = String::deserialize(deserializer);
         String* target = String::deserialize(deserializer);
         Kill* new_put = new Kill(sender, target);
+        delete sender; 
+        delete target;
+        return new_put;
+    }
+};
+
+class Complete : public Message {
+    public:
+
+    Complete(String* sender, String* target) {
+        Message::Message_(MsgKind::Complete, sender, target); 
+    }
+
+    ~Complete() {
+        Message::DMessage_();
+    }
+
+    static Complete* deserialize(char* serial) {
+        Deserializer deserializer(serial);
+        return deserialize(deserializer);
+    }
+
+    static Complete* deserialize(Deserializer& deserializer) {
+        deserializer.deserialize_size_t(); // skip serial size
+        deserializer.deserialize_size_t(); // skip kind_
+        String* sender = String::deserialize(deserializer);
+        String* target = String::deserialize(deserializer);
+        Complete* new_put = new Complete(sender, target);
         delete sender; 
         delete target;
         return new_put;
@@ -507,6 +535,8 @@ Message* deserialize_message(char* buff) {
             return WaitAndGet::deserialize(buff);
         case MsgKind::Value:
             return Value::deserialize(buff);
+        case MsgKind::Complete:
+            return Complete::deserialize(buff);
         default:
             assert(0);
     }
