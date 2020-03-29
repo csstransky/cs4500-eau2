@@ -51,7 +51,6 @@ public:
     for (size_t i = 0; i < SZ; ++i) sum += vals[i] = i;
     DataFrame* df1= DataFrame::from_array(&main, &kd_, SZ, vals);
     DataFrame* df2 = DataFrame::from_scalar(&check, &kd_, sum);
-    printf("producer done\n");
 
     delete[] vals;
     delete df1;
@@ -83,7 +82,6 @@ int main(int argc, const char** argv) {
   const char* client_ip_address = get_input_client_ip_address(argc, argv);
   const char* server_ip_address = get_input_server_ip_address(argc, argv);
   int node_index = atoi(argv[5]);
-  printf("node%d\n", node_index);
   Demo app(node_index, client_ip_address, server_ip_address);
   app.run_();
 }
