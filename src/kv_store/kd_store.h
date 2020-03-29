@@ -14,7 +14,7 @@ class KD_Store : public Object {
     KD_Store(size_t node_index, const char* my_ip, const char* server_ip) {
         kv_ = new KV_Store(my_ip, server_ip, node_index);
         kv_->connect_to_server(node_index);
-        kv_->run_server(-1);
+        kv_->run_server(200);
     }
 
     ~KD_Store() {
