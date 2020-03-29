@@ -609,6 +609,14 @@ class DataFrame : public Object {
   }  
 
   // Implemented in kd_store.h to remove circular dependency. See piazza post @963
+  static DataFrame* from_scalar(Key* key, KD_Store* kd, int val);
+
+  static DataFrame* from_scalar(Key* key, KD_Store* kd, float val);
+
+  static DataFrame* from_scalar(Key* key, KD_Store* kd, bool val);
+
+  static DataFrame* from_scalar(Key* key, KD_Store* kd, String* val);
+
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, int* array);
 
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, float* array);

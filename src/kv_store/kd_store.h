@@ -109,6 +109,30 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, String** ar
     return d;
 }
 
+DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, int val) {
+    int array[1];
+    array[0] = val;
+    return DataFrame::from_array(key, kd, 1, array);
+}
+
+DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, float val) {
+    float array[1];
+    array[0] = val;
+    return DataFrame::from_array(key, kd, 1, array);
+}
+
+DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, bool val) {
+    bool array[1];
+    array[0] = val;
+    return DataFrame::from_array(key, kd, 1, array);
+}
+
+DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, String* val) {
+    String* array[1];
+    array[0] = val;
+    return DataFrame::from_array(key, kd, 1, array);
+}
+
 DataFrame* DataFrame::from_file(Key* key, KD_Store* kd, char* file_name) {
     SoR sor(file_name, key->get_key(), kd->get_kv());
     kd->put(key, sor.get_dataframe());
