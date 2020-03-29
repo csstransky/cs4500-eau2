@@ -12,13 +12,15 @@
 int MESSAGE_ID = 0;
 
 // TODO: Add Get and Value messages
-enum class MsgKind { Ack, Put, Get, Value, Kill, Register, Directory, Complete };
+enum class MsgKind { Ack, Put, Get, WaitAndGet, Value, Kill, Register, Directory, Complete };
 
 class Message : public Object {
     public:
 
     MsgKind kind_;  // the message kind
     String* sender_; // the index of the sender node
+    // TODO: We don't need target ip anymore because we are connecting directly to Nodes,
+    // BUT when you do refactor, be very careful and test because of serializing
     String* target_; // the index of the receiver node
     size_t id_;     // an id t unique within the node
 
@@ -421,6 +423,34 @@ class Get : public Message {
     }
 };
 
+class WaitAndGet : public Get {
+    public:
+
+    WaitAndGet(String* sender, String* target, String* key_name_) : Get(sender, target, key_name_) {
+        kind_ = MsgKind::WaitAndGet;
+    }
+
+    static WaitAndGet* deserialize(char* serial) {
+        Deserializer deserializer(serial);
+        return deserialize(deserializer);
+    }
+
+    static WaitAndGet* deserialize(Deserializer& deserializer) {
+        deserializer.deserialize_size_t(); // skip serial size
+        deserializer.deserialize_size_t(); // skip kind_
+        String* sender = String::deserialize(deserializer);
+        String* target = String::deserialize(deserializer);
+        deserializer.deserialize_size_t(); // skip id_
+        String* key_name = String::deserialize(deserializer);
+        WaitAndGet* new_get = new WaitAndGet(sender, target, key_name);
+        delete sender;
+        delete target;
+        delete key_name;
+        return new_get;
+    }
+
+};
+
 class Value : public Message {
     public:
     Serializer* value_;
@@ -501,6 +531,8 @@ Message* deserialize_message(char* buff) {
             return Register::deserialize(buff);
         case MsgKind::Get:
             return Get::deserialize(buff);
+        case MsgKind::WaitAndGet:
+            return WaitAndGet::deserialize(buff);
         case MsgKind::Value:
             return Value::deserialize(buff);
         case MsgKind::Complete:

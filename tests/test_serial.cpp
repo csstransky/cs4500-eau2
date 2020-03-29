@@ -161,6 +161,29 @@ void test_get() {
     printf("Get serialization passed!\n");
 }
 
+void test_wait_get() {
+    String ip1("172.10.64.31");
+    String ip2("10.221.22.2");
+    String key("keykey");
+    WaitAndGet get_message(&ip1, &ip2, &key);
+    assert(get_message.get_sender()->equals(&ip1));
+    assert(get_message.get_target()->equals(&ip2));
+    assert(get_message.get_key_name()->equals(&key));
+    assert(get_message.get_kind() == MsgKind::WaitAndGet);
+
+    char* get_serial = get_message.serialize();
+    Message* message = deserialize_message(get_serial);
+    WaitAndGet* get_deserial = reinterpret_cast<WaitAndGet*>(message);
+    assert(get_deserial->get_sender()->equals(&ip1));
+    assert(get_deserial->get_target()->equals(&ip2));
+    assert(get_deserial->get_key_name()->equals(&key));
+    assert(get_deserial->get_kind() == MsgKind::WaitAndGet);
+
+    delete[] get_serial;
+    delete get_deserial;
+    printf("WaitAndGet serialization passed!\n");
+}
+
 void test_value() {
     String ip1("172.10.64.31");
     String ip2("10.221.22.2");
@@ -1107,6 +1130,7 @@ int main(int argc, char const *argv[])
     test_ack();
     test_put();
     test_get();
+    test_wait_get();
     test_value();
     test_directory();
     test_kill();
