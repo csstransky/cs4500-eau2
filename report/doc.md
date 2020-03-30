@@ -97,14 +97,15 @@ class CreateDataframe : public Application {
 + If we were to use get() on a kv_store that doesn't have the kv pair, is it okay if we can error out?   
 We expect that if you use get(), you know the key is already in the kv_store (wait_and_get should be used if you don't know if the key is there).
 + Are we going to need is_missing (from the refactor video) in our dataframe?
++ How will we construct DataFrames in the future? Will it only be done with fromArray, fromFile, or fromScalar? We assume we will write into the DataFrame at first, and then read all the data. If we have to write and read in random chunks (write 10, read 10, write 100, read 100), that means we'll have to have a "put" cache and "get" cache for our Column, but if we strictly read and then write, we can have just 1 cache.
 
 ## Status
 All of our code valgrinds. The application runs on multiple nodes using a complete network layer. The pseudo network approach was not taken. The demo class example given in the assignment description for Milestone 3 works. 
 
 We are in the middle of refactor and deleting duplicate code but have not merged this refactor with our master branch. 
-+ We have completed refactoring array to use a union for its payload instead of all the duplicate code. 
-+ We have not implemented the array changes in the rest of the code yet so we are not submitting the refactored array. 
-+ For the next milestone, we will have the refactored array changes reflected throughout our code, change our implementation of column to use one class, and delete unused code in map and dataframe. 
++ We have completed refactoring array to use a union for its payload instead of duplicating code for each Array. 
++ We have not implemented the array changes in the rest of the code yet, so we are not submitting the refactored array. 
++ For the next milestone, we will have the refactored array changes reflected throughout our code, change our implementation of column to use one class, and delete unused code in map and dataframe, as per Jan's notes. 
 + Serialization and deserialization is also being redesigned to reduce code. 
 - We can provide the link to our refactor branch to show that we are deleting the duplicate code (but right now the repo is private).
 
