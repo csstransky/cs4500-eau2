@@ -24,10 +24,6 @@ public:
     return ObjectArray::push(to_add); 
   }
 
-  /* Removes the last Column of the Array, returns the removed Column */
-  /* Throws an error if not found or out of range or no elements in array*/
-  Column* pop() { return static_cast<Column*>(ObjectArray::pop()); }
-
   /* Removes a Column at the given index, returns removed Column */
   /* Throws an error if not found or out of range or no elements in array*/
   Column* remove(size_t index) { return static_cast<Column*>(ObjectArray::remove(index)); }

@@ -92,8 +92,6 @@ void testBasicSOMap () {
     t_true(values == nullptr);
     values = map->values();
     t_true(values != nullptr);
-    map->clear();
-    t_true(map->isEmpty());
 
     delete map;
     delete a;
@@ -170,8 +168,6 @@ void testBasicSSMap () {
     t_true(values == nullptr);
     values = map->values();
     t_true(values != nullptr);
-    map->clear();
-    t_true(map->isEmpty());
 
     delete map;
     delete a;

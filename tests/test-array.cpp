@@ -64,8 +64,6 @@ void basic_stringarray_test() {
   arr->push(y);
   arr->push(z);
   t_true(arr->length() == 3, "3a");
-  String* v = arr->pop();
-  t_true(arr->length() == 2, "3b");
   arr->clear();
   t_true(arr->length() == 0, "3c");
 
@@ -73,7 +71,6 @@ void basic_stringarray_test() {
   delete z;
   delete y;
   delete x;
-  delete v;
 
   OK("3");
 }
@@ -86,8 +83,6 @@ void basic_intarray_test() {
   arr->push(2);
   arr->push(3);
   t_true(arr->length() == 3, "4a");
-  arr->pop();
-  t_true(arr->length() == 2, "4b");
   arr->clear();
   t_true(arr->length() == 0, "4c");
 
@@ -104,8 +99,6 @@ void basic_DoubleArray_tests() {
   arr->push(2.7);
   arr->push(3.9);
   t_true(arr->length() == 3, "5a");
-  arr->pop();
-  t_true(arr->length() == 2, "5b");
   arr->clear();
   t_true(arr->length() == 0, "5c");
 
@@ -122,8 +115,6 @@ void basic_boolarray_tests() {
   arr->push(true);
   arr->push(false);
   t_true(arr->length() == 3, "6a");
-  arr->pop();
-  t_true(arr->length() == 2, "6b");
   arr->clear();
   t_true(arr->length() == 0, "6c");
 
@@ -324,9 +315,6 @@ void basic_columnarray_test() {
   t_true(arr.get(3)->as_bool()->get(0), "14e");
   t_true(arr.get(4)->as_string()->get(0)->equals(&str), "14f");
 
-  Column* v = arr.pop();
-  delete v;
-  t_true(arr.length() == 4, "14g");
   arr.clear();
   t_true(arr.length() == 0, "14h");
 
@@ -356,9 +344,6 @@ void basic_keyarray_test() {
     t_true(arr.get(ii)->get_key()->equals(&key_string), test_string.c_str());
   }
 
-  Key* v = arr.pop();
-  delete v;
-  t_true(arr.length() == num_keys - 1, "15c");
   arr.clear();
   t_true(arr.length() == 0, "15d");
 
