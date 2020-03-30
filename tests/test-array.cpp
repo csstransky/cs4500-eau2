@@ -134,44 +134,34 @@ void basic_boolarray_tests() {
 
 /** Tests more complex Array functions */
 void complex_stringarray_test() {
-  String * a = new String("This");
-  String * b = new String("is going");
-  String * c = new String("in a list");
-  String * x = new String("Hello");
-  String * y = new String("World");
-  String * z = new String("!");
-  StringArray * arr1 = new StringArray(10);
-  StringArray * arr2 = new StringArray(10);
+  String a("This");
+  String b("is going");
+  String c("in a list");
+  String x("Hello");
+  String y("World");
+  String z("!");
+  StringArray arr1(10);
+  StringArray arr2(10);
 
-  arr1->push(a);
-  arr1->push(b);
-  arr1->push(c);
-  arr2->push(x);
-  arr2->push(y);
-  arr2->push(z);
-  String * copy_of_a = arr1->get(0);
-  t_true(copy_of_a->equals(a), "7a");
-  arr1->concat(arr2);
-  t_true(arr1->length() == 6, "7b");
-  t_true(arr2->length() == 3, "7c");
-  String* v = arr2->remove(2);
-  t_true(arr2->index_of(z) == -1, "7g");
-  String* w = arr2->replace(1, z);
-  t_true(arr2->index_of(y) == -1, "7i");
-  StringArray * copy_of_arr1 = new StringArray(arr1);
-  t_true(copy_of_arr1->equals(arr1), "7j");
-
-  delete copy_of_arr1;
-  delete arr2;
-  delete arr1;
-  delete z;
-  delete y;
-  delete x;
-  delete c;
-  delete b;
-  delete a;
+  arr1.push(&a);
+  arr1.push(&b);
+  arr1.push(&c);
+  arr2.push(&x);
+  arr2.push(&y);
+  arr2.push(&z);
+  String * pointer_of_a = arr1.get(0);
+  t_true(pointer_of_a->equals(&a), "7a");
+  String* v = arr2.remove(2);
+  t_true(v->equals(&z), "7b");
   delete v;
+  t_true(arr2.index_of(&z) == -1, "7g");
+  String* w = arr2.replace(1, &z);
+  t_true(y.equals(w), "7h");
   delete w;
+  t_true(arr2.index_of(&y) == -1, "7i");
+  StringArray * copy_of_arr1 = new StringArray(arr1);
+  t_true(copy_of_arr1->equals(&arr1), "7j");
+  delete copy_of_arr1;
 
   OK("7");
 }

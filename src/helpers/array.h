@@ -12,6 +12,31 @@ union Payload {
   Object* o;
 };
 
+// TODO: Better place to put these?
+Payload int_to_payload_(int int_value) { 
+  Payload payload;
+  payload.i = int_value;
+  return payload;
+}
+
+Payload double_to_payload_(double double_value) {
+  Payload payload;
+  payload.d = double_value;
+  return payload;
+}
+
+Payload bool_to_payload_(bool bool_value) {
+  Payload payload;
+  payload.b = bool_value;
+  return payload;
+}
+
+Payload object_to_payload_(Object* object_value) {
+  Payload payload;
+  payload.o = object_value;
+  return payload;
+}
+
 /**
  * An basic Array class that should be inherited, but not directly used.
  * Requested here: https://github.com/chasebish/cs4500_assignment1_part2/issues/2
@@ -24,16 +49,26 @@ public:
   Payload* elements_;
 
   Array(char type, size_t size, size_t count) {
-    assert(size > 0 && (type == 'I' || type == 'B' || type == 'D' || type == 'O'));
+    assert(size > 0 && size >= count && (type == 'I' || type == 'B' || type == 'D' || type == 'O'));
     count_ = count;
     size_ = size;
     type_ = type;
-    elements_[size_];  
+    // TODO: Find a way to do this without using new
+    elements_ = new Payload[size_];  
   }
 
   Array(char type, size_t size) : Array(type, size, 0) { }
 
   Array(char type) : Array(type, 1) { }
+
+  Array(Array& arr) : Array(arr.type_, arr.size_, arr.count_) {
+    for (size_t i = 0; i < arr.count_; i++) {
+      if (arr.type_ == 'O')
+        elements_[i].o = arr.elements_[i].o ? arr.elements_[i].o->clone() : nullptr;
+      else
+        elements_[i] = arr.elements_[i];
+    }
+  }
 
   ~Array() {
     if (type_ == 'O') {
@@ -41,16 +76,7 @@ public:
         delete elements_[ii].o;
       }
     }
-  }
-
-  Array(Array& arr) : Array(arr.type_, arr.size_) {
-    for (size_t i = 0; i < arr.size_; i++) {
-      if (arr.type_ == 'O')
-        elements_[i].o = arr.elements_[i].o ? arr.elements_[i].o->clone() : nullptr;
-      else
-        elements_[i] = arr.elements_[i];
-    }
-    count_ = arr.count_;
+    delete[] elements_;
   }
 
   bool equals(Object* const obj) {
@@ -83,65 +109,39 @@ public:
 
   void increase_array_() {
     size_ = size_ * 2;
-    Payload new_elements[size_];
+    // TODO: Find a way to do this without new
+    Payload* new_elements = new Payload[size_];
     for (size_t i = 0; i < count_; i++)
       new_elements[i] = elements_[i];
+    delete[] elements_;
     elements_ = new_elements;
   }
   
-  virtual void clear() { 
-    assert(false); // TODO: see if soemthing cbreaks
-    count_ = 0;
-  }
-
   size_t length() { return count_;  }
 
-  size_t push_payload_(char type, Payload to_add) {
-    assert(type_ == type);
+  size_t push_payload_(Payload to_add) {
     if (count_ + 1 > size_)
       increase_array_();
     elements_[count_] = to_add;
     return count_++;
   }
 
-  /**
-   *  Adds a bool to the end of the Array, returns the new length 
-   *  NOTE: Only works for a BoolArray
-   */
-  size_t push(bool to_add) {
-    Payload payload;
-    payload.b = to_add;
-    return push_payload_('B', payload);
+  size_t index_of_payload_(Payload payload) {
+    for (size_t ii = 0; ii < count_; ii++) {
+      switch(type_) {
+        case 'I': if (elements_[ii].i == payload.i) return ii;
+        case 'D': if (elements_[ii].d == payload.d) return ii;
+        case 'B': if (elements_[ii].b == payload.b) return ii;
+        case 'O': if (elements_[ii].o->equals(payload.o)) return ii;
+      }
+    }
+    return -1;
   }
 
-  /**
-   *  Adds a double to the end of the Array, returns the new length 
-   *  NOTE: Only works for a DoubleArray
-   */
-  size_t push(double to_add) {
-    Payload payload;
-    payload.d = to_add;
-    return push_payload_('D', payload);
-  }
-
-  /**
-   *  Adds an int to the end of the Array, returns the new length 
-   *  NOTE: Only works for an IntArray
-   */
-  size_t push(int to_add) {
-    Payload payload;
-    payload.i = to_add;
-    return push_payload_('I', payload);
-  }
-
-  /** 
-   * Adds a Object to the end of the Array, returns the new length 
-   * NOTE: Only works for an ObjectArray
-   */
-  size_t push(Object* const to_add) {
-    Payload payload;
-    payload.o = to_add ? to_add->clone() : nullptr;
-    return push_payload_('O', payload);
+  Payload pop_payload_() {
+    assert(count_ > 0);
+    count_--;
+    return elements_[count_];
   }
 
   Payload remove_payload_(size_t index) {
@@ -154,6 +154,13 @@ public:
     return element;
   }
 
+  void clear() {
+    if (type_ == 'O') 
+      for (size_t ii = 0; ii < count_; ii++) 
+        delete elements_[ii].o;
+    count_ = 0;
+  }
+
   Payload replace_payload_(size_t index, Payload to_add) {
     assert(count_ > 0 && index < count_);
     Payload element = elements_[index];
@@ -161,23 +168,26 @@ public:
     return element;
   }
 
-  size_t serial_len() {
-    size_t elements_serial_length = 0;
+  size_t elements_serial_len_() {
     switch(type_) {
-      case 'I': elements_serial_length = count_ * sizeof(int); break;
-      case 'D': elements_serial_length = count_ * sizeof(double); break;
-      case 'B': elements_serial_length = count_ * sizeof(bool); break;
+      case 'I': return count_ * sizeof(int);
+      case 'D': return count_ * sizeof(double);
+      case 'B': return count_ * sizeof(bool); 
       case 'O': {
+        size_t elements_serial_length = 0;
         for (size_t ii = 0; ii < count_; ii++)
           elements_serial_length += elements_[ii].o->serial_len();
-        break;
+        return elements_serial_length;
       }
     }
+  }
+
+  size_t serial_len() {
     return sizeof(size_t) // serial_length
       + sizeof(size_t) // size_
       + sizeof(size_t) // count_
       + sizeof(char) // type_
-      + elements_serial_length;
+      + elements_serial_len_();
   }
 
   char* serialize() {
@@ -198,32 +208,13 @@ public:
     return serializer.get_serial();
   }
 
+  // NOTE: creates a new Array WITH NO ELEMENTS inside, but count is kept
   static Array* deserialize_new_array_(Deserializer& deserializer) {
     deserializer.deserialize_size_t(); // skip serial_size
     size_t size = deserializer.deserialize_size_t();
     size_t count = deserializer.deserialize_size_t();
     char type = deserializer.deserialize_char();
     return new Array(type, size, count);
-  }
-
-  // NOTE: only works with IntArray, BoolArray, & DoubleArray
-  static Array* deserialize(char* serial) {
-    Deserializer deserializer(serial);
-    return deserialize(deserializer);
-  }
-
-  // NOTE: only works with IntArray, BoolArray, & DoubleArray
-  static Array* deserialize(Deserializer& deserializer) {
-    Array* new_array = deserialize_new_array_(deserializer);
-    for (size_t ii = 0; ii < new_array->count_; ii++) {
-      switch(new_array->type_) {
-        case 'I': new_array->push(deserializer.deserialize_int());
-        case 'B': new_array->push(deserializer.deserialize_bool());
-        case 'D': new_array->push(deserializer.deserialize_double());
-        case 'O': assert(false); // ObjectArrays must deserialize themselves (ex. StringArray)
-      }
-    }
-    return new_array;
   }
 };
 
@@ -238,11 +229,21 @@ public:
 
   BoolArray* clone() { return new BoolArray(*this); }
 
-  /** Throws an error if not found or out of range or no elements in array */
+  /** Adds a bool to the end of the Array, returns the new length */
+  size_t push(bool to_add) { return push_payload_(bool_to_payload_(to_add)); }
+
+  /** Gets a Boolean. Throws an error if not found or out of range or no elements in array */
   bool get(size_t index) {
     assert(count_ > 0 && index < count_);
     return elements_[index].b;
   }
+
+  /* Returns the index of the given bool, -1 if bool is not found */
+  size_t index_of(bool to_find) { return index_of_payload_(bool_to_payload_(to_find)); }
+
+  /* Removes the last bool of the Array, returns the removed bool */
+  /* Throws an error if not found or out of range or no elements in array*/
+  bool pop() { return pop_payload_().b; }
 
   /* Removes an bool at the given index, returns removed bool */
   /* Throws an error if not found or out of range or no elements in array*/
@@ -251,9 +252,7 @@ public:
   /* Replaces an bool at the given index with the given bool, returns the replaced bool */
   /* Throws an error if not found or out of range or no elements in array*/
   bool replace(size_t index, bool to_add) {
-    Payload payload;
-    payload.b = to_add;
-    return replace_payload_(index, payload).b;
+    return replace_payload_(index, bool_to_payload_(to_add)).b;
   }
 
   static BoolArray* deserialize(char* serial) {
@@ -262,8 +261,12 @@ public:
   }
 
   static BoolArray* deserialize(Deserializer& deserializer) {
-    Array* new_array = Array::deserialize(deserializer);
-    return static_cast<BoolArray*>(new_array);
+    Array* new_array = deserialize_new_array_(deserializer);
+    BoolArray* new_bool_array = static_cast<BoolArray*>(new_array);
+    for (size_t ii = 0; ii < new_bool_array->count_; ii++) {
+      new_bool_array->replace(ii, deserializer.deserialize_bool());
+    }
+    return new_bool_array;
   }
 };
 
@@ -273,18 +276,27 @@ public:
 class DoubleArray : public Array {
 public:
   DoubleArray() : DoubleArray(1) { }
-  DoubleArray(const size_t size) : Array(size) { }
+  DoubleArray(const size_t size) : Array('D', size) { }
   DoubleArray(DoubleArray& arr) : Array(arr) { }
 
   DoubleArray* clone() { return new DoubleArray(*this); }
 
-  /**
-   * Gets a double at the given index
-   * Throws an error if not found or out of range  or no elements in array*/
+  /** Adds a double to the end of the Array, returns the new length */
+  size_t push(double to_add) { 
+    return push_payload_(double_to_payload_(to_add)); }
+
+  /** Gets a double. Throws an error if not found or out of range  or no elements in array*/
   double get(size_t index) {
     assert(count_ > 0 && index < count_);
     return elements_[index].d;
   }
+
+  /* Returns the index of the given double, -1 if double is not found */
+  size_t index_of(double to_find) { return index_of_payload_(double_to_payload_(to_find)); }
+
+  /* Removes the last float of the Array, returns the removed float */
+  /* Throws an error if not found or out of range or no elements in array*/
+  double pop() { return pop_payload_().d; }
 
   /* Removes a double at the given index, returns removed double */
   /* Throws an error if not found or out of range or no elements in array*/  
@@ -293,9 +305,7 @@ public:
   /* Replaces a double at the given index with the given double, returns the replaced double */
   /* Throws an error if not found or out of range or no elements in array*/
   double replace(size_t index, double to_add) {
-    Payload payload;
-    payload.d = to_add;
-    return  replace_payload_(index, payload).d;
+    return replace_payload_(index, double_to_payload_(to_add)).d;
   }
 
   static DoubleArray* deserialize(char* serial) {
@@ -304,8 +314,13 @@ public:
   }
 
   static DoubleArray* deserialize(Deserializer& deserializer) {
-    Array* new_array = Array::deserialize(deserializer);
-    return static_cast<DoubleArray*>(new_array);
+    Array* new_array = deserialize_new_array_(deserializer);
+    DoubleArray* new_double_array = static_cast<DoubleArray*>(new_array);
+    new_double_array->elements_[100];
+    for (size_t ii = 0; ii < new_double_array->count_; ii++) {
+      new_double_array->replace(ii, deserializer.deserialize_double());
+    }
+    return new_double_array;
   }
 };
 
@@ -320,13 +335,21 @@ public:
 
   IntArray* clone() { return new IntArray(*this); }
 
-  /**
-   * Gets an int at the given index
-   * Throws an error if not found or out of range or no elements in array */
+  /** Adds an int to the end of the Array, returns the new length */
+  size_t push(int to_add) { return push_payload_(int_to_payload_(to_add)); }
+
+  /** Gets an int. Throws an error if not found or out of range or no elements in array */
   int get(size_t index) {
     assert(count_ > 0 && index < count_);
     return elements_[index].i;
   }
+
+  /* Returns the index of the given int, -1 if int is not found */
+  size_t index_of(int to_find) { return index_of_payload_(int_to_payload_(to_find)); }
+
+  /* Removes the last int of the Array, returns the removed int */
+  /* Throws an error if not found or out of range or no elements in array*/
+  int pop() { return pop_payload_().i; }
 
   /* Removes an int at the given index, returns removed int */
   /* Throws an error if not found or out of range or no elements in array*/
@@ -335,9 +358,7 @@ public:
   /* Replaces an int at the given index with the given int, returns the replaced int */
   /* Throws an error if not found or out of range or no elements in array*/
   int replace(size_t index, int to_add) {
-    Payload payload;
-    payload.i = to_add;
-    return replace_payload_(index, payload).i;
+    return replace_payload_(index, int_to_payload_(to_add)).i;
   }
 
   static IntArray* deserialize(char* serial) {
@@ -346,8 +367,12 @@ public:
   }
 
   static IntArray* deserialize(Deserializer& deserializer) {
-    Array* new_array = Array::deserialize(deserializer);
-    return static_cast<IntArray*>(new_array);
+    Array* new_array = deserialize_new_array_(deserializer);
+    IntArray* new_int_array = static_cast<IntArray*>(new_array);
+    for (size_t ii = 0; ii < new_int_array->count_; ii++) {
+      new_int_array->replace(ii, deserializer.deserialize_int());
+    }
+    return new_int_array;
   }
 };
 
@@ -362,26 +387,34 @@ public:
 
   ObjectArray* clone() { return new ObjectArray(*this); }
 
-  /**
-   * Gets an Object at the given index
-   * Throws an error if not found or out of range or no elements in array */
+ /** Adds a Object to the end of the Array, returns the new length */
+  size_t push(Object* to_add) { 
+    Object* object_clone = to_add ? to_add->clone() : nullptr;
+    return push_payload_(object_to_payload_(object_clone)); 
+  }
+
+  /** Gets an Object. Throws an error if not found or out of range or no elements in array */
   Object* get(size_t index) {
     assert(count_ > 0 && index < count_);
     return elements_[index].o;
   }
 
+  /* Removes the last Object of the Array, returns the removed Object */
+  /* Throws an error if not found or out of range or no elements in array*/
+  Object* pop() { return pop_payload_().o; }
+
+  /* Returns the index of the given Object, -1 if Object is not found */
+  size_t index_of(Object* to_find) { return index_of_payload_(object_to_payload_(to_find)); }
+
   /* Removes a Object at the given index, returns removed Object */
   /* Throws an error if not found or out of range or no elements in array*/
-  Object* remove(size_t index) {
-    return remove_payload_(index).o;
-  }
+  Object* remove(size_t index) { return remove_payload_(index).o; }
 
   /* Replaces a Object at the given index with the given Object, returns the replaced Object */
   /* Throws an error if not found or out of range or no elements in array*/
-  Object* replace(size_t index, Object* const to_add) {
-    Payload payload;
-    payload.o = to_add ? to_add->clone() : nullptr;
-    return replace_payload_(index, payload).o;
+  Object* replace(size_t index, Object* to_add) {
+    Object* object_clone = to_add ? to_add->clone() : nullptr;
+    return replace_payload_(index, object_to_payload_(object_clone)).o;
   }
 };
 
@@ -391,26 +424,29 @@ public:
 class StringArray : public ObjectArray {
 public:
   StringArray() : StringArray(1) {  }
-  StringArray(const size_t size) : ObjectArray(size) { }
+  StringArray(size_t size) : ObjectArray(size) { }
   StringArray(StringArray& arr) : ObjectArray(arr) { }
 
   StringArray* clone() { return new StringArray(*this); }
 
   /* Adds an String to the end of the Array, returns the new length */
-  size_t push(String* const to_add) { return ObjectArray::push(to_add); }
+  size_t push(String* to_add) { return ObjectArray::push(to_add); }
 
-  /* Gets a String at the given index */
+  /* Gets String. Throws an error if not found or out of range or no elements in array*/
+  String* get(size_t index) { return static_cast<String*>(ObjectArray::get(index)); }
+
+  /* Removes the last String of the Array, returns the removed String */
   /* Throws an error if not found or out of range or no elements in array*/
-  String* get(size_t index) { return dynamic_cast<String*>(ObjectArray::get(index)); }
+  String* pop() { return static_cast<String*>(ObjectArray::pop()); }
 
   /* Removes a String at the given index, returns removed String */
   /* Throws an error if not found or out of range or no elements in array*/
-  String* remove(size_t index) { return dynamic_cast<String*>(ObjectArray::remove(index)); }
+  String* remove(size_t index) { return static_cast<String*>(ObjectArray::remove(index)); }
 
   /* Replaces a String at the given index with the given String, returns the replaced String */
   /* Throws an error if not found or out of range or no elements in array*/
   String* replace(size_t index, String* const to_add) {
-    return dynamic_cast<String*>(ObjectArray::replace(index, to_add));
+    return static_cast<String*>(ObjectArray::replace(index, to_add));
   }
 
   static StringArray* deserialize(char* serial) {
@@ -423,7 +459,7 @@ public:
     StringArray* new_string_array = static_cast<StringArray*>(new_array);
     for (size_t ii = 0; ii < new_string_array->count_; ii++) {
       String* new_object = String::deserialize(deserializer);
-      new_array->push(new_object);
+      new_string_array->replace(ii, new_object);
       delete new_object;
     }
     return new_string_array;
