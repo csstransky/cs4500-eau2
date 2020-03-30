@@ -4,38 +4,7 @@
 #include "object.h"
 #include "string.h"
 #include <assert.h>
-
-union Payload {
-  int i;
-  double d;
-  bool b;
-  Object* o;
-};
-
-// TODO: Better place to put these?
-Payload int_to_payload_(int int_value) { 
-  Payload payload;
-  payload.i = int_value;
-  return payload;
-}
-
-Payload double_to_payload_(double double_value) {
-  Payload payload;
-  payload.d = double_value;
-  return payload;
-}
-
-Payload bool_to_payload_(bool bool_value) {
-  Payload payload;
-  payload.b = bool_value;
-  return payload;
-}
-
-Payload object_to_payload_(Object* object_value) {
-  Payload payload;
-  payload.o = object_value;
-  return payload;
-}
+#include "payload.h"
 
 /**
  * An basic Array class that should be inherited, but not directly used.
@@ -388,7 +357,7 @@ public:
   ObjectArray* clone() { return new ObjectArray(*this); }
 
  /** Adds a Object to the end of the Array, returns the new length */
-  size_t push(Object* to_add) { 
+  virtual size_t push(Object* const to_add) { 
     Object* object_clone = to_add ? to_add->clone() : nullptr;
     return push_payload_(object_to_payload_(object_clone)); 
   }
@@ -430,7 +399,10 @@ public:
   StringArray* clone() { return new StringArray(*this); }
 
   /* Adds an String to the end of the Array, returns the new length */
-  size_t push(String* to_add) { return ObjectArray::push(to_add); }
+  size_t push(Object* const to_add) { 
+    assert(dynamic_cast<String*>(to_add));
+    return ObjectArray::push(to_add); 
+  }
 
   /* Gets String. Throws an error if not found or out of range or no elements in array*/
   String* get(size_t index) { return static_cast<String*>(ObjectArray::get(index)); }

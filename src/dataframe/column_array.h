@@ -19,7 +19,10 @@ public:
   Column* get(size_t index) { return static_cast<Column*>(ObjectArray::get(index)); }
 
   /* Adds an Column to the end of the Array, returns the new length */
-  size_t push(Column* const to_add) { return ObjectArray::push(to_add); }
+  size_t push(Object* const to_add) { 
+    assert(dynamic_cast<Column*>(to_add));
+    return ObjectArray::push(to_add); 
+  }
 
   /* Removes the last Column of the Array, returns the removed Column */
   /* Throws an error if not found or out of range or no elements in array*/

@@ -20,7 +20,10 @@ public:
   Key* get(size_t index) { return static_cast<Key*>(ObjectArray::get(index)); }
 
   /* Adds an Key to the end of the Array, returns the new length */
-  size_t push(Key* const to_add) { return ObjectArray::push(to_add); }
+  size_t push(Object* const to_add) { 
+    assert(dynamic_cast<Key*>(to_add));
+    return ObjectArray::push(to_add); 
+  }
   
   /* Removes the last Key of the Array, returns the removed Key */
   /* Throws an error if not found or out of range or no elements in array*/
