@@ -24,10 +24,6 @@ public:
     assert(dynamic_cast<Key*>(to_add));
     return ObjectArray::push(to_add); 
   }
-  
-  /* Removes the last Key of the Array, returns the removed Key */
-  /* Throws an error if not found or out of range or no elements in array*/
-  Key* pop() { return static_cast<Key*>(ObjectArray::pop()); }
 
   /* Removes a Key at the given index, returns removed Key */
   /* Throws an error if not found or out of range or no elements in array*/

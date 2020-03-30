@@ -210,10 +210,6 @@ public:
   /* Returns the index of the given bool, -1 if bool is not found */
   size_t index_of(bool to_find) { return index_of_payload_(bool_to_payload_(to_find)); }
 
-  /* Removes the last bool of the Array, returns the removed bool */
-  /* Throws an error if not found or out of range or no elements in array*/
-  bool pop() { return pop_payload_().b; }
-
   /* Removes an bool at the given index, returns removed bool */
   /* Throws an error if not found or out of range or no elements in array*/
   bool remove(size_t index) { return remove_payload_(index).b; }
@@ -262,10 +258,6 @@ public:
 
   /* Returns the index of the given double, -1 if double is not found */
   size_t index_of(double to_find) { return index_of_payload_(double_to_payload_(to_find)); }
-
-  /* Removes the last float of the Array, returns the removed float */
-  /* Throws an error if not found or out of range or no elements in array*/
-  double pop() { return pop_payload_().d; }
 
   /* Removes a double at the given index, returns removed double */
   /* Throws an error if not found or out of range or no elements in array*/  
@@ -316,10 +308,6 @@ public:
   /* Returns the index of the given int, -1 if int is not found */
   size_t index_of(int to_find) { return index_of_payload_(int_to_payload_(to_find)); }
 
-  /* Removes the last int of the Array, returns the removed int */
-  /* Throws an error if not found or out of range or no elements in array*/
-  int pop() { return pop_payload_().i; }
-
   /* Removes an int at the given index, returns removed int */
   /* Throws an error if not found or out of range or no elements in array*/
   int remove(size_t index) { return remove_payload_(index).i; }
@@ -368,10 +356,6 @@ public:
     return elements_[index].o;
   }
 
-  /* Removes the last Object of the Array, returns the removed Object */
-  /* Throws an error if not found or out of range or no elements in array*/
-  Object* pop() { return pop_payload_().o; }
-
   /* Returns the index of the given Object, -1 if Object is not found */
   size_t index_of(Object* to_find) { return index_of_payload_(object_to_payload_(to_find)); }
 
@@ -406,10 +390,6 @@ public:
 
   /* Gets String. Throws an error if not found or out of range or no elements in array*/
   String* get(size_t index) { return static_cast<String*>(ObjectArray::get(index)); }
-
-  /* Removes the last String of the Array, returns the removed String */
-  /* Throws an error if not found or out of range or no elements in array*/
-  String* pop() { return static_cast<String*>(ObjectArray::pop()); }
 
   /* Removes a String at the given index, returns removed String */
   /* Throws an error if not found or out of range or no elements in array*/
