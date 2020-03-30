@@ -101,9 +101,14 @@ We expect that if you use get(), you know the key is already in the kv_store (wa
 ## Status
 All of our code valgrinds. The application runs on multiple nodes using a complete network layer. The pseudo network approach was not taken. The demo class example given in the assignment description for Milestone 3 works. 
 
-We are in the middle of refactor and deleting duplicate code but have not merged this refactor with our master branch. We have completed refactoring array to use a union for its payload instead of all the duplicate code. We have not implemented the array changes in the rest of the code yet so we are not submitting the refactored array. For the next milestone, we will have the refactored array changes reflected throughout our code, change our implementation of column to use one class, and delete unused code in map and dataframe. Serialization and deserialization is also being redesigned to reduce code. We can provide the link to our refactor branch to show that we are deleting the duplicate code (but right now the repo is private).
+We are in the middle of refactor and deleting duplicate code but have not merged this refactor with our master branch. 
++ We have completed refactoring array to use a union for its payload instead of all the duplicate code. 
++ We have not implemented the array changes in the rest of the code yet so we are not submitting the refactored array. 
++ For the next milestone, we will have the refactored array changes reflected throughout our code, change our implementation of column to use one class, and delete unused code in map and dataframe. 
++ Serialization and deserialization is also being redesigned to reduce code. 
+- We can provide the link to our refactor branch to show that we are deleting the duplicate code (but right now the repo is private).
 
-We also plan to add a cache to the kv store or column class to reduce network calls.
+We also plan to add a "get" cache to the column class to reduce network calls when a "get()" is called on the Column. For example, getting the first 100 elements in a Column, we can simply make 1 network call to grab and cache the array of elements from a remote kv_store, and then grab the next 99 elements locally, rather than making 100 network calls.
 
 Steps to run our code:
 1. builds the needed directory of executables  
