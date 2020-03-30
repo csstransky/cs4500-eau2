@@ -11,9 +11,8 @@
 
 int MESSAGE_ID = 0;
 
-// TODO: Add Get and Value messages
 enum class MsgKind { Ack, Put, Get, WaitAndGet, Value, Kill, Register, Directory, Complete };
-
+// TODO: A lot of repeated code, make sure to refactor this in the future
 class Message : public Object {
     public:
 

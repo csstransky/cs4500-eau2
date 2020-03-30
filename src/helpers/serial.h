@@ -5,6 +5,7 @@
 #include <string.h> 
 #include "object.h"
 
+// TODO: This file could actually use some refactoring to bring down the code base
 // NOTE: When using deserialize methods, it MUST be done in order of the serial given to it, or
 // else segfaults will occur
 class Deserializer {
@@ -185,6 +186,8 @@ class Serializer : public Object {
         return new Serializer(*this);
     }
 
+    // TODO: This is REALLY ugly, I'm sure there's a way to get rid of this in kv_store and use
+    // something else instead
     static Serializer* deserialize(Deserializer& deserial) {
         size_t starting_index = deserial.get_serial_index();
         size_t serial_size = deserial.deserialize_size_t();

@@ -5,6 +5,8 @@
 #include "string.h"
 #include <assert.h>
 
+// TODO: This has actually all been refactored all ready, and will be merged in with the next
+// reduce_code branch
 /**
  * An basic Array class that should be inherited, but not directly used.
  * Requested here: https://github.com/chasebish/cs4500_assignment1_part2/issues/2

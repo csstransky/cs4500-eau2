@@ -33,7 +33,6 @@ class RServer : public Server {
 
     // Checks to see if all Nodes connected to this RServer are complete with their Application.
     bool are_nodes_complete() {
-        // TODO: Actually get RServet to increase node_complete_count_, then we can have auto closing RServer
         return node_complete_count_ > 0 && node_complete_count_ >= node_indexes_->length();
     }
 
