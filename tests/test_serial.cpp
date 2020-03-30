@@ -509,7 +509,7 @@ void test_key() {
 }
 
 void test_schema() {
-    char* schema_type = const_cast<char*>("IFSBFISIBFSIBFFSSIBF");
+    char* schema_type = const_cast<char*>("IDSBDISIBDSIBDDSSIBD");
     size_t num_cols = 20;
     size_t num_rows = 34;
     Schema schema(schema_type);
@@ -1135,10 +1135,10 @@ int main(int argc, char const *argv[])
     test_directory();
     test_kill();
     test_register();
-    test_bool_array();
     test_double_array();
     test_int_array();
     test_string_array();
+    test_bool_array();
     test_key();
     test_schema();
     test_int_column();

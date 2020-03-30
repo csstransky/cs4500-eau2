@@ -438,7 +438,7 @@ void schema_constructor_tests() {
     GT_EQUALS(schema1->width(), 0);
     GT_EQUALS(schema1->length(), 0);
 
-    const char* types = "ISBFFBS";
+    const char* types = "ISBDDBS";
     Schema* schema2 = new Schema(types);
     GT_EQUALS(schema2->width(), 7);
     GT_EQUALS(schema2->length(), 0);
@@ -528,7 +528,7 @@ void test_row_width() {
 }
 
 void test_col_type() {
-  Schema* s = new Schema("IFSB");
+  Schema* s = new Schema("IDSB");
   Row* row = new Row(*s);
   GT_EQUALS(row->col_type(0), 'I');
   GT_EQUALS(row->col_type(1), 'D');
@@ -541,7 +541,7 @@ void test_col_type() {
 }
 
 void test_set_get() {
-  Schema* s = new Schema("IFSB");
+  Schema* s = new Schema("IDSB");
   Row* row = new Row(*s);
   String* hi = new String("hi");
   row->set(0, 4);
@@ -560,7 +560,7 @@ void test_set_get() {
 }
 
 void test_sum_bytes() {
-  Schema* s = new Schema("IFSB");
+  Schema* s = new Schema("IDSB");
   Row* row = new Row(*s);
   String* hi = new String("hi");
   size_t sum_actual = 0;
@@ -583,7 +583,7 @@ void test_sum_bytes() {
 }
 
 void test_nonempty_filter_rower() {
-  Schema* s = new Schema("IFSB");
+  Schema* s = new Schema("IDSB");
   Rower* rower = new NonEmptyFilterRower();
   Row* row = new Row(*s);
   String* hi = new String("hi");
@@ -613,7 +613,7 @@ void test_nonempty_filter_rower() {
 void test_map() {
   KV_Store kv(0);
   String c("c");
-  Schema* s = new Schema("IIFI");
+  Schema* s = new Schema("IIDI");
   DataFrame* df = new DataFrame(*s, &c, &kv);
   Row* r = new Row(df->get_schema());
   AddRower* rower = new AddRower(df);
@@ -648,7 +648,7 @@ void test_map() {
 void test_filter() {
   KV_Store kv(0);
   String c("c");
-  Schema* s = new Schema("IFSB");
+  Schema* s = new Schema("IDSB");
   DataFrame* df = new DataFrame(*s, &c, &kv);
   
   Rower* rower = new NonEmptyFilterRower();
@@ -710,7 +710,7 @@ void test_filter() {
 void test_get_schema() {
   KV_Store kv(0);
   String c("c");
-  Schema* s1 = new Schema("IFSB");
+  Schema* s1 = new Schema("IDSB");
   DataFrame* df = new DataFrame(*s1, &c, &kv);
 
   Schema s2 = df->get_schema();
@@ -728,7 +728,7 @@ void test_get_schema() {
 void test_add_column() {
   KV_Store kv(0);
   String c("c");
-  Schema s1("IFSB");
+  Schema s1("IDSB");
   DataFrame df(s1, &c, &kv);
   String* hi = new String("hi");
   String* hello = new String("hello");
@@ -802,7 +802,7 @@ void test_add_column() {
 void dataframe_constructor_tests() {
   KV_Store kv(0);
   String c("c");
-  Schema schema1("IFSBSB");
+  Schema schema1("IDSBSB");
   DataFrame* dataframe1 = new DataFrame(schema1, &c, &kv);
   GT_EQUALS(dataframe1->ncols(), 6);
   GT_EQUALS(dataframe1->nrows(), 0);
@@ -1170,7 +1170,7 @@ void dataframe_add_row_tests() {
 void test_pmap_add() {
   KV_Store kv(0);
   String c("c");
-  Schema s("IIFI");
+  Schema s("IIDI");
   DataFrame df(s, &c, &kv);
   Row  r(df.get_schema());
   AddRower rower(&df);
@@ -1200,7 +1200,7 @@ void test_pmap_add() {
 void test_map_add() {
   KV_Store kv(0);
   String c("c");
-  Schema s("IIFI");
+  Schema s("IIDI");
   DataFrame df(s, &c, &kv);
   Row  r(df.get_schema());
   AddRower rower(&df);
