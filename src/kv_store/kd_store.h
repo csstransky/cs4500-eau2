@@ -65,10 +65,10 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, int* array)
 }
 
 // Moved here to remove circular dependency. See piazza post @963
-DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, float* array) {
+DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, double* array) {
     Schema s("");
     DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
-    FloatColumn col(kd->get_kv(), key->get_key(), 0);
+    DoubleColumn col(kd->get_kv(), key->get_key(), 0);
     for (size_t i = 0; i < num; i++) {
         col.push_back(array[i]);
     }
@@ -115,8 +115,8 @@ DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, int val) {
     return DataFrame::from_array(key, kd, 1, array);
 }
 
-DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, float val) {
-    float array[1];
+DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, double val) {
+    double array[1];
     array[0] = val;
     return DataFrame::from_array(key, kd, 1, array);
 }

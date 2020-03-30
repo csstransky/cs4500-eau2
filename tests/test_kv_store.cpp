@@ -45,10 +45,10 @@ void test_int_array() {
     printf("KV Store int array test passed!\n");
 }
 
-void test_float_array() {
-    FloatArray* array = new FloatArray(500);
+void test_double_array() {
+    DoubleArray* array = new DoubleArray(500);
     for (int i = 0; i < 500; i++) {
-        array->push((float)i);
+        array->push((double)i);
     }
 
     String k("k");
@@ -56,10 +56,10 @@ void test_float_array() {
     KV_Store kv(0);
 
     kv.put(&key, array);
-    FloatArray* result = kv.get_float_array(&key);
+    DoubleArray* result = kv.get_double_array(&key);
 
     for (int i = 0; i < 500; i++) {
-        assert(result->get(i) == (float)i);
+        assert(result->get(i) == (double)i);
     }
 
     assert(array->equals(result));
@@ -67,7 +67,7 @@ void test_float_array() {
     delete array;
     delete result;
 
-    printf("KV Store float array test passed!\n");
+    printf("KV Store double array test passed!\n");
 }
 
 void test_bool_array() {
@@ -126,9 +126,9 @@ void test_multiple() {
     for (int i = 0; i < 500; i++) {
         int_array->push(i);
     } 
-    FloatArray* float_array = new FloatArray(500);
+    DoubleArray* double_array = new DoubleArray(500);
     for (int i = 0; i < 500; i++) {
-        float_array->push((float)i);
+        double_array->push((double)i);
     } 
     BoolArray* bool_array = new BoolArray(500);
     for (int i = 0; i < 500; i++) {
@@ -152,7 +152,7 @@ void test_multiple() {
         snprintf(buf, 6, "kf_%d", i);
         String sf(buf);
         Key kf(&sf, 0);
-        kv.put(&kf, float_array); 
+        kv.put(&kf, double_array); 
 
         snprintf(buf, 6, "kb_%d", i);
         String sb(buf);
@@ -176,9 +176,9 @@ void test_multiple() {
         snprintf(buf, 6, "kf_%d", i);
         String sf(buf);
         Key kf(&sf, 0);
-        FloatArray* float_result = kv.get_float_array(&kf); 
-        assert(float_result->equals(float_array));
-        delete float_result; 
+        DoubleArray* double_result = kv.get_double_array(&kf); 
+        assert(double_result->equals(double_array));
+        delete double_result; 
 
         snprintf(buf, 6, "kb_%d", i);
         String sb(buf);
@@ -196,7 +196,7 @@ void test_multiple() {
     }
 
     delete int_array;
-    delete float_array;
+    delete double_array;
     delete bool_array;
     delete string_array;
 
@@ -608,7 +608,7 @@ void test_wait_local_get() {
 int main(int argc, char const *argv[]) {
     test_put_get();
     test_int_array();
-    test_float_array();
+    test_double_array();
     test_bool_array();
     test_string_array();
     test_multiple();

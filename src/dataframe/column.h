@@ -8,13 +8,13 @@
 // TODO: change this in the future when we know the average file to store
 const int ELEMENT_ARRAY_SIZE = 100; 
 const int DEFAULT_INT_VALUE = 0;
-const float DEFAULT_FLOAT_VALUE = 0;
+const double DEFAULT_DOUBLE_VALUE = 0;
 const bool DEFAULT_BOOL_VALUE = 0;
 String DEFAULT_STRING_VALUE("");
 const int NUM_THREADS = 4;
 
 class IntColumn;
-class FloatColumn;
+class DoubleColumn;
 class BoolColumn;
 class StringColumn;
 class KD_Store;
@@ -43,7 +43,7 @@ class Column : public Object {
    *  nullptr if of the wrong type.  */
   virtual IntColumn* as_int() { return nullptr; }
   virtual BoolColumn*  as_bool() { return nullptr; }
-  virtual FloatColumn* as_float() { return nullptr; }
+  virtual DoubleColumn* as_double() { return nullptr; }
   virtual StringColumn* as_string() { return nullptr; }
  
   /** Type appropriate push_back methods. Calling the wrong method is
@@ -57,7 +57,7 @@ class Column : public Object {
     assert(0);
   }
 
-  virtual void push_back(float val) {
+  virtual void push_back(double val) {
     assert(0);
   }
 
@@ -110,7 +110,7 @@ class Column : public Object {
     return size_;
   }
  
-  /** Return the type of this column as a char: 'S', 'B', 'I' and 'F'. */
+  /** Return the type of this column as a char: 'S', 'B', 'I' and 'D'. */
   char get_type() {
     return type_;
   }
@@ -293,47 +293,47 @@ class IntColumn : public Column {
 };
  
 /*************************************************************************
- * FloatColumn::
- * Holds float values.
+ * DoubleColumn::
+ * Holds double values.
  */
-class FloatColumn : public Column {
+class DoubleColumn : public Column {
   public:
   // Elements are stored as an array of int arrays where each int array holds ELEMENT_ARRAY_SIZE 
   // number of elements.
-  FloatArray* buffered_elements_;
+  DoubleArray* buffered_elements_;
 
-  FloatColumn(KV_Store* kv, String* name, size_t index, size_t size, KeyArray* keys, 
-    FloatArray* local_array) {
-    set_parent_values_(size, 'F', kv, name, index, keys);
+  DoubleColumn(KV_Store* kv, String* name, size_t index, size_t size, KeyArray* keys, 
+    DoubleArray* local_array) {
+    set_parent_values_(size, 'D', kv, name, index, keys);
     buffered_elements_ = local_array->clone();
   }
 
-  FloatColumn(KV_Store* kv, String* name, size_t index) {
-    set_parent_values_(0, 'F', kv, name, index);
-    buffered_elements_ = new FloatArray(ELEMENT_ARRAY_SIZE);
+  DoubleColumn(KV_Store* kv, String* name, size_t index) {
+    set_parent_values_(0, 'D', kv, name, index);
+    buffered_elements_ = new DoubleArray(ELEMENT_ARRAY_SIZE);
   }
 
-  FloatColumn(FloatColumn& other) 
-    : FloatColumn(other.kv_, other.dataframe_name_, other.column_index_, other.size_, other.keys_, 
+  DoubleColumn(DoubleColumn& other) 
+    : DoubleColumn(other.kv_, other.dataframe_name_, other.column_index_, other.size_, other.keys_, 
       other.buffered_elements_) {
 
   }
 
-  FloatColumn() : FloatColumn(nullptr, nullptr, 0) {
+  DoubleColumn() : DoubleColumn(nullptr, nullptr, 0) {
     
   }
 
-  ~FloatColumn() {
+  ~DoubleColumn() {
     delete dataframe_name_;
     delete buffered_elements_;
     delete keys_;
   }
 
-  FloatColumn* clone() {
-    return new FloatColumn(*this);
+  DoubleColumn* clone() {
+    return new DoubleColumn(*this);
   }
 
-  float get(size_t idx) {
+  double get(size_t idx) {
     assert(idx < size_);
     size_t array = idx / ELEMENT_ARRAY_SIZE;
     size_t index = idx % ELEMENT_ARRAY_SIZE;
@@ -344,18 +344,18 @@ class FloatColumn : public Column {
       return buffered_elements_->get(index);
     } else {
       Key* k = keys_->get(array);
-      FloatArray* data = kv_->get_float_array(k);
-      float i = data->get(index);
+      DoubleArray* data = kv_->get_double_array(k);
+      double i = data->get(index);
       delete data;
       return i;
     }
   }
 
-  FloatColumn* as_float() { return this; }
+  DoubleColumn* as_double() { return this; }
 
 
   /** Set value at idx. An out of bound idx is undefined.  */
-  void set(size_t idx, float val) {
+  void set(size_t idx, double val) {
     assert(idx < size_);
     size_t array = idx / ELEMENT_ARRAY_SIZE;
     size_t index = idx % ELEMENT_ARRAY_SIZE;
@@ -366,7 +366,7 @@ class FloatColumn : public Column {
       buffered_elements_->replace(index, val);
     } else {
       Key* k = keys_->get(array);
-      FloatArray* data = kv_->get_float_array(k);
+      DoubleArray* data = kv_->get_double_array(k);
       data->replace(index, val);
       kv_->put(k, data);
       delete data;
@@ -378,7 +378,7 @@ class FloatColumn : public Column {
     return Column::size();
   }
 
-  void push_back(float val) {
+  void push_back(double val) {
     size_t array = size_ / ELEMENT_ARRAY_SIZE;
     size_t index = size_ % ELEMENT_ARRAY_SIZE;
 
@@ -391,7 +391,7 @@ class FloatColumn : public Column {
       kv_->put(k, buffered_elements_); 
       delete k;
       delete buffered_elements_;
-      buffered_elements_ = new FloatArray(ELEMENT_ARRAY_SIZE);
+      buffered_elements_ = new DoubleArray(ELEMENT_ARRAY_SIZE);
     }
 
     size_++;
@@ -408,26 +408,26 @@ class FloatColumn : public Column {
     return serializer.get_serial();
   }
 
-  static FloatColumn* deserialize(char* serial, KV_Store* kv_store) {
+  static DoubleColumn* deserialize(char* serial, KV_Store* kv_store) {
     Deserializer deserializer(serial);
     return deserialize(deserializer, kv_store);
   }
 
-  static FloatColumn* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
+  static DoubleColumn* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
     deserializer.deserialize_size_t(); // skip serial size
     deserializer.deserialize_char(); // skip type
     size_t dataframe_size = deserializer.deserialize_size_t(); 
     String* dataframe_name = String::deserialize(deserializer);
     size_t dataframe_index = deserializer.deserialize_size_t();
     KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
-    FloatArray* buffered_elements = FloatArray::deserialize(deserializer);
+    DoubleArray* buffered_elements = DoubleArray::deserialize(deserializer);
 
-    FloatColumn* new_float_column = new FloatColumn(kv_store, dataframe_name, dataframe_index, 
+    DoubleColumn* new_double_column = new DoubleColumn(kv_store, dataframe_name, dataframe_index, 
       dataframe_size, dataframe_keys, buffered_elements);
     delete dataframe_name;
     delete dataframe_keys;
     delete buffered_elements;
-    return new_float_column;
+    return new_double_column;
   }
 };
 
@@ -732,8 +732,8 @@ Column* Column::deserialize(Deserializer& deserializer, KV_Store* kv_store) {
   switch(column_type) {
     case 'I':
       return IntColumn::deserialize(deserializer, kv_store);
-    case 'F':
-      return FloatColumn::deserialize(deserializer, kv_store);
+    case 'D':
+      return DoubleColumn::deserialize(deserializer, kv_store);
     case 'B':
       return BoolColumn::deserialize(deserializer, kv_store);
     case 'S':

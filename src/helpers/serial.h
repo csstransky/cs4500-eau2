@@ -44,11 +44,11 @@ class Deserializer {
         return int_value;
     }
 
-    float deserialize_float() {
-        float float_value;
-        memcpy(&float_value, &serial_[serial_index_], sizeof(float));
-        serial_index_ += sizeof(float);
-        return float_value;
+    double deserialize_double() {
+        double double_value;
+        memcpy(&double_value, &serial_[serial_index_], sizeof(double));
+        serial_index_ += sizeof(double);
+        return double_value;
     }
 
     bool deserialize_bool() {
@@ -116,9 +116,9 @@ class Serializer : public Object {
         serial_index_ += sizeof(int);
     }
 
-    void serialize_float(float float_value) {
-        memcpy(serial_ + serial_index_, &float_value, sizeof(float));
-        serial_index_ += sizeof(float);
+    void serialize_double(double double_value) {
+        memcpy(serial_ + serial_index_, &double_value, sizeof(double));
+        serial_index_ += sizeof(double);
     }
 
     void serialize_bool(bool bool_value) {

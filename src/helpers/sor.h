@@ -12,7 +12,7 @@
 
 using namespace std;
 
-enum enum_type {INTEGER, FLOAT, BOOL, STRING, EMPTY};
+enum enum_type {INTEGER, DOUBLE, BOOL, STRING, EMPTY};
 
 // Assignment only wants us to read the first 500 lines to find the schema of a file
 size_t MAX_SCHEMA_READ = 500;
@@ -31,13 +31,13 @@ class SoR {
         }
     }
 
-    float get_float_from_line(vector<string> line, size_t index) {
+    double get_double_from_line(vector<string> line, size_t index) {
         if (index < line.size()) {
             string element = line.at(index);
             return stof(element);
         }
         else {
-            return (float)DEFAULT_FLOAT_VALUE;
+            return (double)DEFAULT_DOUBLE_VALUE;
         }
     }
 
@@ -85,9 +85,9 @@ class SoR {
                     if (string_value) { delete string_value; }
                     break;
                 }
-                case 'F': {
-                    float float_value = get_float_from_line(line, i);
-                    row.set(i, float_value);
+                case 'D': {
+                    double double_value = get_double_from_line(line, i);
+                    row.set(i, double_value);
                     break;
                 }
                 case 'I': {
@@ -115,15 +115,15 @@ class SoR {
     }
 
     bool is_first_char_numeric(std::string line_string) {
-        // Ints and floats can start with a + or - character, like "-2" or "+30"
+        // Ints and doubles can start with a + or - character, like "-2" or "+30"
         return line_string.length() > 0 && (line_string[0] == '+' || line_string[0] == '-' || isdigit(line_string[0]));
     }
 
-    bool is_file_float(std::string line_string) {
+    bool is_file_double(std::string line_string) {
         if (!is_first_char_numeric(line_string)) 
             return false;
 
-        // We only consider a float to have ONE dot, ex: "12.2" = True, "1.1.1" = False, "13" = False
+        // We only consider a double to have ONE dot, ex: "12.2" = True, "1.1.1" = False, "13" = False
         bool has_dot = false;
         for (size_t ii = 1; ii < line_string.length(); ii++) {
             if (line_string[ii] == '.' && !has_dot) {
@@ -168,8 +168,8 @@ class SoR {
 
     char get_column_char(string line_string) {
         // NOTE: Order of these if else statements is important!
-        if (is_file_float(line_string)) {
-            return 'F';
+        if (is_file_double(line_string)) {
+            return 'D';
         }
         // NOTE: Because of this, a "1" and "0" integer is NOT possible
         else if (is_file_boolean(line_string)) {

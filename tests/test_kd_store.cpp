@@ -41,21 +41,21 @@ void test_multiple_dataframe() {
     KD_Store kd(0);
 
     IntColumn col_int(kd.get_kv(), key.get_key(), 0);
-    FloatColumn col_float(kd.get_kv(), key.get_key(), 1);
+    DoubleColumn col_double(kd.get_kv(), key.get_key(), 1);
     BoolColumn col_bool(kd.get_kv(), key.get_key(), 2);
     StringColumn col_string(kd.get_kv(), key.get_key(), 3);
     String test("test");
     for (size_t i = 0; i < rows; i++) {
         col_int.push_back(i);
         assert(col_int.get(i) == i);
-        col_float.push_back((float)i + 0.1);
+        col_double.push_back((double)i + 0.1);
         col_bool.push_back((bool)(i % 2));
         col_string.push_back(&test);
     }
 
     for (size_t i = 0; i < rows; i++) {
         assert(col_int.get(i) == i);
-        assert(col_float.get(i) == (float)(i + 0.1));
+        assert(col_double.get(i) == (double)(i + 0.1));
         assert(col_bool.get(i) == (bool)(i % 2));
         assert(col_string.get(i)->equals(&test));
     }
@@ -64,20 +64,20 @@ void test_multiple_dataframe() {
     DataFrame df(s, key.get_key(), kd.get_kv());
     DataFrame df3(s, key2.get_key(), kd.get_kv());
     df.add_column(&col_int);
-    df.add_column(&col_float);
+    df.add_column(&col_double);
     df.add_column(&col_bool);
     df.add_column(&col_string);
     df3.add_column(&col_int);
 
     assert(df.get_schema().col_type(0) == 'I');
-    assert(df.get_schema().col_type(1) == 'F');
+    assert(df.get_schema().col_type(1) == 'D');
     assert(df.get_schema().col_type(2) == 'B');
     assert(df.get_schema().col_type(3) == 'S');
 
     for (size_t i = 0; i < rows; i++) {
         assert(df3.get_int(0, i) == i);
         assert(df.get_int(0, i) == i);
-        assert(df.get_float(1, i) == (float)(i+0.1));
+        assert(df.get_double(1, i) == (double)(i+0.1));
         assert(df.get_bool(2, i) == i % 2);
         assert(df.get_string(3, i)->equals(&test));
     }
@@ -108,7 +108,7 @@ void test_multiple_dataframe() {
     for (size_t i = 0; i < rows; i++) {
         assert(df4->get_int(0, i) == i);
         assert(df2->get_int(0, i) == i);
-        assert(df2->get_float(1, i) == (float)(i+0.1));
+        assert(df2->get_double(1, i) == (double)(i+0.1));
         assert(df2->get_bool(2, i) == i % 2);
         assert(df2->get_string(3, i)->equals(&test));
     }
