@@ -62,7 +62,8 @@ void string_example() {
     print_serial_section(string_serial, start_index, end_index);
 
     printf("\nDeserializing is done through static methods specific to each Class:\n");
-    String* string_deserial = String::deserialize(string_serial);
+    Deserializer deserializer(string_serial);
+    String* string_deserial = new String(deserializer);
     printf("size: %zu\n", string_deserial->size());
     printf("char array: \"%s\"\n\n", string_deserial->c_str());
 

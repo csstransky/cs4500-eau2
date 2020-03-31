@@ -934,7 +934,7 @@ public:
       size_t count = deserializer.deserialize_size_t();
       StringArray* new_array = new StringArray(size);
       for (size_t ii = 0; ii < count; ii++) {
-        String* new_object = String::deserialize(deserializer);
+        String* new_object = new String(deserializer);
         new_array->push(new_object);
         delete new_object;
       }

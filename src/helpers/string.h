@@ -42,6 +42,12 @@ public:
         memcpy(cstr_, from.cstr_, size_ + 1);
     }
 
+    String(Deserializer& deserializer) {
+        deserializer.deserialize_size_t();
+        size_ = deserializer.deserialize_size_t();
+        cstr_ = deserializer.deserialize_char_array(size_);
+    }
+
     /** Delete the string */
     ~String() { delete[] cstr_; }
     
@@ -125,60 +131,5 @@ public:
         serializer.serialize_size_t(size_);
         serializer.serialize_chars(cstr_, size_);
         return serializer.get_serial();
-    }
-
-    static String* deserialize(char* serial) {
-        Deserializer deserializer(serial);
-        return deserialize(deserializer);
-    }
-
-    static String* deserialize(Deserializer& deserializer) {
-        deserializer.deserialize_size_t();
-        size_t string_size = deserializer.deserialize_size_t();
-        char* string_chars = deserializer.deserialize_char_array(string_size);
-        // String is "stealing" the character array, so no need to delete
-        String* new_string = new String(true, string_chars, string_size);    
-        return new_string;
-    }
- };
-
-/** A string buffer builds a string from various pieces.
- *  author: jv */
-class StrBuff : public Object {
-public:
-    char *val_; // owned; consumed by get()
-    size_t capacity_;
-    size_t size_;
-
-    StrBuff() {
-        val_ = new char[capacity_ = 10];
-        size_ = 0;
-    }
-    void grow_by_(size_t step) {
-        if (step + size_ < capacity_) return;
-        capacity_ *= 2;
-        if (step + size_ >= capacity_) capacity_ += step;        
-        char* oldV = val_;
-        val_ = new char[capacity_];
-        memcpy(val_, oldV, size_);
-        delete[] oldV;
-    }
-    StrBuff& c(const char* str) {
-        size_t step = strlen(str);
-        grow_by_(step);
-        memcpy(val_+size_, str, step);
-        size_ += step;
-        return *this;
-    }
-    StrBuff& c(String &s) { return c(s.c_str());  }
-    StrBuff& c(size_t v) { return c(std::to_string(v).c_str());  } // Cpp
-
-    String* get() {
-        assert(val_ != nullptr); // can be called only once
-        grow_by_(1);     // ensure space for terminator
-        val_[size_] = 0; // terminate
-        String *res = new String(true, val_, size_);
-        val_ = nullptr; // val_ was consumed above
-        return res;
     }
 };

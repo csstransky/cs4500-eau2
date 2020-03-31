@@ -601,7 +601,7 @@ class DataFrame : public Object {
       deserializer.deserialize_size_t(); // skip serial_length
       Schema* schema = Schema::deserialize(deserializer);
       ColumnArray* columns = ColumnArray::deserialize(deserializer, kv_store);
-      String* name = String::deserialize(deserializer);
+      String* name = new String(deserializer);
 
       DataFrame* new_dataframe = new DataFrame(*schema, name, kv_store, columns);
       delete schema;

@@ -16,7 +16,8 @@ void test_string() {
    assert(strcmp(string1->c_str(), "hello there") == 0);
 
    char* string_serial = string1->serialize();
-   String* string2 = String::deserialize(string_serial);
+   Deserializer deserializer(string_serial);
+   String* string2 = new String(deserializer);
 
    assert(string2->size() == 11);
    assert(strcmp(string2->c_str(), "hello there") == 0);
@@ -1056,7 +1057,7 @@ void serializing_test() {
     assert(string_serial_size == serial_len);
     size_t size_t_value_2 = deserial.deserialize_size_t();
     assert(size_t_value_2 == size_t_value);
-    String* string_value_2 = String::deserialize(deserial);
+    String* string_value_2 = new String(deserial);
     assert(string_value->size() == string_value_2->size());
     assert(strcmp(string_value->c_str(), string_value_2->c_str()) == 0);
 

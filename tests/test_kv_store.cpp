@@ -12,7 +12,8 @@ void test_put_get() {
 
     kv.put(&key, &k);
     char* serial = kv.get_value_serial(&key);
-    String* kk = String::deserialize(serial);
+    Deserializer deserializer(serial);
+    String* kk = new String(deserializer);
     delete[] serial;
     assert(k.equals(kk));
     delete kk;

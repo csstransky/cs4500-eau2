@@ -123,10 +123,10 @@ class Ack : public Message {
     static Ack* deserialize(Deserializer& deserializer) {
         deserializer.deserialize_size_t(); // skip serial size
         deserializer.deserialize_size_t(); // skip kind_
-        static String* sender = String::deserialize(deserializer);
-        static String* target = String::deserialize(deserializer);
+        static String* sender = new String(deserializer);
+        static String* target = new String(deserializer);
         deserializer.deserialize_size_t(); // skip id_
-        String* message = String::deserialize(deserializer);
+        String* message = new String(deserializer);
         Ack* new_ack = new Ack(sender, target, message);
         delete sender;
         delete target;
@@ -154,8 +154,8 @@ class Kill : public Message {
     static Kill* deserialize(Deserializer& deserializer) {
         deserializer.deserialize_size_t(); // skip serial size
         deserializer.deserialize_size_t(); // skip kind_
-        String* sender = String::deserialize(deserializer);
-        String* target = String::deserialize(deserializer);
+        String* sender = new String(deserializer);
+        String* target = new String(deserializer);
         Kill* new_put = new Kill(sender, target);
         delete sender; 
         delete target;
@@ -182,8 +182,8 @@ class Complete : public Message {
     static Complete* deserialize(Deserializer& deserializer) {
         deserializer.deserialize_size_t(); // skip serial size
         deserializer.deserialize_size_t(); // skip kind_
-        String* sender = String::deserialize(deserializer);
-        String* target = String::deserialize(deserializer);
+        String* sender = new String(deserializer);
+        String* target = new String(deserializer);
         Complete* new_put = new Complete(sender, target);
         delete sender; 
         delete target;
@@ -228,8 +228,8 @@ class Register : public Message {
     static Register* deserialize(Deserializer& deserializer) {
         deserializer.deserialize_size_t(); // skip serial size
         deserializer.deserialize_size_t(); // skip kind_
-        String* sender = String::deserialize(deserializer);
-        String* target = String::deserialize(deserializer);
+        String* sender = new String(deserializer);
+        String* target = new String(deserializer);
         deserializer.deserialize_size_t(); // skip id_
         size_t node_index = deserializer.deserialize_size_t();
         Register* new_put = new Register(sender, target, node_index);
@@ -287,8 +287,8 @@ class Directory : public Message {
     static Directory* deserialize(Deserializer& deserializer) {
         deserializer.deserialize_size_t(); // skip serial size
         deserializer.deserialize_size_t(); // skip kind_
-        String* sender = String::deserialize(deserializer);
-        String* target = String::deserialize(deserializer);
+        String* sender = new String(deserializer);
+        String* target = new String(deserializer);
         deserializer.deserialize_size_t(); // skip id_
         StringArray* addresses = StringArray::deserialize(deserializer);
         IntArray* node_indexes = IntArray::deserialize(deserializer);
@@ -356,10 +356,10 @@ class Put : public Message {
     static Put* deserialize(Deserializer& deserializer) {
         deserializer.deserialize_size_t(); // skip serial size
         deserializer.deserialize_size_t(); // skip kind_
-        String* sender = String::deserialize(deserializer);
-        String* target = String::deserialize(deserializer);
+        String* sender = new String(deserializer);
+        String* target = new String(deserializer);
         deserializer.deserialize_size_t(); // skip id_
-        String* key_name = String::deserialize(deserializer);
+        String* key_name = new String(deserializer);
         Serializer* value = Serializer::deserialize(deserializer);
 
         Put* new_put = new Put(sender, target, key_name, value);
@@ -410,10 +410,10 @@ class Get : public Message {
     static Get* deserialize(Deserializer& deserializer) {
         deserializer.deserialize_size_t(); // skip serial size
         deserializer.deserialize_size_t(); // skip kind_
-        String* sender = String::deserialize(deserializer);
-        String* target = String::deserialize(deserializer);
+        String* sender = new String(deserializer);
+        String* target = new String(deserializer);
         deserializer.deserialize_size_t(); // skip id_
-        String* key_name = String::deserialize(deserializer);
+        String* key_name = new String(deserializer);
         Get* new_get = new Get(sender, target, key_name);
         delete sender;
         delete target;
@@ -437,10 +437,10 @@ class WaitAndGet : public Get {
     static WaitAndGet* deserialize(Deserializer& deserializer) {
         deserializer.deserialize_size_t(); // skip serial size
         deserializer.deserialize_size_t(); // skip kind_
-        String* sender = String::deserialize(deserializer);
-        String* target = String::deserialize(deserializer);
+        String* sender = new String(deserializer);
+        String* target = new String(deserializer);
         deserializer.deserialize_size_t(); // skip id_
-        String* key_name = String::deserialize(deserializer);
+        String* key_name = new String(deserializer);
         WaitAndGet* new_get = new WaitAndGet(sender, target, key_name);
         delete sender;
         delete target;
@@ -496,8 +496,8 @@ class Value : public Message {
     static Value* deserialize(Deserializer& deserializer) {
         deserializer.deserialize_size_t(); // skip serial size
         deserializer.deserialize_size_t(); // skip kind_
-        String* sender = String::deserialize(deserializer);
-        String* target = String::deserialize(deserializer);
+        String* sender = new String(deserializer);
+        String* target = new String(deserializer);
         deserializer.deserialize_size_t(); // skip id_
         Serializer* value = Serializer::deserialize(deserializer);
 

@@ -282,7 +282,7 @@ class IntColumn : public Column {
     deserializer.deserialize_size_t(); // skip serial size
     deserializer.deserialize_char(); // skip type
     size_t dataframe_size = deserializer.deserialize_size_t(); 
-    String* dataframe_name = String::deserialize(deserializer);
+    String* dataframe_name = new String(deserializer);
     size_t dataframe_index = deserializer.deserialize_size_t();
     KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
     IntArray* buffered_elements = IntArray::deserialize(deserializer);
@@ -421,7 +421,7 @@ class FloatColumn : public Column {
     deserializer.deserialize_size_t(); // skip serial size
     deserializer.deserialize_char(); // skip type
     size_t dataframe_size = deserializer.deserialize_size_t(); 
-    String* dataframe_name = String::deserialize(deserializer);
+    String* dataframe_name = new String(deserializer);
     size_t dataframe_index = deserializer.deserialize_size_t();
     KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
     FloatArray* buffered_elements = FloatArray::deserialize(deserializer);
@@ -560,7 +560,7 @@ class BoolColumn : public Column {
     deserializer.deserialize_size_t(); // skip serial size
     deserializer.deserialize_char(); // skip type
     size_t dataframe_size = deserializer.deserialize_size_t(); 
-    String* dataframe_name = String::deserialize(deserializer);
+    String* dataframe_name = new String(deserializer);
     size_t dataframe_index = deserializer.deserialize_size_t();
     KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
     BoolArray* buffered_elements = BoolArray::deserialize(deserializer);
@@ -717,7 +717,7 @@ class StringColumn : public Column {
     deserializer.deserialize_size_t(); // skip serial size
     deserializer.deserialize_char(); // skip type
     size_t dataframe_size = deserializer.deserialize_size_t(); 
-    String* dataframe_name = String::deserialize(deserializer);
+    String* dataframe_name = new String(deserializer);
     size_t dataframe_index = deserializer.deserialize_size_t();
     KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
     StringArray* buffered_elements = StringArray::deserialize(deserializer);
