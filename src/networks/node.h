@@ -23,40 +23,52 @@ class Node : public Server {
     // Address of server
     struct sockaddr_in server_address_;
     String* server_ip_;
-    String** other_nodes_;
-    size_t num_other_nodes_;
+    // list of POSSIBLE IPs to connect to
+    StringArray* other_nodes_; 
+    IntArray* other_node_indexes_;
     bool kill_;
+
+    // Strictly used to test a local KV_Store
+    Node() : Server(){
+        server_ip_ = nullptr;
+        other_nodes_ = nullptr;
+        other_node_indexes_ = nullptr;
+    }
 
     Node(const char* client_ip_address, const char* server_ip_address) : Server(client_ip_address) {
         server_address_ = get_new_sockaddr_(server_ip_address, PORT);  
         server_socket_ = 0; 
         server_ip_ = new String(server_ip_address);  
         kill_ = false;  
-        num_other_nodes_ = 0;
-        other_nodes_ = new String*[num_other_nodes_]; 
+        other_nodes_ = nullptr;
+        other_node_indexes_ = nullptr; 
     }
 
     ~Node() {
- 
         delete server_ip_;
-        if (other_nodes_) {
-            for (int i = 0; i < num_other_nodes_; i++) {
-                delete other_nodes_[i];
-            }
-            delete[] other_nodes_;
-        }
+        delete other_nodes_;
+        delete other_node_indexes_;
     }
 
-    void shutdown() {
+    // Node needs to tell the RServer that it's complete with its task, so that this Node is ready
+    // to shutdown.
+    // When all Nodes are complete, they will receive a Kill message to shutdown.
+    void signal_complete_to_server_() {
+        Message* m = new Complete(my_ip_, server_ip_);
+        send_message(server_socket_, m);
+        delete m;
+    }
+
+    void wait_for_shutdown() {
+        signal_complete_to_server_();
+        Server::wait_for_shutdown();
         if (server_socket_) {
             close(server_socket_);
         }
-
-        Server::shutdown();
     }
 
     // NOTE: timeout -1 runs forever
-    void run_server(int timeout) {
+    void thread_run_server_(int timeout) {
         timeval timeout_val = {timeout, 0};
         timeval* timeout_pointer = (timeout < 0) ? nullptr : &timeout_val;
         while (wait_for_activty_(timeout_pointer) && !kill_) {
@@ -66,60 +78,45 @@ class Node : public Server {
         }
     }
 
-    void register_with_server_() {
-        Message* m = new Register(my_ip_, server_ip_);
-        printf("Sending ip\n");
+    void register_with_server_(size_t local_node_index) {
+        Message* m = new Register(my_ip_, server_ip_, local_node_index);
         send_message(server_socket_, m);
-        printf("\n");
         delete m;
     
     }
 
-    void connect_to_server() {
+    void connect_to_server(size_t local_node_index) {
         server_socket_ = get_new_socket_();
         if (connect(server_socket_, (struct sockaddr *)&server_address_, sizeof(server_address_)) < 0) { 
             printf("\nConnection Failed \n"); 
             assert(0);
         }
-        register_with_server_();
+        register_with_server_(local_node_index);
     }
 
     // -1 is the server
-    void decode_message_(Message* message, int client) {
-        switch (message->get_kind()) {
-            case MsgKind::Put: {
-                Put* put_message = dynamic_cast<Put*>(message);
-                printf("Message from %s, text: %s\n\n", message->get_sender()->c_str(), put_message->get_message()->c_str());
-                break;
-            }
-            case MsgKind::Directory: {
-                printf("Received Directory Message\n\n");
-                Directory* dir_message = dynamic_cast<Directory*>(message);
-                for (int i = 0; i < num_other_nodes_; i++) {
-                    delete other_nodes_[i];
-                }
-                delete[] other_nodes_;
-                num_other_nodes_ = dir_message->get_num();
-                String** temp_addresses = dir_message->get_addresses();
-                other_nodes_ = new String*[num_other_nodes_];
-                for (int i = 0; i < num_other_nodes_; i++) {
-                    other_nodes_[i] = temp_addresses[i]->clone();
-                }
+    bool decode_message_(Message* message, int client) {
+        if (Server::decode_message_(message, client)) {
+            return 1;
+        }
 
+        switch (message->get_kind()) {
+            case MsgKind::Directory: {
+                Directory* dir_message = dynamic_cast<Directory*>(message);
+                delete other_nodes_;
+                other_nodes_ = dir_message->get_addresses()->clone();
+                delete other_node_indexes_;
+                other_node_indexes_ = dir_message->get_node_indexes()->clone();
                 break;
             }
             case MsgKind::Kill: {
-                printf("Received Kill message\n\n");
                 kill_ = true;
-                shutdown();
                 break;
             }
-            case MsgKind::Register: 
-                printf("Received Register Message from %s\n\n", message->get_sender()->c_str());
-                break;
             default:
-                assert(0);
+                return 0;
         }
+        return 1;
     }
 
     int set_socket_set_() {
@@ -135,11 +132,13 @@ class Node : public Server {
         }
     }
 
+    // returns -1 if no network
     int get_num_other_nodes() {
-        return num_other_nodes_;
+        return other_node_indexes_? other_node_indexes_->length() : -1;
     }
 
-    void send_message_to_node(String* node_ip, Message* message) {
+    void send_message_to_node(Message* message) {
+        String* node_ip = message->get_target();
         // Create socket and connect to node
         int socket = get_new_socket_();
         sockaddr_in address = get_new_sockaddr_(node_ip->c_str(), PORT);
@@ -148,20 +147,31 @@ class Node : public Server {
             assert(0);
         }
 
-        // Send message
         send_message(socket, message);
 
         // Close connections
         close(socket);
     }
 
-    void send_put_message_to_node(String* message, int index) {        
+    // sends a message to a node and waits for a message back from that node
+    Message* send_message_to_node_wait(Message* message) {
+        String* node_ip = message->get_target();
+        // Create socket and connect to node
+        int socket = get_new_socket_();
+        sockaddr_in address = get_new_sockaddr_(node_ip->c_str(), PORT);
+        if (connect(socket, (struct sockaddr *)&address, sizeof(address)) < 0) { 
+            printf("\nConnection Failed \n"); 
+            assert(0);
+        }
 
-        // Create message
-        Message* m = new Put(my_ip_, other_nodes_[index], message);
+        send_message(socket, message);
 
-        send_message_to_node(other_nodes_[index], m);
-        delete m;
+        Message* m = receive_message_(socket);
+
+        // Close connections
+        close(socket);
+
+        return m;
     }
 
     void check_server_messages_() {

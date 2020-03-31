@@ -1,5 +1,6 @@
 #pragma once
 
+// TODO: Refactor this entire file as there's things left in here we don't use (such as clear())
 #include "object.h"
 #include "string.h"
 #include "array.h"
@@ -503,5 +504,26 @@ class SSMap : public Map {
          */
         virtual String* remove(String* key) {
             return dynamic_cast<String*>(Map::remove(key));
+        }
+};
+
+class SIAMap : public Map {
+    public:
+        bool containsValue(int value) {
+            IntArray int_value(1);
+            int_value.push(value);
+            return Map::containsValue(&int_value);
+        }
+
+        IntArray* get(String* key) {
+            return dynamic_cast<IntArray*>(Map::get(key));
+        }
+
+        IntArray* put(String* key, IntArray* value) {
+            return dynamic_cast<IntArray*>(Map::put(key, value));
+        }
+
+        IntArray* remove(String* key) {
+            return dynamic_cast<IntArray*>(Map::remove(key));
         }
 };

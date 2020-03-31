@@ -36,21 +36,19 @@ int main(int argc, char const *argv[]) {
     const char* server_ip_address = get_input_server_ip_address(argc, argv);
 
     Node* node = new Node(client_ip_address, server_ip_address);
-    node->connect_to_server();
+    node->connect_to_server(0);
 
-    // Create random timeout between 0 and 10
-    // Adding randomness for demo
-    int timeout = rand() % 9 + 1;
-    node->run_server(timeout);
+    node->run_server(2);
+    sleep(1);
 
     // Send message to random node
     String* hi = new String("hi");
     int index = rand() % node->get_num_other_nodes();
-    node->send_put_message_to_node(hi, index);
+    printf("index: %d\n", index);
+    Ack message(node->my_ip_, node->other_nodes_->get(index), hi);
+    node->send_message_to_node(&message);
+    node->wait_for_shutdown();
     delete hi;
-
-    timeout = -1;
-    node->run_server(timeout);
 
     delete node;
     return 0;

@@ -30,21 +30,24 @@ void test_string() {
 void test_ack() {
     String* ip1 = new String("172.10.64.31");
     String* ip2 = new String("10.221.22.2");
-    Ack* ack_message = new Ack(ip1, ip2);
+    String message("Ack serialization passed!\n");
+    Ack* ack_message = new Ack(ip1, ip2, &message);
     assert(ack_message->get_kind() == MsgKind::Ack);
+    assert(ack_message->get_message()->equals(&message));
 
     char* serial = ack_message->serialize();
     Ack* ack_deserial = Ack::deserialize(serial);
     assert(ack_deserial->get_kind() == MsgKind::Ack);
     assert(ack_deserial->get_sender()->equals(ip1));
     assert(ack_deserial->get_target()->equals(ip2));
+    assert(ack_deserial->get_message()->equals(&message));
 
     delete ip1;
     delete ip2;
     delete ack_message;
     delete[] serial;
+    printf("%s", ack_deserial->get_message()->c_str());
     delete ack_deserial;
-    printf("Ack serialization passed!\n");
 }
 
 void test_kill() {
@@ -71,9 +74,11 @@ void test_kill() {
 void test_register() {
     String ip1("172.101.64.312");
     String ip2("10.221.22.31");
-    Register register_message(&ip2, &ip1);
+    size_t node_index = 12;
+    Register register_message(&ip2, &ip1, node_index);
     assert(register_message.get_sender()->equals(&ip2));
     assert(register_message.get_target()->equals(&ip1));
+    assert(register_message.get_node_index() == node_index);
     assert(register_message.get_kind() == MsgKind::Register);
 
     char* register_serial = register_message.serialize();
@@ -83,6 +88,7 @@ void test_register() {
     assert(register_deserial->get_sender()->equals(&ip2));
     assert(register_deserial->get_target()->equals(&ip1));
     assert(register_deserial->get_kind() == MsgKind::Register);
+    assert(register_deserial->get_node_index() == node_index);
 
     delete[] register_serial;
     delete register_deserial;
@@ -92,41 +98,162 @@ void test_register() {
 void test_put() {
     String ip1("172.10.64.31");
     String ip2("10.221.22.2");
-    String msg("Hello from your message.\n");
-    Put put_message(&ip1, &ip2, &msg);
+    String key("keykey");
+    size_t int_array_size = 100;
+    IntArray int_array(int_array_size);
+    for (size_t ii = 0; ii < int_array_size; ii++) {
+        int_array.push(ii);
+    }
+    char* int_array_serial = int_array.serialize();
+    Serializer serializer(int_array_serial);
+
+    Put put_message(&ip1, &ip2, &key, &serializer);
     assert(put_message.get_sender()->equals(&ip1));
     assert(put_message.get_target()->equals(&ip2));
-    assert(put_message.get_message()->equals(&msg));
+    assert(put_message.get_key_name()->equals(&key));
+    assert(put_message.get_value()->equals(&serializer));
     assert(put_message.get_kind() == MsgKind::Put);
-    char* put_serial = put_message.serialize();
 
+    char* put_serial = put_message.serialize();
     Message* message = deserialize_message(put_serial);
     Put* put_deserial = reinterpret_cast<Put*>(message);
     assert(put_deserial->get_sender()->equals(&ip1));
     assert(put_deserial->get_target()->equals(&ip2));
-    assert(put_deserial->get_message()->equals(&msg));
+    assert(put_deserial->get_key_name()->equals(&key));
+    assert(put_deserial->get_value()->equals(&serializer));
+    assert(put_deserial->get_kind() == MsgKind::Put);
 
+    char* int_array_serial2 = put_deserial->get_serial();
+    IntArray* deserial_int_array = IntArray::deserialize(int_array_serial2);
+    assert(deserial_int_array->length() == int_array_size);
+    for (size_t ii = 0; ii < deserial_int_array->length(); ii++) {
+        assert(deserial_int_array->get(ii) == ii);
+    }
+
+    delete[] int_array_serial;
+    delete[] int_array_serial2;
+    delete deserial_int_array;
     delete[] put_serial;
     delete put_deserial;
     printf("Put serialization passed!\n");
+}
+
+void test_get() {
+    String ip1("172.10.64.31");
+    String ip2("10.221.22.2");
+    String key("keykey");
+    Get get_message(&ip1, &ip2, &key);
+    assert(get_message.get_sender()->equals(&ip1));
+    assert(get_message.get_target()->equals(&ip2));
+    assert(get_message.get_key_name()->equals(&key));
+    assert(get_message.get_kind() == MsgKind::Get);
+
+    char* get_serial = get_message.serialize();
+    Message* message = deserialize_message(get_serial);
+    Get* get_deserial = reinterpret_cast<Get*>(message);
+    assert(get_deserial->get_sender()->equals(&ip1));
+    assert(get_deserial->get_target()->equals(&ip2));
+    assert(get_deserial->get_key_name()->equals(&key));
+    assert(get_deserial->get_kind() == MsgKind::Get);
+
+    delete[] get_serial;
+    delete get_deserial;
+    printf("Get serialization passed!\n");
+}
+
+void test_wait_get() {
+    String ip1("172.10.64.31");
+    String ip2("10.221.22.2");
+    String key("keykey");
+    WaitAndGet get_message(&ip1, &ip2, &key);
+    assert(get_message.get_sender()->equals(&ip1));
+    assert(get_message.get_target()->equals(&ip2));
+    assert(get_message.get_key_name()->equals(&key));
+    assert(get_message.get_kind() == MsgKind::WaitAndGet);
+
+    char* get_serial = get_message.serialize();
+    Message* message = deserialize_message(get_serial);
+    WaitAndGet* get_deserial = reinterpret_cast<WaitAndGet*>(message);
+    assert(get_deserial->get_sender()->equals(&ip1));
+    assert(get_deserial->get_target()->equals(&ip2));
+    assert(get_deserial->get_key_name()->equals(&key));
+    assert(get_deserial->get_kind() == MsgKind::WaitAndGet);
+
+    delete[] get_serial;
+    delete get_deserial;
+    printf("WaitAndGet serialization passed!\n");
+}
+
+void test_value() {
+    String ip1("172.10.64.31");
+    String ip2("10.221.22.2");
+    size_t string_array_size = 103;
+    StringArray string_array(string_array_size);
+    for (size_t ii = 0; ii < string_array_size; ii++) {
+        String base_string("base_");
+        base_string.concat(ii);
+        string_array.push(&base_string);
+    }
+    char* string_array_serial = string_array.serialize();
+    Serializer serializer(string_array_serial);
+
+    Value value_message(&ip1, &ip2, &serializer);
+    assert(value_message.get_sender()->equals(&ip1));
+    assert(value_message.get_target()->equals(&ip2));
+    assert(value_message.get_value()->equals(&serializer));
+    assert(value_message.get_kind() == MsgKind::Value);
+
+    char* value_serial = value_message.serialize();
+    Message* message = deserialize_message(value_serial);
+    Value* value_deserial = reinterpret_cast<Value*>(message);
+    assert(value_deserial->get_sender()->equals(&ip1));
+    assert(value_deserial->get_target()->equals(&ip2));
+    assert(value_deserial->get_value()->equals(&serializer));
+    assert(value_deserial->get_kind() == MsgKind::Value);
+
+    char* string_array_serial2 = value_deserial->get_serial();
+    StringArray* deserial_string_array = StringArray::deserialize(string_array_serial2);
+    assert(deserial_string_array->length() == string_array_size);
+    for (size_t ii = 0; ii < deserial_string_array->length(); ii++) {
+        String base_string("base_");
+        base_string.concat(ii);
+        assert(base_string.equals(deserial_string_array->get(ii)));
+    }
+
+    delete[] string_array_serial;
+    delete[] string_array_serial2;
+    delete deserial_string_array;
+    delete[] value_serial;
+    delete value_deserial;
+    printf("Value serialization passed!\n");
 }
 
 void test_directory() {
     String ip1("172.10.64.31");
     String ip2("10.221.22.2");
     size_t addresses_len = 2;
-    String* addresses[addresses_len];
+    StringArray addresses(addresses_len);
     String ip3("12.132.92.12");
     String ip4("192.168.0.2");
-    addresses[0] = &ip3;
-    addresses[1] = &ip4;
+    addresses.push(&ip3);
+    addresses.push(&ip4);
+    IntArray nodes(addresses_len);
+    size_t node_1 = 2;
+    size_t node_2 = 3;
+    size_t node_3 = 12;
+    size_t node_4 = 13;
+    nodes.push(node_1);
+    nodes.push(node_2);
 
-    Directory directory_message(&ip1, &ip2, addresses, addresses_len);
+    Directory directory_message(&ip1, &ip2, &addresses, &nodes);
     assert(directory_message.get_sender()->equals(&ip1));
     assert(directory_message.get_target()->equals(&ip2));
-    assert(directory_message.get_addresses()[0]->equals(&ip3));
-    assert(directory_message.get_addresses()[1]->equals(&ip4));
-    assert(directory_message.get_num() == addresses_len);
+    assert(directory_message.get_addresses()->length() == addresses_len);
+    assert(directory_message.get_addresses()->get(0)->equals(&ip3));
+    assert(directory_message.get_addresses()->get(1)->equals(&ip4));
+    assert(directory_message.get_node_indexes()->length() == addresses_len);
+    assert(directory_message.get_node_indexes()->get(0) == node_1);
+    assert(directory_message.get_node_indexes()->get(1) == node_2);
     assert(directory_message.get_kind() == MsgKind::Directory);
 
     char* directory_serial = directory_message.serialize();
@@ -134,37 +261,51 @@ void test_directory() {
     Directory* directory_deserial = reinterpret_cast<Directory*>(message);
     assert(directory_deserial->get_sender()->equals(&ip1));
     assert(directory_deserial->get_target()->equals(&ip2));
-    assert(directory_deserial->get_addresses()[0]->equals(&ip3));
-    assert(directory_deserial->get_addresses()[1]->equals(&ip4));
-    assert(directory_deserial->get_num() == addresses_len);
+    assert(directory_deserial->get_addresses()->get(0)->equals(&ip3));
+    assert(directory_deserial->get_addresses()->get(1)->equals(&ip4));
+    assert(directory_deserial->get_node_indexes()->get(0) == node_1);
+    assert(directory_deserial->get_node_indexes()->get(1) == node_2);
+    assert(directory_deserial->get_kind() == MsgKind::Directory);
 
     addresses_len += 2;
-    String* addresses2[addresses_len];
-    addresses2[0] = &ip1;
-    addresses2[1] = &ip2;
-    addresses2[2] = &ip3;
-    addresses2[3] = &ip4;
+    StringArray addresses2(addresses_len);
+    addresses2.push(&ip1);
+    addresses2.push(&ip2);
+    addresses2.push(&ip3);
+    addresses2.push(&ip4);
+    IntArray nodes2(addresses_len);
+    nodes2.push(node_1);
+    nodes2.push(node_2);
+    nodes2.push(node_3);
+    nodes2.push(node_4);
     
-    Directory directory_message2(&ip4, &ip3, addresses2, addresses_len);
+    Directory directory_message2(&ip4, &ip3, &addresses2, &nodes2);
     assert(directory_message2.get_sender()->equals(&ip4));
     assert(directory_message2.get_target()->equals(&ip3));
-    assert(directory_message2.get_addresses()[0]->equals(&ip1));
-    assert(directory_message2.get_addresses()[1]->equals(&ip2));
-    assert(directory_message2.get_addresses()[2]->equals(&ip3));
-    assert(directory_message2.get_addresses()[3]->equals(&ip4));
-    assert(directory_message2.get_num() == addresses_len);
+    assert(directory_message2.get_addresses()->get(0)->equals(&ip1));
+    assert(directory_message2.get_addresses()->get(1)->equals(&ip2));
+    assert(directory_message2.get_addresses()->get(2)->equals(&ip3));
+    assert(directory_message2.get_addresses()->get(3)->equals(&ip4));
     assert(directory_message2.get_kind() == MsgKind::Directory);
+    assert(directory_message2.get_node_indexes()->get(0) == node_1);
+    assert(directory_message2.get_node_indexes()->get(1) == node_2);
+    assert(directory_message2.get_node_indexes()->get(2) == node_3);
+    assert(directory_message2.get_node_indexes()->get(3) == node_4);
 
     char* directory_serial2 = directory_message2.serialize();
     Message* message2 = deserialize_message(directory_serial2);
     Directory* directory_deserial2 = reinterpret_cast<Directory*>(message2);
     assert(directory_deserial2->get_sender()->equals(&ip4));
     assert(directory_deserial2->get_target()->equals(&ip3));
-    assert(directory_deserial2->get_addresses()[0]->equals(&ip1));
-    assert(directory_deserial2->get_addresses()[1]->equals(&ip2));
-    assert(directory_deserial2->get_addresses()[2]->equals(&ip3));
-    assert(directory_deserial2->get_addresses()[3]->equals(&ip4));
-    assert(directory_deserial2->get_num() == addresses_len);
+    assert(directory_deserial2->get_addresses()->get(0)->equals(&ip1));
+    assert(directory_deserial2->get_addresses()->get(1)->equals(&ip2));
+    assert(directory_deserial2->get_addresses()->get(2)->equals(&ip3));
+    assert(directory_deserial2->get_addresses()->get(3)->equals(&ip4));
+    assert(directory_deserial2->get_kind() == MsgKind::Directory);
+    assert(directory_deserial2->get_node_indexes()->get(0) == node_1);
+    assert(directory_deserial2->get_node_indexes()->get(1) == node_2);
+    assert(directory_deserial2->get_node_indexes()->get(2) == node_3);
+    assert(directory_deserial2->get_node_indexes()->get(3) == node_4);
 
     delete[] directory_serial;
     delete directory_deserial;
@@ -988,6 +1129,9 @@ int main(int argc, char const *argv[])
     test_string();
     test_ack();
     test_put();
+    test_get();
+    test_wait_get();
+    test_value();
     test_directory();
     test_kill();
     test_register();

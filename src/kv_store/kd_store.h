@@ -11,8 +11,18 @@ class KD_Store : public Object {
         kv_ = new KV_Store(node_index);
     }
 
+    KD_Store(size_t node_index, const char* my_ip, const char* server_ip) {
+        kv_ = new KV_Store(my_ip, server_ip, node_index);
+        kv_->connect_to_server(node_index);
+        kv_->run_server(200);
+    }
+
     ~KD_Store() {
         delete kv_;
+    }
+
+    void application_complete() {
+        kv_->wait_for_shutdown();
     }
 
     DataFrame* get(Key* key) {
@@ -23,7 +33,10 @@ class KD_Store : public Object {
     }
 
     DataFrame* wait_and_get(Key* key) {
-        // TODO: actually deal with distributed kvs later
+       char* serial = kv_->wait_get_value_serial(key);
+       DataFrame* df = DataFrame::deserialize(serial, kv_);
+       delete[] serial;
+       return df;
     }
 
     void put(Key* key, DataFrame* df) {
@@ -94,6 +107,30 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, String** ar
     kd->put(key, d);
 
     return d;
+}
+
+DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, int val) {
+    int array[1];
+    array[0] = val;
+    return DataFrame::from_array(key, kd, 1, array);
+}
+
+DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, float val) {
+    float array[1];
+    array[0] = val;
+    return DataFrame::from_array(key, kd, 1, array);
+}
+
+DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, bool val) {
+    bool array[1];
+    array[0] = val;
+    return DataFrame::from_array(key, kd, 1, array);
+}
+
+DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, String* val) {
+    String* array[1];
+    array[0] = val;
+    return DataFrame::from_array(key, kd, 1, array);
 }
 
 DataFrame* DataFrame::from_file(Key* key, KD_Store* kd, char* file_name) {

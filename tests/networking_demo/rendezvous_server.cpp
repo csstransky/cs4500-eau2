@@ -20,8 +20,8 @@ int main(int argc, char const *argv[])
     const char* ip_address = get_input_ip_address(argc, argv);
     
     RServer* server = new RServer(ip_address); 
-    server->run_server(TIME_OUT);
-    server->shutdown();
+    server->run_server();
+    server->wait_for_shutdown();
     delete server;
     return 0;
 } 

@@ -1,6 +1,6 @@
 build:
-	g++ -g rendezvous_server.cpp -o rserver
-	g++ -g node.cpp -o node
+	g++ -g -pthread rendezvous_server.cpp -o rserver
+	g++ -g -pthread node.cpp -o node
 
 run:
 	# Running in background. Will take 100 secs

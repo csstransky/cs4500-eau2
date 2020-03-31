@@ -168,6 +168,7 @@ class Schema : public Object {
   }
 };
  
+// TODO: This can actually be deleted (as per Jan's request)
 /*****************************************************************************
  * Fielder::
  * A field vistor invoked by Row.
@@ -396,6 +397,7 @@ class Row : public Object {
  
 };
  
+// TODO: Remove this as it will NOT be viable in the future with 10GB of data
 /*****************************************************************************
  * PrinterFielder::
  * Prints out each field in the row.
@@ -609,6 +611,14 @@ class DataFrame : public Object {
   }  
 
   // Implemented in kd_store.h to remove circular dependency. See piazza post @963
+  static DataFrame* from_scalar(Key* key, KD_Store* kd, int val);
+
+  static DataFrame* from_scalar(Key* key, KD_Store* kd, float val);
+
+  static DataFrame* from_scalar(Key* key, KD_Store* kd, bool val);
+
+  static DataFrame* from_scalar(Key* key, KD_Store* kd, String* val);
+
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, int* array);
 
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, float* array);
@@ -759,6 +769,7 @@ class DataFrame : public Object {
     return string_column->get(row);
   }
 
+  // TODO: Remove all of these set(...) functions as we are dealing with a read_only DataFrame
   /** Set the value at the given column and row to the given value.
     * If the column is not  of the right type or the indices are out of
     * bound, the result is undefined. */
@@ -883,6 +894,7 @@ class DataFrame : public Object {
     delete row;
   }
  
+  // TODO: Remove this as Jan doesn't think we'll need it in the future
   /** Create a new dataframe, constructed from rows for which the given Rower
     * returned true from its accept method. */
   DataFrame* filter(Rower& r, String* name) {
@@ -918,6 +930,7 @@ class DataFrame : public Object {
 
   }
 
+  // TODO: Maybe remove this since all kv_stores have their own seperate threads anyway
   /** This method clones the Rower and executes the map in parallel. Join is
   * used at the end to merge the results. */
   void pmap(Rower& rower) {

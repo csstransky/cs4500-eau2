@@ -13,6 +13,8 @@
 #include "message.h"
 #include <errno.h>
 #include <assert.h>
+#include <thread>
+#include <mutex>
 #include "../helpers/string.h"
 
 const int PORT = 8080;
@@ -25,25 +27,27 @@ const char* IP_DEFAULT = "Not registered";
 
 class Server {
     public:
-    String** client_ip_list_;
+    StringArray* connected_client_ips_; // list of CONNECTED IPs
     int connection_socket_; 
-    int* client_sockets_;
+    IntArray* client_sockets_;
     struct sockaddr_in my_address_; 
     String* my_ip_;
+    std::thread networking_thread_;
 
     // Point of this is to store all open fds so we can monitor the open ones
     fd_set readfds_; 
 
+    // Strictly used to test a local KV_Store
+    Server() {
+        connected_client_ips_ = nullptr;
+        client_sockets_ = nullptr;
+        my_ip_ = nullptr;
+    }
+
     Server(const char* ip_address) {
         // Create client ip list and sockets
-        client_ip_list_ = new String*[MAX_CLIENTS];
-        client_sockets_ = new int[MAX_CLIENTS];
-
-        // Zero all client sockets and ips
-        for (int i = 0; i < MAX_CLIENTS; i++) {   
-            client_sockets_[i] = 0; 
-            client_ip_list_[i] = 0;  
-        } 
+        connected_client_ips_ = new StringArray(MAX_CLIENTS);
+        client_sockets_ = new IntArray(MAX_CLIENTS);
 
         // Creating socket file descriptor
         connection_socket_ = get_new_socket_();
@@ -70,23 +74,21 @@ class Server {
 
     ~Server() {  
         // each ip will get freed on shutdown      
-        delete[] client_ip_list_;
-        delete[] client_sockets_;
+        delete connected_client_ips_;
+        delete client_sockets_;
         delete my_ip_;
     }
 
     // Has to be called before server is deleted
-    virtual void shutdown() {
-        
+    virtual void wait_for_shutdown() {
+        networking_thread_.join(); 
         // close connection socket
         close(connection_socket_);
 
         // close all sockets
-        for (int i = 0; i < MAX_CLIENTS; i++) {
-            if (client_sockets_[i]) {
-                close(client_sockets_[i]);
-                delete client_ip_list_[i];
-            }
+        for (int i = 0; i < client_sockets_->length(); i++) {
+            close(client_sockets_->get(i));
+            connected_client_ips_->clear();
         }
     }
 
@@ -94,15 +96,23 @@ class Server {
         return strcmp(s->c_str(), IP_DEFAULT);
     }
 
-    // NOTE: -1 runs forever
-    virtual void run_server(int timeout) {
+    virtual void thread_run_server_(int timeout) {
         timeval timeout_val = {timeout, 0};
         timeval* timeout_pointer = (timeout < 0) ? nullptr : &timeout_val;
         while (wait_for_activty_(timeout_pointer)) {
             check_for_connections_();
             check_for_client_messages_();
         }
-        printf("No activity on server. Shutting down...\n");
+    }
+
+    // NOTE: -1 runs forever
+    void run_server(int timeout) {
+        networking_thread_ = std::thread(&Server::thread_run_server_, this, timeout);
+    }
+
+    // NOTE: runs server indefinitely
+    void run_server() {
+        run_server(-1);
     }
 
     /**
@@ -118,9 +128,9 @@ class Server {
         int max_sd = connection_socket_;   
              
         //add child sockets to set  
-        for (int i = 0 ; i < MAX_CLIENTS ; i++) {   
+        for (int i = 0; i < client_sockets_->length(); i++) {   
             //socket descriptor  
-            int sd = client_sockets_[i];   
+            int sd = client_sockets_->get(i);   
                  
             // if valid socket descriptor then add to read list  
             if(sd > 0) { 
@@ -160,41 +170,44 @@ class Server {
         if ((new_socket = accept(connection_socket_, (struct sockaddr *)&address_client, (socklen_t*)&(addrlen)))<0)   
         {   
             assert(0);   
-        }     
-            
-        //add new socket to array of sockets  
-        for (int i = 0; i < MAX_CLIENTS; i++)   
-        {   
-            //if position is empty  
-            if( client_sockets_[i] == 0 )   
-            {   
-                client_sockets_[i] = new_socket; 
-                client_ip_list_[i] = new String(IP_DEFAULT);
+        }
 
-                //inform user new connection 
-                printf("New Connection. Socket fd is %d, index is %d\n\n" , new_socket, i); 
-                    
-                return;   
-            }   
-        }   
-        // Add some error handling if there is more than MAX_CLIENTS
-        printf("Server can only support %d clients.\n", MAX_CLIENTS);
-        assert(0);
+        //add new socket to array of sockets
+        if (client_sockets_->length() == MAX_CLIENTS) {
+            // Add some error handling if there is more than MAX_CLIENTS
+            printf("Server can only support %d clients.\n", MAX_CLIENTS);
+            assert(0);
+        }  
+
+        client_sockets_->push(new_socket);
+        String s(IP_DEFAULT);
+        connected_client_ips_->push(&s);               
     } 
 
     int find_ip_in_list_(String* ip) {
-        
-        for (int i = 0; i < MAX_CLIENTS; i++) {
-            if (client_ip_list_[i] && client_ip_list_[i]->equals(ip) == 0) {
-                return i;
-            }
+
+        size_t index = connected_client_ips_->index_of(ip);
+
+        if (index == -1) {
+            printf("No client with given ip\n");
+            assert(0);
         }
-        printf("No client with given ip\n");
-        assert(0);
+        
+        return index;
     }
 
-    virtual void decode_message_(Message* message, int client) {
+    // returns if the message was handled
+    virtual bool decode_message_(Message* message, int client) {
         // common responses to message 
+        switch (message->get_kind()) {
+            case MsgKind::Ack: {
+                Ack* ack_message = dynamic_cast<Ack*>(message);
+                break;
+            }
+            default:
+                return 0;
+        }
+        return 1;
     }
 
     // nullptr is return if it is a disconnect
@@ -219,11 +232,11 @@ class Server {
     }
 
     void check_for_client_messages_() {
-        for (int i = 0; i < MAX_CLIENTS; i++) {  
-            int sd = client_sockets_[i];   
+        for (int i = 0; i < client_sockets_->length(); i++) {  
+            int sd = client_sockets_->get(i);   
                  
             if (is_socket_in_set_(sd)) {  
-                Message* m = receive_message_(client_sockets_[i]);
+                Message* m = receive_message_(sd);
                 if (m) {
                     decode_message_(m, i); 
                     delete m;
@@ -235,14 +248,11 @@ class Server {
     }
 
     virtual void remove_client_(int index) {
-        printf("Client disconnected, ip %s , sd %d, index %d\n\n" ,  
-                client_ip_list_[index]->c_str() , client_sockets_[index], index);
 
-        //Close the socket and mark as 0 in list for reuse  
-        close(client_sockets_[index]); 
-        client_sockets_[index] = 0;
-        delete client_ip_list_[index];
-        client_ip_list_[index] = nullptr;   
+        // Close the socket and remove from arrays
+        close(client_sockets_->remove(index));
+        String* removed = connected_client_ips_->remove(index);   
+        delete removed;
     }
 
     int get_new_socket_() {
@@ -268,7 +278,6 @@ class Server {
     }
 
     void send_message(int fd, Message* message) {
-        //printf("Sending message with type %d from %s to %s\n\n", message->get_kind(), message->get_sender(), message->get_target());
         char* serial_message = message->serialize();
         int length = message->serial_len();
         
@@ -281,17 +290,14 @@ class Server {
 
     void send_message(String* ip, Message* message) {
         int index = find_ip_in_list_(ip);
-        send_message(client_sockets_[index], message);
+        send_message(client_sockets_->get(index), message);
     }
 
     void send_kill_() {
-        for (int i = 0; i < MAX_CLIENTS; i++) {
-            if (client_sockets_[i]) {
-                Message* m = new Kill(my_ip_, client_ip_list_[i]);
-                printf("Sending kill to sd %d\n\n", client_sockets_[i]);
-                send_message(client_sockets_[i], m);
-                delete m;
-            }
+        for (int i = 0; i < client_sockets_->length(); i++) {
+            Message* m = new Kill(my_ip_, connected_client_ips_->get(i));
+            send_message(client_sockets_->get(i), m);
+            delete m;
         }
     }
 

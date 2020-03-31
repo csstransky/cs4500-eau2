@@ -5,7 +5,8 @@
 #include "../kv_store/key_array.h"
 
 // Number of elements each array in the array of arrays in Column have
-// TODO: change this in the future when we know the average file to store
+// TODO: Now we know a 10GB is our average file size, we should mess with ELEMENT_ARRAY_SIZE until
+// we get a number that's optimal. Jan does say 100 is too small though.
 const int ELEMENT_ARRAY_SIZE = 100; 
 const int DEFAULT_INT_VALUE = 0;
 const float DEFAULT_FLOAT_VALUE = 0;
@@ -28,6 +29,7 @@ class ColumnArray;
  * equality. 
  * Authors: Kaylin Devchand & Cristian Stransky
  * */
+// TODO: In the future, there will only be ONE Column class (no need to IntColumn, BoolColumn, etc)
 class Column : public Object {
  public:
 
@@ -37,6 +39,7 @@ class Column : public Object {
   String* dataframe_name_;
   size_t column_index_;
   KeyArray* keys_; // owned
+  int node_for_chunk_;
  
   /** Type converters: Return same column under its actual type, or
    *  nullptr if of the wrong type.  */
@@ -77,6 +80,7 @@ class Column : public Object {
     size_ = size;
     size_t num_arrays_ = get_num_arrays();
     keys_ = new KeyArray(num_arrays_);
+    node_for_chunk_ = 0;
   }
 
   void set_parent_values_(size_t size, char type, KV_Store* kv, String* dataframe_name, 
@@ -87,6 +91,7 @@ class Column : public Object {
     type_ = type;
     size_ = size;
     keys_ = keys->clone();
+    node_for_chunk_ = 0;
   }
 
   Key* generate_key_(size_t array_index) {
@@ -96,10 +101,9 @@ class Column : public Object {
     key_name.concat("_");
     key_name.concat(array_index);
 
-    // TODO: This is where you'll have to make a key with a different node_index, so in the future
-    // you'll have to go through the kv's list of indexes, and somehow find a way to give the column
-    // key a different index for better parallization
-    Key* new_key = new Key(&key_name, kv_->get_node_index());
+    // TODO: Cristian change get_random_node_index if you don't want it completely random
+    size_t home_index = kv_->get_node_index(node_for_chunk_++ % kv_->get_num_other_nodes());
+    Key* new_key = new Key(&key_name, home_index);
     return new_key;    
   }
  
@@ -123,6 +127,7 @@ class Column : public Object {
       + buffered_elements->serial_len();
   }
 
+  // TODO: Fix in the future so that you only serialize what you need
   void serialize_column_(Serializer& serializer, Array* buffered_elements) {
     serializer.serialize_size_t(serializer.get_serial_size());
     serializer.serialize_char(type_);
@@ -138,6 +143,7 @@ class Column : public Object {
     return deserialize(deserializer, kv_store);
   }
 
+  // TODO: get rid of this. I have a new way to Serialize things (look in branch reduce_code, Array.h)
   static char get_column_type(Deserializer& deserializer) {
     size_t deserial_start_index = deserializer.get_serial_index();
     deserializer.deserialize_size_t(); // skip serial_length
@@ -211,7 +217,7 @@ class IntColumn : public Column {
 
   IntColumn* as_int() { return this; }
 
-
+  // TODO: We actually don't need to set anymore because we're doing read-only, so get rid of ALL sets
   /** Set value at idx. An out of bound idx is undefined.  */
   void set(size_t idx, int val) {
     assert(idx < size_);
