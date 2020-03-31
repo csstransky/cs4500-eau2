@@ -64,6 +64,8 @@ void basic_stringarray_test() {
   arr->push(y);
   arr->push(z);
   t_true(arr->length() == 3, "3a");
+  String* v = arr->pop();
+  t_true(arr->length() == 2, "3b");
   arr->clear();
   t_true(arr->length() == 0, "3c");
 
@@ -71,6 +73,7 @@ void basic_stringarray_test() {
   delete z;
   delete y;
   delete x;
+  delete v;
 
   OK("3");
 }
@@ -83,6 +86,8 @@ void basic_intarray_test() {
   arr->push(2);
   arr->push(3);
   t_true(arr->length() == 3, "4a");
+  arr->pop();
+  t_true(arr->length() == 2, "4b");
   arr->clear();
   t_true(arr->length() == 0, "4c");
 
@@ -92,13 +97,15 @@ void basic_intarray_test() {
 }
 
 /** Tests pushing, popping, and length of Arrays */
-void basic_DoubleArray_tests() {
-  DoubleArray * arr = new DoubleArray(10);
+void basic_floatarray_tests() {
+  FloatArray * arr = new FloatArray(10);
 
   arr->push(1.5);
   arr->push(2.7);
   arr->push(3.9);
   t_true(arr->length() == 3, "5a");
+  arr->pop();
+  t_true(arr->length() == 2, "5b");
   arr->clear();
   t_true(arr->length() == 0, "5c");
 
@@ -115,6 +122,8 @@ void basic_boolarray_tests() {
   arr->push(true);
   arr->push(false);
   t_true(arr->length() == 3, "6a");
+  arr->pop();
+  t_true(arr->length() == 2, "6b");
   arr->clear();
   t_true(arr->length() == 0, "6c");
 
@@ -125,34 +134,44 @@ void basic_boolarray_tests() {
 
 /** Tests more complex Array functions */
 void complex_stringarray_test() {
-  String a("This");
-  String b("is going");
-  String c("in a list");
-  String x("Hello");
-  String y("World");
-  String z("!");
-  StringArray arr1(10);
-  StringArray arr2(10);
+  String * a = new String("This");
+  String * b = new String("is going");
+  String * c = new String("in a list");
+  String * x = new String("Hello");
+  String * y = new String("World");
+  String * z = new String("!");
+  StringArray * arr1 = new StringArray(10);
+  StringArray * arr2 = new StringArray(10);
 
-  arr1.push(&a);
-  arr1.push(&b);
-  arr1.push(&c);
-  arr2.push(&x);
-  arr2.push(&y);
-  arr2.push(&z);
-  String * pointer_of_a = arr1.get(0);
-  t_true(pointer_of_a->equals(&a), "7a");
-  String* v = arr2.remove(2);
-  t_true(v->equals(&z), "7b");
-  delete v;
-  t_true(arr2.index_of(&z) == -1, "7g");
-  String* w = arr2.replace(1, &z);
-  t_true(y.equals(w), "7h");
-  delete w;
-  t_true(arr2.index_of(&y) == -1, "7i");
+  arr1->push(a);
+  arr1->push(b);
+  arr1->push(c);
+  arr2->push(x);
+  arr2->push(y);
+  arr2->push(z);
+  String * copy_of_a = arr1->get(0);
+  t_true(copy_of_a->equals(a), "7a");
+  arr1->concat(arr2);
+  t_true(arr1->length() == 6, "7b");
+  t_true(arr2->length() == 3, "7c");
+  String* v = arr2->remove(2);
+  t_true(arr2->index_of(z) == -1, "7g");
+  String* w = arr2->replace(1, z);
+  t_true(arr2->index_of(y) == -1, "7i");
   StringArray * copy_of_arr1 = new StringArray(arr1);
-  t_true(copy_of_arr1->equals(&arr1), "7j");
+  t_true(copy_of_arr1->equals(arr1), "7j");
+
   delete copy_of_arr1;
+  delete arr2;
+  delete arr1;
+  delete z;
+  delete y;
+  delete x;
+  delete c;
+  delete b;
+  delete a;
+  delete v;
+  delete w;
 
   OK("7");
 }
@@ -208,18 +227,18 @@ void clone_intarray_test() {
   OK("9");
 }
 
-void clone_DoubleArray_test() {
-  DoubleArray arr(10);
+void clone_floatarray_test() {
+  FloatArray arr(10);
 
   arr.push(1.5);
   arr.push(2.7);
   arr.push(3.9);
   t_true(arr.length() == 3, "10a");
-  DoubleArray* clone = arr.clone();
+  FloatArray* clone = arr.clone();
   t_true(clone->length() == 3, "10b");
-  t_true(clone->get(0) == (double)1.5, "10c");
-  t_true(clone->get(1) == (double)2.7, "10d");
-  t_true(clone->get(2) == (double)3.9, "10e");
+  t_true(clone->get(0) == (float)1.5, "10c");
+  t_true(clone->get(1) == (float)2.7, "10d");
+  t_true(clone->get(2) == (float)3.9, "10e");
 
   delete clone;
   OK("10");
@@ -256,10 +275,6 @@ void clone_stringarray_test() {
   t_true(arr->length() == 3, "12a");
   StringArray* clone = arr->clone();
   t_true(clone->length() == 3, "12b");
-  t_true(clone->get(0)->equals(x), "12c");
-  t_true(clone->get(1)->equals(y), "12d");
-  t_true(clone->get(2)->equals(z), "12e");
-  
   delete x;
   delete y;
   delete z;
@@ -297,8 +312,8 @@ void basic_columnarray_test() {
   Column col_col;
   IntColumn int_col;
   int_col.push_back(3);
-  DoubleColumn double_col;
-  double_col.push_back(232.3);
+  FloatColumn float_col;
+  float_col.push_back(232.3);
   BoolColumn bool_col;
   bool_col.push_back(true);
   StringColumn string_col;
@@ -307,18 +322,21 @@ void basic_columnarray_test() {
   ColumnArray arr(10);
   arr.push(&col_col);
   arr.push(&int_col);
-  arr.push(&double_col);
+  arr.push(&float_col);
   arr.push(&bool_col);
   arr.push(&string_col);
 
   t_true(arr.length() == 5, "14a");
-  // Test to show that a normal Column does not work, and must be IntColumn, DoubleColumn, etc.
+  // Test to show that a normal Column does not work, and must be IntColumn, FloatColumn, etc.
   t_true(arr.get(0) == nullptr, "14b");
   t_true(arr.get(1)->as_int()->get(0) == 3, "14c");
-  t_true(arr.get(2)->as_double()->get(0) == (double)232.3, "14d");
+  t_true(arr.get(2)->as_float()->get(0) == (float)232.3, "14d");
   t_true(arr.get(3)->as_bool()->get(0), "14e");
   t_true(arr.get(4)->as_string()->get(0)->equals(&str), "14f");
 
+  Column* v = arr.pop();
+  delete v;
+  t_true(arr.length() == 4, "14g");
   arr.clear();
   t_true(arr.length() == 0, "14h");
 
@@ -348,6 +366,9 @@ void basic_keyarray_test() {
     t_true(arr.get(ii)->get_key()->equals(&key_string), test_string.c_str());
   }
 
+  Key* v = arr.pop();
+  delete v;
+  t_true(arr.length() == num_keys - 1, "15c");
   arr.clear();
   t_true(arr.length() == 0, "15d");
 
@@ -359,7 +380,7 @@ int main() {
   basic_string_test();
 
   basic_boolarray_tests();
-  basic_DoubleArray_tests();
+  basic_floatarray_tests();
   basic_intarray_test();
   basic_stringarray_test();
 
@@ -368,7 +389,7 @@ int main() {
   object_array_test();
 
   clone_intarray_test();
-  clone_DoubleArray_test();
+  clone_floatarray_test();
   clone_boolarray_test();
   clone_stringarray_test();
 

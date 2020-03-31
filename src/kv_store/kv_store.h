@@ -172,12 +172,12 @@ class KV_Store : public Node {
         return bool_array;
     }
 
-    // Returns a new DoubleArray, make sure to delete it later
-    DoubleArray* get_double_array(Key* key) {
+    // Returns a new FloatArray, make sure to delete it later
+    FloatArray* get_float_array(Key* key) {
         char* kv_serial = get_value_serial(key);
-        DoubleArray* double_array = DoubleArray::deserialize(kv_serial);
+        FloatArray* float_array = FloatArray::deserialize(kv_serial);
         delete[] kv_serial;
-        return double_array;
+        return float_array;
     }
 
     // Returns a new StringArray, make sure to delete it later

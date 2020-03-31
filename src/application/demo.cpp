@@ -46,7 +46,7 @@ public:
  
   void producer() {
     size_t SZ = 100*1000;
-    double* vals = new double[SZ];
+    float* vals = new float[SZ];
     int sum = 0;
     for (size_t i = 0; i < SZ; ++i) sum += vals[i] = i;
     DataFrame* df1= DataFrame::from_array(&main, &kd_, SZ, vals);
@@ -60,7 +60,7 @@ public:
   void counter() {
     DataFrame* v = kd_.wait_and_get(&main);
     int sum = 0;
-    for (size_t i = 0; i < 100*1000; ++i) sum += v->get_double(0,i);
+    for (size_t i = 0; i < 100*1000; ++i) sum += v->get_float(0,i);
     p("The sum is  ").pln(sum);
     DataFrame* df = DataFrame::from_scalar(&verify, &kd_, sum);
 

@@ -22,7 +22,7 @@ public:
  
   void producer() {
     size_t SZ = 100*1000;
-    double* vals = new double[SZ];
+    float* vals = new float[SZ];
     int sum = 0;
     for (size_t i = 0; i < SZ; ++i) sum += vals[i] = i;
     DataFrame* df1= DataFrame::from_array(&main, &kd_, SZ, vals);
@@ -36,7 +36,7 @@ public:
   void counter() {
     DataFrame* v = kd_.wait_and_get(&main);
     int sum = 0;
-    for (size_t i = 0; i < 100*1000; ++i) sum += v->get_double(0,i);
+    for (size_t i = 0; i < 100*1000; ++i) sum += v->get_float(0,i);
     p("The sum is  ").pln(sum);
     DataFrame* df = DataFrame::from_scalar(&verify, &kd_, sum);
 
@@ -59,7 +59,7 @@ class Trivial : public Application {
   Trivial(size_t idx, const char* my_ip, const char* server_ip) : Application(idx, my_ip, server_ip) { }
   void run_() {
     size_t SZ = 1000 * 1000;
-    double* vals = new double[SZ];
+    float* vals = new float[SZ];
     double sum = 0;
     for (size_t i = 0; i < SZ; ++i) {
         vals[i] = i;
@@ -70,14 +70,14 @@ class Trivial : public Application {
     DataFrame* df = DataFrame::from_array(&key, &kd_, SZ, vals);
 
     for (size_t i = 0; i < SZ; i++) {
-        assert(df->get_double(0,i) == (double)i);
+        assert(df->get_float(0,i) == (float)i);
     }
     
     DataFrame* df2 = kd_.get(&key);
 
     for (size_t i = 0; i < SZ; ++i) {
-        double val = df2->get_double(0,i);
-        assert(val == (double)i);
+        float val = df2->get_float(0,i);
+        assert(val == (float)i);
         sum = sum - i;
     } 
 

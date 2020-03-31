@@ -19,7 +19,7 @@
  * A schema is a description of the contents of a data frame, the schema
  * knows the number of columns and number of rows, the type of each column,
  * optionally columns and rows can be named by strings.
- * The valid types are represented by the chars 'S', 'B', 'I' and 'D'.
+ * The valid types are represented by the chars 'S', 'B', 'I' and 'F'.
  * Authors: Kaylin Devchand & Cristian Stransky
  */
 class Schema : public Object {
@@ -52,7 +52,7 @@ class Schema : public Object {
     assert(types != nullptr);
     size_t types_length = strlen(types);
     for (size_t ii = 0; ii < types_length; ii++) {
-      assert(types[ii] == 'I' || types[ii] == 'D' || types[ii] == 'B' || types[ii] == 'S');
+      assert(types[ii] == 'I' || types[ii] == 'F' || types[ii] == 'B' || types[ii] == 'S');
     }
 
     types_size_ = types_length + 1;
@@ -135,7 +135,7 @@ class Schema : public Object {
     * is external. Names are expectd to be unique, duplicates result
     * in undefined behavior. */
   void add_column(char typ) {
-    assert(typ == 'I' || typ == 'D' || typ == 'B' || typ == 'S');
+    assert(typ == 'I' || typ == 'F' || typ == 'B' || typ == 'S');
     if (num_cols_ + 1 >= types_size_) {
       increase_types_array_size_();
     }
@@ -183,7 +183,7 @@ public:
   /** Called for fields of the argument's type with the value of the field. */
   virtual void accept(bool b) = 0;
 
-  virtual void accept(double f) = 0;
+  virtual void accept(float f) = 0;
 
   virtual void accept(int i) = 0;
 
@@ -217,14 +217,14 @@ IntColumn* get_int_column_(ColumnArray* columns, size_t columns_size, size_t col
 }
 
 /** 
- * Helper function to get an absolutely certain DoubleColumn with error checking. 
- * Throws error if the col_idx is out of bounds, or if the type of the Column is not DoubleColumn.
+ * Helper function to get an absolutely certain FloatColumn with error checking. 
+ * Throws error if the col_idx is out of bounds, or if the type of the Column is not FloatColumn.
  */
-DoubleColumn* get_double_column_(ColumnArray* columns, size_t columns_size, size_t col_idx) {
+FloatColumn* get_float_column_(ColumnArray* columns, size_t columns_size, size_t col_idx) {
   assert(col_idx < columns_size);
-  DoubleColumn* double_column = columns->get(col_idx)->as_double();
-  assert(double_column);
-  return double_column;
+  FloatColumn* float_column = columns->get(col_idx)->as_float();
+  assert(float_column);
+  return float_column;
 }
 
 /** 
@@ -267,10 +267,10 @@ class Row : public Object {
           cols_->get(i)->push_back(DEFAULT_INT_VALUE);
           break;
         }
-        case 'D': {
-          DoubleColumn temp_column;
+        case 'F': {
+          FloatColumn temp_column;
           cols_->push(&temp_column);
-          cols_->get(i)->push_back(DEFAULT_DOUBLE_VALUE);
+          cols_->get(i)->push_back(DEFAULT_FLOAT_VALUE);
           break;
         }
         case 'B': {
@@ -306,8 +306,8 @@ class Row : public Object {
     column->set(0, val);
   }
 
-  void set(size_t col, double val) {
-    DoubleColumn* column = get_double_column_(this->cols_, this->width_, col);
+  void set(size_t col, float val) {
+    FloatColumn* column = get_float_column_(this->cols_, this->width_, col);
     column->set(0, val);
   }
 
@@ -345,8 +345,8 @@ class Row : public Object {
     return column->get(0);
   }
 
-  double get_double(size_t col) {
-    DoubleColumn* column = get_double_column_(this->cols_, this->width_, col);
+  float get_float(size_t col) {
+    FloatColumn* column = get_float_column_(this->cols_, this->width_, col);
     return column->get(0);
   }
   
@@ -378,8 +378,8 @@ class Row : public Object {
         case 'I':
           f.accept(get_int(i));
           break;
-        case 'D':
-          f.accept(get_double(i));
+        case 'F':
+          f.accept(get_float(i));
           break;
         case 'B':
           f.accept(get_bool(i));
@@ -424,7 +424,7 @@ public:
     printf("<%d> ", b);
   }
 
-  void accept(double f) {
+  void accept(float f) {
     printf("<%f> ", f);
   }
 
@@ -512,8 +512,8 @@ class DataFrame : public Object {
     switch (col_type) {
       case 'I': 
         return new IntColumn(kv_, name_, index);
-      case 'D': 
-        return new DoubleColumn(kv_, name_, index);
+      case 'F': 
+        return new FloatColumn(kv_, name_, index);
       case 'B': 
         return new BoolColumn(kv_, name_, index);
       case 'S': 
@@ -613,7 +613,7 @@ class DataFrame : public Object {
   // Implemented in kd_store.h to remove circular dependency. See piazza post @963
   static DataFrame* from_scalar(Key* key, KD_Store* kd, int val);
 
-  static DataFrame* from_scalar(Key* key, KD_Store* kd, double val);
+  static DataFrame* from_scalar(Key* key, KD_Store* kd, float val);
 
   static DataFrame* from_scalar(Key* key, KD_Store* kd, bool val);
 
@@ -621,7 +621,7 @@ class DataFrame : public Object {
 
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, int* array);
 
-  static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, double* array);
+  static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, float* array);
 
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, bool* array);
 
@@ -651,9 +651,9 @@ class DataFrame : public Object {
         }
         break;
       }
-      case 'D': {
+      case 'F': {
         for (size_t jj = 0; jj < num_rows_to_fill; jj++) {
-          column->push_back(DEFAULT_DOUBLE_VALUE);
+          column->push_back(DEFAULT_FLOAT_VALUE);
         }
         break;
       }
@@ -687,9 +687,9 @@ class DataFrame : public Object {
         copy_column = new IntColumn(kv_, name_, index, coll->size_, coll->keys_, coll->buffered_elements_);
         break;
       }
-      case 'D': {
-        DoubleColumn* coll = col->as_double();
-        copy_column = new DoubleColumn(kv_, name_, index, coll->size_, coll->keys_, coll->buffered_elements_);
+      case 'F': {
+        FloatColumn* coll = col->as_float();
+        copy_column = new FloatColumn(kv_, name_, index, coll->size_, coll->keys_, coll->buffered_elements_);
         break;
       }
       case 'B': {
@@ -758,9 +758,9 @@ class DataFrame : public Object {
     BoolColumn* bool_column = get_bool_column_(this->cols_, this->schema_.width(), col);
     return bool_column->get(row);
   }
-  double get_double(size_t col, size_t row) {
-    DoubleColumn* double_column = get_double_column_(this->cols_, this->schema_.width(), col);
-    return double_column->get(row);
+  float get_float(size_t col, size_t row) {
+    FloatColumn* float_column = get_float_column_(this->cols_, this->schema_.width(), col);
+    return float_column->get(row);
   }
   // NOTE: Returns a pointer that can be volatile (if coming from KV store, will overwrite the old
   // cache String pointer, so String address CAN change later), clone if needed longer
@@ -781,9 +781,9 @@ class DataFrame : public Object {
     BoolColumn* bool_column = get_bool_column_(this->cols_, this->schema_.width(), col);
     bool_column->set(row, val);
   }
-  void set(size_t col, size_t row, double val) {
-    DoubleColumn* double_column = get_double_column_(this->cols_, this->schema_.width(), col);
-    double_column->set(row, val);
+  void set(size_t col, size_t row, float val) {
+    FloatColumn* float_column = get_float_column_(this->cols_, this->schema_.width(), col);
+    float_column->set(row, val);
   }
   void set(size_t col, size_t row, String* val) {
     StringColumn* string_column = get_string_column_(this->cols_, this->schema_.width(), col);
@@ -810,10 +810,10 @@ class DataFrame : public Object {
           row.set(ii, int_value);
           break;
         }
-        case 'D': {
-          DoubleColumn* double_column = this->cols_->get(ii)->as_double();
-          double double_value = double_column->get(idx);
-          row.set(ii, double_value);
+        case 'F': {
+          FloatColumn* float_column = this->cols_->get(ii)->as_float();
+          float float_value = float_column->get(idx);
+          row.set(ii, float_value);
           break;
         }
         case 'B': {
@@ -850,9 +850,9 @@ class DataFrame : public Object {
           this->cols_->get(ii)->as_int()->push_back(int_value);
           break;
         }
-        case 'D': {
-          double double_value = row.get_double(ii);
-          this->cols_->get(ii)->as_double()->push_back(double_value);
+        case 'F': {
+          float float_value = row.get_float(ii);
+          this->cols_->get(ii)->as_float()->push_back(float_value);
           break;
         }
         case 'B': {
