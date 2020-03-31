@@ -210,7 +210,7 @@ class Put : public Message {
 
     Put(Deserializer deserializer) : Message(MsgKind::Put, deserializer) {
         key_name_ = new String(deserializer);
-        value_ = Serializer::deserialize(deserializer);
+        value_ = new Serializer(deserializer);
     }
 
     ~Put() {
@@ -304,7 +304,7 @@ class Value : public Message {
     }
 
     Value(Deserializer deserializer) : Message(MsgKind::Value, deserializer) {
-        value_ = Serializer::deserialize(deserializer);
+        value_ = new Serializer(deserializer);
     }
 
     ~Value() {
