@@ -37,8 +37,8 @@ public:
     *sum_ += sizeof(bool);
   }
 
-  virtual void accept(float f) {
-    *sum_ += sizeof(float);
+  virtual void accept(double f) {
+    *sum_ += sizeof(double);
   }
 
   virtual void accept(int i) {
@@ -89,9 +89,9 @@ class NonEmptyFilterRower : public Rower {
         }
         break;
       }
-      case 'F': {
-        float val = r.get_float(i);
-        if (val != DEFAULT_FLOAT_VALUE) {
+      case 'D': {
+        double val = r.get_double(i);
+        if (val != DEFAULT_DOUBLE_VALUE) {
           return true;
         }
         break;
@@ -221,33 +221,33 @@ void min_test() {
 
 void converter_tests() {
     Column* int_column = new IntColumn();
-    Column* float_column = new FloatColumn();
+    Column* double_column = new DoubleColumn();
     Column* bool_column = new BoolColumn();
     Column* string_column = new StringColumn();
 
     GT_TRUE(int_column->as_int() != nullptr);
-    GT_TRUE(int_column->as_float() == nullptr);
+    GT_TRUE(int_column->as_double() == nullptr);
     GT_TRUE(int_column->as_bool() == nullptr);
     GT_TRUE(int_column->as_string() == nullptr);
 
-    GT_TRUE(float_column->as_int() == nullptr);
-    GT_TRUE(float_column->as_float() != nullptr);
-    GT_TRUE(float_column->as_bool() == nullptr);
-    GT_TRUE(float_column->as_string() == nullptr);
+    GT_TRUE(double_column->as_int() == nullptr);
+    GT_TRUE(double_column->as_double() != nullptr);
+    GT_TRUE(double_column->as_bool() == nullptr);
+    GT_TRUE(double_column->as_string() == nullptr);
 
 
     GT_TRUE(bool_column->as_int() == nullptr);
-    GT_TRUE(bool_column->as_float() == nullptr);
+    GT_TRUE(bool_column->as_double() == nullptr);
     GT_TRUE(bool_column->as_bool() != nullptr);
     GT_TRUE(bool_column->as_string() == nullptr);
 
     GT_TRUE(string_column->as_int() == nullptr);
-    GT_TRUE(string_column->as_float() == nullptr);
+    GT_TRUE(string_column->as_double() == nullptr);
     GT_TRUE(string_column->as_bool() == nullptr);
     GT_TRUE(string_column->as_string() != nullptr);
 
     delete int_column;
-    delete float_column;
+    delete double_column;
     delete bool_column;
     delete string_column;
     exit(0);
@@ -255,26 +255,26 @@ void converter_tests() {
 
 void push_back_tests() {
     Column* int_column = new IntColumn();
-    Column* float_column = new FloatColumn();
+    Column* double_column = new DoubleColumn();
     Column* bool_column = new BoolColumn();
     Column* string_column = new StringColumn();
 
     int int_value = 2;
-    float float_value = 2.2;
+    double double_value = 2.2;
     bool bool_value = true;
     String* string_value = new String("lol");
 
     int_column->push_back(int_value);
     GT_EQUALS(int_column->size(), 1);
-    float_column->push_back(float_value);
-    GT_EQUALS(float_column->size(), 1);
+    double_column->push_back(double_value);
+    GT_EQUALS(double_column->size(), 1);
     bool_column->push_back(bool_value);
     GT_EQUALS(bool_column->size(), 1);
     string_column->push_back(string_value);
     GT_EQUALS(string_column->size(), 1);
 
     delete int_column;
-    delete float_column;
+    delete double_column;
     delete bool_column;
     delete string_column;  
     delete string_value; 
@@ -283,17 +283,17 @@ void push_back_tests() {
 
 void get_type_tests() {
     Column* int_column = new IntColumn();
-    Column* float_column = new FloatColumn();
+    Column* double_column = new DoubleColumn();
     Column* bool_column = new BoolColumn();
     Column* string_column = new StringColumn();
 
     GT_EQUALS(int_column->get_type(), 'I');
-    GT_EQUALS(float_column->get_type(), 'F');
+    GT_EQUALS(double_column->get_type(), 'D');
     GT_EQUALS(bool_column->get_type(), 'B');
     GT_EQUALS(string_column->get_type(), 'S');
 
     delete int_column;
-    delete float_column;
+    delete double_column;
     delete bool_column;
     delete string_column;  
     exit(0);  
@@ -304,12 +304,12 @@ void size_tests() {
     String c("c");
   
     Column* int_column = new IntColumn(&kv, &c, 0);
-    Column* float_column = new FloatColumn(&kv, &c, 0);
+    Column* double_column = new DoubleColumn(&kv, &c, 0);
     Column* bool_column = new BoolColumn(&kv, &c, 0);
     Column* string_column = new StringColumn(&kv, &c, 0);
 
     int int_value = 2;
-    float float_value = 2.2;
+    double double_value = 2.2;
     bool bool_value = true;
     String* string_value = new String("lol");
 
@@ -318,8 +318,8 @@ void size_tests() {
         GT_EQUALS(int_column->size(), ii + 1);
     }
     for (size_t ii = 0; ii < 400; ii++) {
-        float_column->push_back(float_value);
-        GT_EQUALS(float_column->size(), ii + 1);
+        double_column->push_back(double_value);
+        GT_EQUALS(double_column->size(), ii + 1);
     }
     for (size_t ii = 0; ii < 400; ii++) {
         bool_column->push_back(bool_value);
@@ -331,7 +331,7 @@ void size_tests() {
     }
 
     delete int_column;
-    delete float_column;
+    delete double_column;
     delete bool_column;
     delete string_column;  
     delete string_value; 
@@ -361,27 +361,27 @@ void int_column_set_tests() {
     exit(0);
 }
 
-void float_column_set_tests() {
-    FloatColumn* float_column = new FloatColumn();
-    float_column->push_back(23.12);
-    float_column->push_back(42.3);
-    float_column->push_back(5.1);
-    float_column->push_back(5234);
-    float_column->push_back(2342.33);
-    float_column->push_back(2.1);
+void double_column_set_tests() {
+    DoubleColumn* double_column = new DoubleColumn();
+    double_column->push_back(23.12);
+    double_column->push_back(42.3);
+    double_column->push_back(5.1);
+    double_column->push_back(5234);
+    double_column->push_back(2342.33);
+    double_column->push_back(2.1);
 
-    float_column->set(0, 1.11);
-    float_column->set(4, 2.2);
-    float_column->set(5, 1.33);
-    float_column->push_back(188);
-    GT_EQUALS(float_column->size(), 7);
-    GT_EQUALS(float_column->get(0), (float)1.11);
-    GT_EQUALS(float_column->get(3), (float)5234);
-    GT_EQUALS(float_column->get(4), (float)2.2);
-    GT_EQUALS(float_column->get(5), (float)1.33);
-    GT_EQUALS(float_column->get(6), (float)188);
+    double_column->set(0, 1.11);
+    double_column->set(4, 2.2);
+    double_column->set(5, 1.33);
+    double_column->push_back(188);
+    GT_EQUALS(double_column->size(), 7);
+    GT_EQUALS(double_column->get(0), (double)1.11);
+    GT_EQUALS(double_column->get(3), (double)5234);
+    GT_EQUALS(double_column->get(4), (double)2.2);
+    GT_EQUALS(double_column->get(5), (double)1.33);
+    GT_EQUALS(double_column->get(6), (double)188);
 
-    delete float_column;
+    delete double_column;
     exit(0);
 }
 
@@ -438,7 +438,7 @@ void schema_constructor_tests() {
     GT_EQUALS(schema1->width(), 0);
     GT_EQUALS(schema1->length(), 0);
 
-    const char* types = "ISBFFBS";
+    const char* types = "ISBDDBS";
     Schema* schema2 = new Schema(types);
     GT_EQUALS(schema2->width(), 7);
     GT_EQUALS(schema2->length(), 0);
@@ -478,10 +478,10 @@ void schema_add_column_tests() {
     GT_EQUALS(schema1->col_type(47), 'S');
     
     String* name = new String("hi");
-    schema1->add_column('F');
+    schema1->add_column('D');
     GT_EQUALS(schema1->width(), 101);
     GT_EQUALS(schema1->length(), 0);
-    GT_EQUALS(schema1->col_type(100), 'F');
+    GT_EQUALS(schema1->col_type(100), 'D');
 
     delete schema1;
     delete name;
@@ -528,10 +528,10 @@ void test_row_width() {
 }
 
 void test_col_type() {
-  Schema* s = new Schema("IFSB");
+  Schema* s = new Schema("IDSB");
   Row* row = new Row(*s);
   GT_EQUALS(row->col_type(0), 'I');
-  GT_EQUALS(row->col_type(1), 'F');
+  GT_EQUALS(row->col_type(1), 'D');
   GT_EQUALS(row->col_type(2), 'S');
   GT_EQUALS(row->col_type(3), 'B');
 
@@ -541,15 +541,15 @@ void test_col_type() {
 }
 
 void test_set_get() {
-  Schema* s = new Schema("IFSB");
+  Schema* s = new Schema("IDSB");
   Row* row = new Row(*s);
   String* hi = new String("hi");
   row->set(0, 4);
-  row->set(1, (float)3.2);
+  row->set(1, (double)3.2);
   row->set(2, hi);
   row->set(3, (bool)0);
   GT_EQUALS(row->get_int(0), 4);
-  GT_EQUALS(row->get_float(1), (float)3.2);
+  GT_EQUALS(row->get_double(1), (double)3.2);
   GT_EQUALS(row->get_string(2)->equals(hi), 1);
   GT_EQUALS(row->get_bool(3), 0);
 
@@ -560,15 +560,15 @@ void test_set_get() {
 }
 
 void test_sum_bytes() {
-  Schema* s = new Schema("IFSB");
+  Schema* s = new Schema("IDSB");
   Row* row = new Row(*s);
   String* hi = new String("hi");
   size_t sum_actual = 0;
   SumBytesFielder* f = new SumBytesFielder(&sum_actual);
-  size_t sum_expect = sizeof(int) + sizeof(float) + sizeof(bool) + sizeof(String*);
+  size_t sum_expect = sizeof(int) + sizeof(double) + sizeof(bool) + sizeof(String*);
 
   row->set(0, 4);
-  row->set(1, (float)3.2);
+  row->set(1, (double)3.2);
   row->set(2, hi);
   row->set(3, (bool)0);
   row->visit(0, *f);
@@ -583,21 +583,21 @@ void test_sum_bytes() {
 }
 
 void test_nonempty_filter_rower() {
-  Schema* s = new Schema("IFSB");
+  Schema* s = new Schema("IDSB");
   Rower* rower = new NonEmptyFilterRower();
   Row* row = new Row(*s);
   String* hi = new String("hi");
   String* empty = new String("");
 
   row->set(0, 4);
-  row->set(1, (float)3.2);
+  row->set(1, (double)3.2);
   row->set(2, hi);
   row->set(3, (bool)0);
   
   GT_EQUALS(rower->accept(*row), 1);
 
   row->set(0, (int)0);
-  row->set(1, (float)0);
+  row->set(1, (double)0);
   row->set(2, empty);
   row->set(3, (bool)0);
 
@@ -613,7 +613,7 @@ void test_nonempty_filter_rower() {
 void test_map() {
   KV_Store kv(0);
   String c("c");
-  Schema* s = new Schema("IIFI");
+  Schema* s = new Schema("IIDI");
   DataFrame* df = new DataFrame(*s, &c, &kv);
   Row* r = new Row(df->get_schema());
   AddRower* rower = new AddRower(df);
@@ -621,7 +621,7 @@ void test_map() {
   for (size_t i = 0; i <  10; i++) {
     r->set(0,(int)i);
     r->set(1,(int)i+1);
-    r->set(2, (float)i);
+    r->set(2, (double)i);
     df->add_row(*r);
   }
 
@@ -634,7 +634,7 @@ void test_map() {
   for (size_t i = 0; i < 10; i++) {
     GT_EQUALS(df->get_int((size_t)0,i), i);
     GT_EQUALS(df->get_int((size_t)1,i), i+1);
-    GT_EQUALS(df->get_float((size_t)2,i), (float)i);
+    GT_EQUALS(df->get_double((size_t)2,i), (double)i);
   }
 
   delete s;
@@ -648,7 +648,7 @@ void test_map() {
 void test_filter() {
   KV_Store kv(0);
   String c("c");
-  Schema* s = new Schema("IFSB");
+  Schema* s = new Schema("IDSB");
   DataFrame* df = new DataFrame(*s, &c, &kv);
   
   Rower* rower = new NonEmptyFilterRower();
@@ -658,28 +658,28 @@ void test_filter() {
 
   // Non empty row
   row->set(0, 4);
-  row->set(1, (float)3.2);
+  row->set(1, (double)3.2);
   row->set(2, hi);
   row->set(3, (bool)0);
   df->add_row(*row);
 
   // Empty row
   row->set(0, (int)0);
-  row->set(1, (float)0);
+  row->set(1, (double)0);
   row->set(2, empty);
   row->set(3, (bool)0);
   df->add_row(*row);
 
   // Empty row
   row->set(0, (int)0);
-  row->set(1, (float)0);
+  row->set(1, (double)0);
   row->set(2, empty);
   row->set(3, (bool)0);
   df->add_row(*row);
 
   // Non empty row
   row->set(0, 4);
-  row->set(1, (float)3.2);
+  row->set(1, (double)3.2);
   row->set(2, hi);
   row->set(3, (bool)0);
   df->add_row(*row);
@@ -692,7 +692,7 @@ void test_filter() {
 
   for (size_t i = 0; i < 2; i++) {
     GT_EQUALS(df_new->get_int((size_t)0,i), 4);
-    GT_EQUALS(df_new->get_float((size_t)1,i), (float)3.2);
+    GT_EQUALS(df_new->get_double((size_t)1,i), (double)3.2);
     GT_EQUALS(df_new->get_string((size_t)2,i)->equals(hi), 1);
     GT_EQUALS(df_new->get_bool((size_t)3,i), (bool)0);
   }
@@ -710,7 +710,7 @@ void test_filter() {
 void test_get_schema() {
   KV_Store kv(0);
   String c("c");
-  Schema* s1 = new Schema("IFSB");
+  Schema* s1 = new Schema("IDSB");
   DataFrame* df = new DataFrame(*s1, &c, &kv);
 
   Schema s2 = df->get_schema();
@@ -728,7 +728,7 @@ void test_get_schema() {
 void test_add_column() {
   KV_Store kv(0);
   String c("c");
-  Schema s1("IFSB");
+  Schema s1("IDSB");
   DataFrame df(s1, &c, &kv);
   String* hi = new String("hi");
   String* hello = new String("hello");
@@ -742,11 +742,11 @@ void test_add_column() {
   c_int->push_back(2);
   c_int->push_back(3);
   c_int->push_back(4);
-  Column* c_float = new FloatColumn();
-  c_float->push_back((float)1.2);
-  c_float->push_back((float)2.2);
-  c_float->push_back((float)3.2);
-  c_float->push_back((float)4.2);
+  Column* c_double = new DoubleColumn();
+  c_double->push_back((double)1.2);
+  c_double->push_back((double)2.2);
+  c_double->push_back((double)3.2);
+  c_double->push_back((double)4.2);
   Column* c_string = new StringColumn();
   c_string->push_back(hi);
   c_string->push_back(hi);
@@ -759,7 +759,7 @@ void test_add_column() {
   c_bool->push_back((bool)1);
 
   df.add_column(c_int);
-  df.add_column(c_float);
+  df.add_column(c_double);
   df.add_column(c_string);
   df.add_column(c_bool);
 
@@ -768,14 +768,14 @@ void test_add_column() {
 
   for (int i = 0; i < 4; i++) {
     GT_EQUALS(df.get_int(0, i), DEFAULT_INT_VALUE);
-    GT_EQUALS(df.get_float(1, i), DEFAULT_FLOAT_VALUE);
+    GT_EQUALS(df.get_double(1, i), DEFAULT_DOUBLE_VALUE);
     GT_TRUE(df.get_string(2, i)->equals(&DEFAULT_STRING_VALUE));
     GT_EQUALS(df.get_bool(3, i), DEFAULT_BOOL_VALUE); 
   }
 
   for (int i = 0; i < 4; i++) {
     GT_EQUALS(df.get_int(4, i), i+1);
-    GT_EQUALS(df.get_float(5, i), (float)(i + 1.2));
+    GT_EQUALS(df.get_double(5, i), (double)(i + 1.2));
     GT_TRUE(df.get_string(6, i)->equals(hi));
     GT_EQUALS(df.get_bool(7, i), i % 2); 
   }
@@ -793,7 +793,7 @@ void test_add_column() {
   delete hello;
   delete c_int;
   delete c_bool;
-  delete c_float;
+  delete c_double;
   delete c_string;
 
   exit(0);
@@ -802,7 +802,7 @@ void test_add_column() {
 void dataframe_constructor_tests() {
   KV_Store kv(0);
   String c("c");
-  Schema schema1("IFSBSB");
+  Schema schema1("IDSBSB");
   DataFrame* dataframe1 = new DataFrame(schema1, &c, &kv);
   GT_EQUALS(dataframe1->ncols(), 6);
   GT_EQUALS(dataframe1->nrows(), 0);
@@ -843,11 +843,11 @@ void dataframe_getters_tests() {
   c_int->push_back(3);
   c_int->push_back(4);
   c_int->push_back(2);
-  Column* c_float = new FloatColumn();
-  c_float->push_back((float)1.2);
-  c_float->push_back((float)3.2);
-  c_float->push_back((float)2);
-  c_float->push_back((float)1);
+  Column* c_double = new DoubleColumn();
+  c_double->push_back((double)1.2);
+  c_double->push_back((double)3.2);
+  c_double->push_back((double)2);
+  c_double->push_back((double)1);
   Column* c_string = new StringColumn();
   c_string->push_back(hi);
   c_string->push_back(hello);
@@ -860,7 +860,7 @@ void dataframe_getters_tests() {
   c_bool->push_back((bool)1);
 
   df.add_column(c_int);
-  df.add_column(c_float);
+  df.add_column(c_double);
   df.add_column(c_string);
   df.add_column(c_bool);
 
@@ -869,10 +869,10 @@ void dataframe_getters_tests() {
   GT_EQUALS(df.get_int(0, 2), 4);
   GT_EQUALS(df.get_int(0, 3), 2);
 
-  GT_EQUALS(df.get_float(1, 0), (float)1.2);
-  GT_EQUALS(df.get_float(1, 1), (float)3.2);
-  GT_EQUALS(df.get_float(1, 2), (float)2);
-  GT_EQUALS(df.get_float(1, 3), (float)1);
+  GT_EQUALS(df.get_double(1, 0), (double)1.2);
+  GT_EQUALS(df.get_double(1, 1), (double)3.2);
+  GT_EQUALS(df.get_double(1, 2), (double)2);
+  GT_EQUALS(df.get_double(1, 3), (double)1);
 
   GT_TRUE(df.get_string(2, 0)->equals(hi));
   GT_TRUE(df.get_string(2, 1)->equals(hello));
@@ -889,7 +889,7 @@ void dataframe_getters_tests() {
 
   // Test that the rest of the arrays grew from the extra string array rows
   GT_EQUALS(df.get_int(0, 4), DEFAULT_INT_VALUE);
-  GT_EQUALS(df.get_float(1, 4), DEFAULT_FLOAT_VALUE);
+  GT_EQUALS(df.get_double(1, 4), DEFAULT_DOUBLE_VALUE);
   GT_EQUALS(df.get_bool(3, 4), DEFAULT_BOOL_VALUE);
 
   delete h;
@@ -897,7 +897,7 @@ void dataframe_getters_tests() {
   delete hello;
   delete c_int;
   delete c_bool;
-  delete c_float;
+  delete c_double;
   delete c_string;
 
   exit(0);
@@ -920,11 +920,11 @@ void dataframe_setters_tests() {
   c_int->push_back(3);
   c_int->push_back(4);
   c_int->push_back(2);
-  Column* c_float = new FloatColumn();
-  c_float->push_back((float)1.2);
-  c_float->push_back((float)3.2);
-  c_float->push_back((float)2);
-  c_float->push_back((float)1);
+  Column* c_double = new DoubleColumn();
+  c_double->push_back((double)1.2);
+  c_double->push_back((double)3.2);
+  c_double->push_back((double)2);
+  c_double->push_back((double)1);
   Column* c_string = new StringColumn();
   c_string->push_back(hi);
   c_string->push_back(hello);
@@ -937,20 +937,20 @@ void dataframe_setters_tests() {
   c_bool->push_back((bool)1);
 
   df.add_column(c_int);
-  df.add_column(c_float);
+  df.add_column(c_double);
   df.add_column(c_string);
   df.add_column(c_bool);
 
   for (size_t ii = 0; ii < df.nrows(); ii++) {
     df.set(0, ii, 14);
-    df.set(1, ii, (float)12.44);
+    df.set(1, ii, (double)12.44);
     df.set(2, ii, hello);
     df.set(3, ii, true);
   }
 
   for (size_t ii = 0; ii < df.nrows(); ii++) {
     GT_EQUALS(df.get_int(0, ii), 14);
-    GT_EQUALS(df.get_float(1, ii), (float)12.44);
+    GT_EQUALS(df.get_double(1, ii), (double)12.44);
     GT_TRUE(df.get_string(2, ii)->equals(hello));
     GT_EQUALS(df.get_bool(3, ii), true);
   }
@@ -960,7 +960,7 @@ void dataframe_setters_tests() {
   delete hello;
   delete c_int;
   delete c_bool;
-  delete c_float;
+  delete c_double;
   delete c_string;
 
   exit(0);
@@ -983,11 +983,11 @@ void dataframe_fill_row_tests() {
   c_int->push_back(3);
   c_int->push_back(4);
   c_int->push_back(2);
-  Column* c_float = new FloatColumn();
-  c_float->push_back((float)1.2);
-  c_float->push_back((float)3.2);
-  c_float->push_back((float)2);
-  c_float->push_back((float)1);
+  Column* c_double = new DoubleColumn();
+  c_double->push_back((double)1.2);
+  c_double->push_back((double)3.2);
+  c_double->push_back((double)2);
+  c_double->push_back((double)1);
   Column* c_string = new StringColumn();
   c_string->push_back(hi);
   c_string->push_back(hello);
@@ -1000,7 +1000,7 @@ void dataframe_fill_row_tests() {
   c_bool->push_back((bool)1);
 
   df.add_column(c_int);
-  df.add_column(c_float);
+  df.add_column(c_double);
   df.add_column(c_string);
   df.add_column(c_bool);
 
@@ -1022,11 +1022,11 @@ void dataframe_fill_row_tests() {
   GT_EQUALS(row4->get_int(0), 2);
   GT_EQUALS(row5->get_int(0), 0);
 
-  GT_EQUALS(row1->get_float(1), (float)1.2);
-  GT_EQUALS(row2->get_float(1), (float)3.2);
-  GT_EQUALS(row3->get_float(1), (float)2);
-  GT_EQUALS(row4->get_float(1), (float)1);
-  GT_EQUALS(row5->get_float(1), 0);
+  GT_EQUALS(row1->get_double(1), (double)1.2);
+  GT_EQUALS(row2->get_double(1), (double)3.2);
+  GT_EQUALS(row3->get_double(1), (double)2);
+  GT_EQUALS(row4->get_double(1), (double)1);
+  GT_EQUALS(row5->get_double(1), 0);
 
   GT_TRUE(row1->get_string(2)->equals(hi));
   GT_TRUE(row2->get_string(2)->equals(hello));
@@ -1045,7 +1045,7 @@ void dataframe_fill_row_tests() {
   delete hello;
   delete c_int;
   delete c_bool;
-  delete c_float;
+  delete c_double;
   delete c_string;
   delete row1;
   delete row2;
@@ -1073,11 +1073,11 @@ void dataframe_add_row_tests() {
   c_int->push_back(3);
   c_int->push_back(4);
   c_int->push_back(2);
-  Column* c_float = new FloatColumn();
-  c_float->push_back((float)1.2);
-  c_float->push_back((float)3.2);
-  c_float->push_back((float)2);
-  c_float->push_back((float)1);
+  Column* c_double = new DoubleColumn();
+  c_double->push_back((double)1.2);
+  c_double->push_back((double)3.2);
+  c_double->push_back((double)2);
+  c_double->push_back((double)1);
   Column* c_string = new StringColumn();
   c_string->push_back(hi);
   c_string->push_back(hello);
@@ -1090,7 +1090,7 @@ void dataframe_add_row_tests() {
   c_bool->push_back((bool)1);
 
   df.add_column(c_int);
-  df.add_column(c_float);
+  df.add_column(c_double);
   df.add_column(c_string);
   df.add_column(c_bool);
 
@@ -1124,11 +1124,11 @@ void dataframe_add_row_tests() {
     GT_EQUALS(df.get_int(0, ii + 3), 2);
     GT_EQUALS(df.get_int(0, ii + 4), 0);
 
-    GT_EQUALS(df.get_float(1, ii), (float)1.2);
-    GT_EQUALS(df.get_float(1, ii + 1), (float)3.2);
-    GT_EQUALS(df.get_float(1, ii + 2), (float)2);
-    GT_EQUALS(df.get_float(1, ii + 3), (float)1);
-    GT_EQUALS(df.get_float(1, ii + 4), 0);
+    GT_EQUALS(df.get_double(1, ii), (double)1.2);
+    GT_EQUALS(df.get_double(1, ii + 1), (double)3.2);
+    GT_EQUALS(df.get_double(1, ii + 2), (double)2);
+    GT_EQUALS(df.get_double(1, ii + 3), (double)1);
+    GT_EQUALS(df.get_double(1, ii + 4), 0);
 
     GT_TRUE(df.get_string(2, ii)->equals(hi));
     GT_TRUE(df.get_string(2, ii + 1)->equals(hello));
@@ -1156,7 +1156,7 @@ void dataframe_add_row_tests() {
   delete hello;
   delete c_int;
   delete c_bool;
-  delete c_float;
+  delete c_double;
   delete c_string;
   delete row1;
   delete row2;
@@ -1170,7 +1170,7 @@ void dataframe_add_row_tests() {
 void test_pmap_add() {
   KV_Store kv(0);
   String c("c");
-  Schema s("IIFI");
+  Schema s("IIDI");
   DataFrame df(s, &c, &kv);
   Row  r(df.get_schema());
   AddRower rower(&df);
@@ -1178,7 +1178,7 @@ void test_pmap_add() {
   for (size_t i = 0; i < NUM_ROWS; i++) {
     r.set(0,(int)i);
     r.set(1,(int)i+1);
-    r.set(2, (float)i);
+    r.set(2, (double)i);
     df.add_row(r);
   }
 
@@ -1191,7 +1191,7 @@ void test_pmap_add() {
   for (size_t i = 0; i < NUM_ROWS; i++) {
     GT_EQUALS(df.get_int((size_t)0,i), i);
     GT_EQUALS(df.get_int((size_t)1,i), i+1);
-    GT_EQUALS(df.get_float((size_t)2,i), (float)i);
+    GT_EQUALS(df.get_double((size_t)2,i), (double)i);
   }
   
   exit(0);
@@ -1200,7 +1200,7 @@ void test_pmap_add() {
 void test_map_add() {
   KV_Store kv(0);
   String c("c");
-  Schema s("IIFI");
+  Schema s("IIDI");
   DataFrame df(s, &c, &kv);
   Row  r(df.get_schema());
   AddRower rower(&df);
@@ -1208,7 +1208,7 @@ void test_map_add() {
   for (size_t i = 0; i <  NUM_ROWS; i++) {
     r.set(0,(int)i);
     r.set(1,(int)i+1);
-    r.set(2, (float)i);
+    r.set(2, (double)i);
     df.add_row(r);
   }
 
@@ -1221,7 +1221,7 @@ void test_map_add() {
   for (size_t i = 0; i < NUM_ROWS; i++) {
     GT_EQUALS(df.get_int((size_t)0,i), i);
     GT_EQUALS(df.get_int((size_t)1,i), i+1);
-    GT_EQUALS(df.get_float((size_t)2,i), (float)i);
+    GT_EQUALS(df.get_double((size_t)2,i), (double)i);
   }
   
   exit(0);
@@ -1239,7 +1239,7 @@ TEST(Column, push_back_tests){ ASSERT_EXIT_ZERO(push_back_tests); }
 TEST(Column, get_type_tests){ ASSERT_EXIT_ZERO(get_type_tests); }
 TEST(Column, size_tests){ ASSERT_EXIT_ZERO(size_tests); }
 TEST(IntColumn, int_column_set_tests){ ASSERT_EXIT_ZERO(int_column_set_tests); }
-TEST(FloatColumn, float_column_set_tests){ ASSERT_EXIT_ZERO(float_column_set_tests); }
+TEST(DoubleColumn, double_column_set_tests){ ASSERT_EXIT_ZERO(double_column_set_tests); }
 TEST(BoolColumn, bool_column_set_tests){ ASSERT_EXIT_ZERO(bool_column_set_tests); }
 TEST(StringColumn, string_column_set_tests){ ASSERT_EXIT_ZERO(string_column_set_tests); }
 
@@ -1307,9 +1307,9 @@ void test_from_array_int() {
   printf("Dataframe from int array tests pass!\n");
 }
 
-void test_from_array_float() {
+void test_from_array_double() {
   size_t num = 500;
-  float array[num];
+  double array[num];
 
   for (size_t i = 0; i < num; i++) {
     array[i] = i + 0.2;
@@ -1322,7 +1322,7 @@ void test_from_array_float() {
   assert(df->ncols() == 1);
   assert(df->nrows() == num);
   for (size_t i = 0; i < num; i++) {
-    assert(df->get_float(0,i) == array[i]);
+    assert(df->get_double(0,i) == array[i]);
   }
 
   DataFrame* df2 = kd.get(&k);
@@ -1330,13 +1330,13 @@ void test_from_array_float() {
   assert(df2->ncols() == 1);
   assert(df2->nrows() == num);
   for (size_t i = 0; i < num; i++) {
-    assert(df2->get_float(0,i) == array[i]);
+    assert(df2->get_double(0,i) == array[i]);
   }
 
   delete df;
   delete df2;
 
-  printf("Dataframe from float array tests pass!\n");
+  printf("Dataframe from double array tests pass!\n");
 }
 
 void test_from_array_bool() {
@@ -1578,7 +1578,7 @@ int main(int argc, char **argv) {
   int val = 0;;
   val = RUN_ALL_TESTS();
   test_from_array_int();
-  test_from_array_float();
+  test_from_array_double();
   test_from_array_bool();
   test_from_array_string();
   test_from_file();

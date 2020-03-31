@@ -285,24 +285,6 @@ class Map: public Object {
         }
 
         /**
-         * @brief - Clear the contents of this map so it is empty.
-         * 
-         */
-        virtual void clear() {
-            // I'm choosing to clear the current buckets_ instead of creating a new buckets_ and
-            // initializing it, to save on having to more new and delete functions.
-            for (size_t ii = 0; ii < buckets_size_; ii++) {
-                ObjectArray* bucket_array = dynamic_cast<ObjectArray*>(buckets_->get(ii));
-                for (size_t jj = 0; jj < bucket_array->length(); jj++) {
-                    Pair* pair = dynamic_cast<Pair*>(bucket_array->get(jj));
-                    bucket_array->pop();
-                    delete pair;
-                }
-            }
-            count_ = 0;
-        }
-
-        /**
          * @brief - Get a list of the keys present in this map.
          * 
          * @return Array* - the list of keys present in this map.

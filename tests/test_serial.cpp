@@ -361,50 +361,50 @@ void test_bool_array() {
     printf("BoolArray serialization passed!\n");
 }
 
-void test_float_array() {
-    float float1 = 12.34;
-    float float2 = 23.2233;
-    float float3 = -12.1111;
+void test_double_array() {
+    double double1 = 12.34;
+    double double2 = 23.2233;
+    double double3 = -12.1111;
     size_t array_size = 44;
-    FloatArray float_array(array_size);
-    float_array.push(float1);
-    float_array.push(float2);
-    float_array.push(float3);
+    DoubleArray double_array(array_size);
+    double_array.push(double1);
+    double_array.push(double2);
+    double_array.push(double3);
     size_t array_count = 3;
 
-    assert(float_array.length() == array_count);
-    assert(float_array.get(0) == float1);
-    assert(float_array.get(1) == float2);
-    assert(float_array.get(2) == float3);
+    assert(double_array.length() == array_count);
+    assert(double_array.get(0) == double1);
+    assert(double_array.get(1) == double2);
+    assert(double_array.get(2) == double3);
 
-    char* array_serial = float_array.serialize();
-    FloatArray* float_array2 = FloatArray::deserialize(array_serial);
+    char* array_serial = double_array.serialize();
+    DoubleArray* double_array2 = DoubleArray::deserialize(array_serial);
 
-    assert(float_array2->length() == array_count);
-    assert(float_array2->get(0) == float1);
-    assert(float_array2->get(1) == float2);
-    assert(float_array2->get(2) == float3);
+    assert(double_array2->length() == array_count);
+    assert(double_array2->get(0) == double1);
+    assert(double_array2->get(1) == double2);
+    assert(double_array2->get(2) == double3);
 
-    float_array2->push(float2);
-    float_array2->push(float3);
-    float_array2->push(float1);
+    double_array2->push(double2);
+    double_array2->push(double3);
+    double_array2->push(double1);
 
-    char* array_serial2 = float_array2->serialize();
-    FloatArray* float_array3 = FloatArray::deserialize(array_serial2);
+    char* array_serial2 = double_array2->serialize();
+    DoubleArray* double_array3 = DoubleArray::deserialize(array_serial2);
 
-    assert(float_array3->length() == array_count + 3);
-    assert(float_array3->get(0) == float1);
-    assert(float_array3->get(1) == float2);
-    assert(float_array3->get(2) == float3);
-    assert(float_array3->get(3) == float2);
-    assert(float_array3->get(4) == float3);
-    assert(float_array3->get(5) == float1);
+    assert(double_array3->length() == array_count + 3);
+    assert(double_array3->get(0) == double1);
+    assert(double_array3->get(1) == double2);
+    assert(double_array3->get(2) == double3);
+    assert(double_array3->get(3) == double2);
+    assert(double_array3->get(4) == double3);
+    assert(double_array3->get(5) == double1);
 
     delete[] array_serial;
     delete[] array_serial2;
-    delete float_array2;
-    delete float_array3;
-    printf("FloatArray serialization passed!\n");
+    delete double_array2;
+    delete double_array3;
+    printf("DoubleArray serialization passed!\n");
 }
 
 void test_int_array() {
@@ -510,7 +510,7 @@ void test_key() {
 }
 
 void test_schema() {
-    char* schema_type = const_cast<char*>("IFSBFISIBFSIBFFSSIBF");
+    char* schema_type = const_cast<char*>("IDSBDISIBDSIBDDSSIBD");
     size_t num_cols = 20;
     size_t num_rows = 34;
     Schema schema(schema_type);
@@ -590,32 +590,32 @@ void test_int_column() {
     printf("IntColumn serialization passed!\n");
 }
 
-void test_float_column() {
-    String df_name("floaties");
+void test_double_column() {
+    String df_name("doubleies");
     size_t local_node_index = 4;
     Key df_key(&df_name, local_node_index);
     KV_Store kv(local_node_index);
-    FloatColumn float_column(&kv, df_key.get_key(), df_key.get_node_index());
+    DoubleColumn double_column(&kv, df_key.get_key(), df_key.get_node_index());
 
     size_t buffered_elements_size = 18;
     size_t number_of_kv_chunks = 3;
-    float float_decimal = 0.002;
-    size_t float_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
-    for (size_t ii = 0; ii < float_column_count; ii++) {
-        float_column.push_back(ii + float_decimal);
+    double double_decimal = 0.002;
+    size_t double_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
+    for (size_t ii = 0; ii < double_column_count; ii++) {
+        double_column.push_back(ii + double_decimal);
     }
-    assert(float_column.get_num_arrays() == number_of_kv_chunks + 1);
+    assert(double_column.get_num_arrays() == number_of_kv_chunks + 1);
 
     // Test that the Column serializes and deserializes correctly
-    char* float_col_serial = float_column.serialize();
-    FloatColumn* deserial_float_col = FloatColumn::deserialize(float_col_serial, &kv);
-    for (size_t ii = 0; ii < deserial_float_col->size(); ii++) {
-        assert(deserial_float_col->get(ii) == ii + float_decimal);
+    char* double_col_serial = double_column.serialize();
+    DoubleColumn* deserial_double_col = DoubleColumn::deserialize(double_col_serial, &kv);
+    for (size_t ii = 0; ii < deserial_double_col->size(); ii++) {
+        assert(deserial_double_col->get(ii) == ii + double_decimal);
     }
-    assert(deserial_float_col->get_num_arrays() == number_of_kv_chunks + 1);
-    assert(deserial_float_col->size_ == float_column_count);
-    assert(deserial_float_col->dataframe_name_->equals(&df_name));
-    assert(deserial_float_col->type_ == 'F');
+    assert(deserial_double_col->get_num_arrays() == number_of_kv_chunks + 1);
+    assert(deserial_double_col->size_ == double_column_count);
+    assert(deserial_double_col->dataframe_name_->equals(&df_name));
+    assert(deserial_double_col->type_ == 'D');
     
     // Test that each kv chunk is still correct
     for (size_t ii = 0; ii < number_of_kv_chunks; ii++) {
@@ -625,26 +625,26 @@ void test_float_column() {
         stored_string.concat("_");
         stored_string.concat(ii);
         Key stored_element_key(&stored_string, local_node_index);
-        FloatArray* stored_floats = deserial_float_col->kv_->get_float_array(&stored_element_key);
+        DoubleArray* stored_doubles = deserial_double_col->kv_->get_double_array(&stored_element_key);
         size_t starting_index = ELEMENT_ARRAY_SIZE * ii;
         for (size_t jj = 0; jj < ELEMENT_ARRAY_SIZE; jj++) {
-            assert(stored_floats->get(jj) == starting_index + jj + float_decimal);
-            assert(stored_floats->get(jj) == deserial_float_col->get(starting_index + jj));
+            assert(stored_doubles->get(jj) == starting_index + jj + double_decimal);
+            assert(stored_doubles->get(jj) == deserial_double_col->get(starting_index + jj));
         }
-        delete stored_floats;
+        delete stored_doubles;
     }
 
     // Test that the buffered elements are still the same
-    FloatArray* buffered_floats = deserial_float_col->buffered_elements_;
+    DoubleArray* buffered_doubles = deserial_double_col->buffered_elements_;
     size_t starting_buffer_index = ELEMENT_ARRAY_SIZE * number_of_kv_chunks;
     for (size_t ii = 0; ii < buffered_elements_size; ii++) {
-        assert(buffered_floats->get(ii) == starting_buffer_index + ii + float_decimal);
-        assert(buffered_floats->get(ii) == deserial_float_col->get(starting_buffer_index + ii));
+        assert(buffered_doubles->get(ii) == starting_buffer_index + ii + double_decimal);
+        assert(buffered_doubles->get(ii) == deserial_double_col->get(starting_buffer_index + ii));
     }
 
-    delete[] float_col_serial;
-    delete deserial_float_col;
-    printf("FloatColumn serialization passed!\n");
+    delete[] double_col_serial;
+    delete deserial_double_col;
+    printf("DoubleColumn serialization passed!\n");
 }
 
 void test_bool_column() {
@@ -780,13 +780,13 @@ void test_string_column() {
 void test_column_array() {
     size_t local_node_index = 3;
     Key string_key("string_col", local_node_index);
-    Key float_key("float_col", local_node_index);
+    Key double_key("double_col", local_node_index);
     Key int_key("int_col", local_node_index);
     Key bool_key("bool_col", local_node_index);
 
     KV_Store kv(local_node_index);
     StringColumn string_column(&kv, string_key.get_key(), string_key.get_node_index());
-    FloatColumn float_column(&kv, float_key.get_key(), float_key.get_node_index());
+    DoubleColumn double_column(&kv, double_key.get_key(), double_key.get_node_index());
     BoolColumn bool_column(&kv, bool_key.get_key(), bool_key.get_node_index());
     IntColumn int_column(&kv, int_key.get_key(), int_key.get_node_index());
 
@@ -794,17 +794,17 @@ void test_column_array() {
     size_t number_of_kv_chunks = 5;
     size_t string_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
     String base_string("col_string_");
-    float float_decimal = 0.002;
+    double double_decimal = 0.002;
     for (size_t ii = 0; ii < string_column_count; ii++) {
         String temp_string(base_string);
         temp_string.concat(ii);
         string_column.push_back(&temp_string);
-        float_column.push_back(ii + float_decimal);
+        double_column.push_back(ii + double_decimal);
         int_column.push_back(ii);
         bool_column.push_back(true);
     }
     assert(string_column.get_num_arrays() == number_of_kv_chunks + 1);
-    assert(float_column.get_num_arrays() == number_of_kv_chunks + 1);
+    assert(double_column.get_num_arrays() == number_of_kv_chunks + 1);
     assert(int_column.get_num_arrays() == number_of_kv_chunks + 1);
     assert(bool_column.get_num_arrays() == number_of_kv_chunks + 1);
 
@@ -812,7 +812,7 @@ void test_column_array() {
     size_t col_count = 4;
     ColumnArray col_array(col_array_size);
     col_array.push(&string_column);
-    col_array.push(&float_column);
+    col_array.push(&double_column);
     col_array.push(&int_column);
     col_array.push(&bool_column);
 
@@ -836,9 +836,9 @@ void test_column_array() {
                 }
                 break;
             }
-            case 'F': {
+            case 'D': {
                 for (size_t jj = 0; jj < string_column_count; jj++) {
-                    assert(col_array.get(ii)->as_float()->get(jj) == jj + float_decimal);
+                    assert(col_array.get(ii)->as_double()->get(jj) == jj + double_decimal);
                 }
                 break;
             }
@@ -878,11 +878,11 @@ void test_column_array() {
                 }
                 break;
             }
-            case 'F': {
+            case 'D': {
                 for (size_t jj = 0; jj < string_column_count; jj++) {
-                    assert(deserial_col_array->get(ii)->as_float()->get(jj) == jj + float_decimal);
-                    assert(deserial_col_array->get(ii)->as_float()->get(jj) 
-                        == col_array.get(ii)->as_float()->get(jj));
+                    assert(deserial_col_array->get(ii)->as_double()->get(jj) == jj + double_decimal);
+                    assert(deserial_col_array->get(ii)->as_double()->get(jj) 
+                        == col_array.get(ii)->as_double()->get(jj));
                 }
                 break;
             }
@@ -914,11 +914,11 @@ void test_basic_dataframe() {
     c_int.push_back(3);
     c_int.push_back(4);
     c_int.push_back(2);
-    FloatColumn c_float;
-    c_float.push_back((float)1.2);
-    c_float.push_back((float)3.2);
-    c_float.push_back((float)2);
-    c_float.push_back((float)1);
+    DoubleColumn c_double;
+    c_double.push_back((double)1.2);
+    c_double.push_back((double)3.2);
+    c_double.push_back((double)2);
+    c_double.push_back((double)1);
     String hi("hi");
     String hello("hello");
     String h("h");
@@ -934,7 +934,7 @@ void test_basic_dataframe() {
     c_bool.push_back((bool)1);
 
     df.add_column(&c_int);
-    df.add_column(&c_float);
+    df.add_column(&c_double);
     df.add_column(&c_string);
     df.add_column(&c_bool);
 
@@ -952,10 +952,10 @@ void test_basic_dataframe() {
     assert(deserial_df->get_int(0, 2) == 4);
     assert(deserial_df->get_int(0, 3) == 2);
 
-    assert(deserial_df->get_float(1, 0) == (float)1.2);
-    assert(deserial_df->get_float(1, 1) == (float)3.2);
-    assert(deserial_df->get_float(1, 2) == (float)2);
-    assert(deserial_df->get_float(1, 3) == (float)1);
+    assert(deserial_df->get_double(1, 0) == (double)1.2);
+    assert(deserial_df->get_double(1, 1) == (double)3.2);
+    assert(deserial_df->get_double(1, 2) == (double)2);
+    assert(deserial_df->get_double(1, 3) == (double)1);
 
     assert(deserial_df->get_string(2, 0)->equals(&hi));
     assert(deserial_df->get_string(2, 1)->equals(&hello));
@@ -972,7 +972,7 @@ void test_basic_dataframe() {
 
     // Test that the rest of the arrays grew from the extra string array rows
     assert(deserial_df->get_int(0, 4) == DEFAULT_INT_VALUE);
-    assert(deserial_df->get_float(1, 4) == DEFAULT_FLOAT_VALUE);
+    assert(deserial_df->get_double(1, 4) == DEFAULT_DOUBLE_VALUE);
     assert(deserial_df->get_bool(3, 4) == DEFAULT_BOOL_VALUE);
 
     delete[] serial;
@@ -988,7 +988,7 @@ void test_complex_dataframe() {
     KV_Store kv(local_node_index);
     size_t column_index = 0;
     StringColumn string_column(&kv, dataframe_key.get_key(), column_index++);
-    FloatColumn float_column(&kv, dataframe_key.get_key(), column_index++);
+    DoubleColumn double_column(&kv, dataframe_key.get_key(), column_index++);
     BoolColumn bool_column(&kv, dataframe_key.get_key(), column_index++);
     IntColumn int_column(&kv, dataframe_key.get_key(), column_index++);
 
@@ -996,17 +996,17 @@ void test_complex_dataframe() {
     size_t number_of_kv_chunks = 4;
     size_t string_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
     String base_string("col_s7r1ng_");
-    float float_decimal = 0.012;
+    double double_decimal = 0.012;
     for (size_t ii = 0; ii < string_column_count; ii++) {
         String temp_string(base_string);
         temp_string.concat(ii);
         string_column.push_back(&temp_string);
-        float_column.push_back(ii + float_decimal);
+        double_column.push_back(ii + double_decimal);
         int_column.push_back(ii);
         bool_column.push_back(true);
     }
     assert(string_column.get_num_arrays() == number_of_kv_chunks + 1);
-    assert(float_column.get_num_arrays() == number_of_kv_chunks + 1);
+    assert(double_column.get_num_arrays() == number_of_kv_chunks + 1);
     assert(int_column.get_num_arrays() == number_of_kv_chunks + 1);
     assert(bool_column.get_num_arrays() == number_of_kv_chunks + 1);
 
@@ -1014,7 +1014,7 @@ void test_complex_dataframe() {
     Schema s1("");
     DataFrame df(s1, &c, &kv);
     df.add_column(&int_column);
-    df.add_column(&float_column);
+    df.add_column(&double_column);
     df.add_column(&string_column);
     df.add_column(&bool_column);
     
@@ -1029,7 +1029,7 @@ void test_complex_dataframe() {
 
     for (size_t ii = 0; ii < string_column_count; ii++) {
         assert(deserial_df->get_int(0, ii) == ii);
-        assert(deserial_df->get_float(1, ii) == ii + float_decimal);
+        assert(deserial_df->get_double(1, ii) == ii + double_decimal);
         String temp_string(base_string);
         temp_string.concat(ii);
         assert(deserial_df->get_string(2, ii)->equals(&temp_string));
@@ -1136,14 +1136,14 @@ int main(int argc, char const *argv[])
     test_directory();
     test_kill();
     test_register();
-    test_bool_array();
-    test_float_array();
+    test_double_array();
     test_int_array();
     test_string_array();
+    test_bool_array();
     test_key();
     test_schema();
     test_int_column();
-    test_float_column();
+    test_double_column();
     test_bool_column();
     test_string_column();
     test_column_array();
