@@ -189,7 +189,7 @@ class KV_Store : public Node {
     }
 
     size_t get_node_index(size_t index) {
-        return other_node_indexes_->get(index);
+        return other_node_indexes_ ? other_node_indexes_->get(index) : local_node_index_;
     }
 
     bool decode_message_(Message* message, int client) {

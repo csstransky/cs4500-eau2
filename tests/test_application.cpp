@@ -164,7 +164,7 @@ void test_demo() {
 }
 
 int main(int argc, char** argv) {
-  //test_trivial();
+  test_trivial();
   test_demo();
   printf("All application tests pass\n");
 }
