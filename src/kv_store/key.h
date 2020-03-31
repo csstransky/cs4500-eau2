@@ -67,7 +67,7 @@ class Key : public Object {
 
     static Key* deserialize(Deserializer& deserializer) {
         deserializer.deserialize_size_t();
-        String* key_string = String::deserialize(deserializer);
+        String* key_string = new String(deserializer);
         size_t node_index = deserializer.deserialize_size_t();
         Key* new_key = new Key(key_string, node_index);
         delete key_string;

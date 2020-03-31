@@ -5,7 +5,8 @@
 #include "../kv_store/key_array.h"
 
 // Number of elements each array in the array of arrays in Column have
-// TODO: change this in the future when we know the average file to store
+// TODO: Now we know a 10GB is our average file size, we should mess with ELEMENT_ARRAY_SIZE until
+// we get a number that's optimal. Jan does say 100 is too small though.
 const int ELEMENT_ARRAY_SIZE = 100; 
 const int DEFAULT_INT_VALUE = 0;
 const double DEFAULT_DOUBLE_VALUE = 0;
@@ -28,6 +29,7 @@ class ColumnArray;
  * equality. 
  * Authors: Kaylin Devchand & Cristian Stransky
  * */
+// TODO: In the future, there will only be ONE Column class (no need to IntColumn, BoolColumn, etc)
 class Column : public Object {
  public:
 
@@ -125,6 +127,7 @@ class Column : public Object {
       + buffered_elements->serial_len();
   }
 
+  // TODO: Fix in the future so that you only serialize what you need
   void serialize_column_(Serializer& serializer, Array* buffered_elements) {
     serializer.serialize_size_t(serializer.get_serial_size());
     serializer.serialize_char(type_);
@@ -140,6 +143,7 @@ class Column : public Object {
     return deserialize(deserializer, kv_store);
   }
 
+  // TODO: get rid of this. I have a new way to Serialize things (look in branch reduce_code, Array.h)
   static char get_column_type(Deserializer& deserializer) {
     size_t deserial_start_index = deserializer.get_serial_index();
     deserializer.deserialize_size_t(); // skip serial_length
@@ -213,7 +217,7 @@ class IntColumn : public Column {
 
   IntColumn* as_int() { return this; }
 
-
+  // TODO: We actually don't need to set anymore because we're doing read-only, so get rid of ALL sets
   /** Set value at idx. An out of bound idx is undefined.  */
   void set(size_t idx, int val) {
     assert(idx < size_);
@@ -278,7 +282,7 @@ class IntColumn : public Column {
     deserializer.deserialize_size_t(); // skip serial size
     deserializer.deserialize_char(); // skip type
     size_t dataframe_size = deserializer.deserialize_size_t(); 
-    String* dataframe_name = String::deserialize(deserializer);
+    String* dataframe_name = new String(deserializer);
     size_t dataframe_index = deserializer.deserialize_size_t();
     KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
     IntArray* buffered_elements = IntArray::deserialize(deserializer);
@@ -417,7 +421,7 @@ class DoubleColumn : public Column {
     deserializer.deserialize_size_t(); // skip serial size
     deserializer.deserialize_char(); // skip type
     size_t dataframe_size = deserializer.deserialize_size_t(); 
-    String* dataframe_name = String::deserialize(deserializer);
+    String* dataframe_name = new String(deserializer);
     size_t dataframe_index = deserializer.deserialize_size_t();
     KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
     DoubleArray* buffered_elements = DoubleArray::deserialize(deserializer);
@@ -556,7 +560,7 @@ class BoolColumn : public Column {
     deserializer.deserialize_size_t(); // skip serial size
     deserializer.deserialize_char(); // skip type
     size_t dataframe_size = deserializer.deserialize_size_t(); 
-    String* dataframe_name = String::deserialize(deserializer);
+    String* dataframe_name = new String(deserializer);
     size_t dataframe_index = deserializer.deserialize_size_t();
     KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
     BoolArray* buffered_elements = BoolArray::deserialize(deserializer);
@@ -713,7 +717,7 @@ class StringColumn : public Column {
     deserializer.deserialize_size_t(); // skip serial size
     deserializer.deserialize_char(); // skip type
     size_t dataframe_size = deserializer.deserialize_size_t(); 
-    String* dataframe_name = String::deserialize(deserializer);
+    String* dataframe_name = new String(deserializer);
     size_t dataframe_index = deserializer.deserialize_size_t();
     KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
     StringArray* buffered_elements = StringArray::deserialize(deserializer);

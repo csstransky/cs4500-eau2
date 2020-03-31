@@ -24,7 +24,7 @@ class Node : public Server {
     struct sockaddr_in server_address_;
     String* server_ip_;
     // list of POSSIBLE IPs to connect to
-    StringArray* other_nodes_; // TODO: Get StringArray working
+    StringArray* other_nodes_; 
     IntArray* other_node_indexes_;
     bool kill_;
 

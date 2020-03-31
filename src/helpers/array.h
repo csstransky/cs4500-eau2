@@ -6,6 +6,8 @@
 #include <assert.h>
 #include "payload.h"
 
+// TODO: This has actually all been refactored all ready, and will be merged in with the next
+// reduce_code branch
 /**
  * An basic Array class that should be inherited, but not directly used.
  * Requested here: https://github.com/chasebish/cs4500_assignment1_part2/issues/2
@@ -409,13 +411,16 @@ public:
   }
 
   static StringArray* deserialize(Deserializer& deserializer) {
-    Array* new_array = deserialize_new_array_(deserializer);
-    StringArray* new_string_array = static_cast<StringArray*>(new_array);
-    for (size_t ii = 0; ii < new_string_array->count_; ii++) {
-      String* new_object = String::deserialize(deserializer);
-      new_string_array->replace(ii, new_object);
-      delete new_object;
-    }
-    return new_string_array;
+      // Don't need serial size, so we skip it
+      deserializer.deserialize_size_t();
+      size_t size = deserializer.deserialize_size_t();
+      size_t count = deserializer.deserialize_size_t();
+      StringArray* new_array = new StringArray(size);
+      for (size_t ii = 0; ii < count; ii++) {
+        String* new_object = new String(deserializer);
+        new_array->push(new_object);
+        delete new_object;
+      }
+      return new_array;
   }
 };
