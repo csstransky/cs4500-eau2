@@ -256,6 +256,10 @@ void clone_stringarray_test() {
   t_true(arr->length() == 3, "12a");
   StringArray* clone = arr->clone();
   t_true(clone->length() == 3, "12b");
+  t_true(clone->get(0)->equals(x), "12c");
+  t_true(clone->get(1)->equals(y), "12d");
+  t_true(clone->get(2)->equals(z), "12e");
+  
   delete x;
   delete y;
   delete z;

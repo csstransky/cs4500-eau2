@@ -31,7 +31,7 @@ public:
   Array(char type) : Array(type, 1) { }
 
   Array(Array& arr) : Array(arr.type_, arr.size_, arr.count_) {
-    for (size_t i = 0; i < arr.count_; i++) {
+    for (size_t i = 0; i < count_; i++) {
       if (arr.type_ == 'O')
         elements_[i].o = arr.elements_[i].o ? arr.elements_[i].o->clone() : nullptr;
       else
@@ -61,6 +61,8 @@ public:
     }
     return true;
   }
+
+  Array* clone() { return new Array(*this); }
 
   size_t hash() { 
     size_t hash = 0;
