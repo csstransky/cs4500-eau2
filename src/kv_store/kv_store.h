@@ -44,7 +44,7 @@ class KV_Store : public Node {
         for (int i = 0; i < sockets->length(); i++) {
             int socket = sockets->get(i);
             if (socket > LOCAL_SOCKET_DESCRIPTOR) {
-                // TODO: Cristian, find a way to grab the IP from the socket
+                // TODO: Target IPs will be removed in the future
                 String no_ip("NO TARGET IP");
                 Value value_message(my_ip_, &no_ip, value);
                 send_message(socket, &value_message);

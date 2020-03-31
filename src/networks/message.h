@@ -23,6 +23,14 @@ class Message : public Object {
     String* target_; // the index of the receiver node
     size_t id_;     // an id t unique within the node
 
+    // Private constructor (only visible to sub classes)
+    void Message_(MsgKind kind, String* sender, String* target) {
+        kind_ = kind;
+        sender_ = sender->clone();
+        target_ = target->clone();
+        id_ = MESSAGE_ID;
+        MESSAGE_ID++;
+    }
 
     // Private constructor (only visible to sub classes)
     void Message_(MsgKind kind, String* sender, String* target, size_t id) {
@@ -31,22 +39,6 @@ class Message : public Object {
         target_ = target->clone();
         id_ = id;
     }
-
-        // Private constructor (only visible to sub classes)
-    void Message_(MsgKind kind, String* sender, String* target) {
-        Message_(kind, sender, target, MESSAGE_ID);
-        MESSAGE_ID++;
-    }
-
-    void Message_(Deserializer& deserializer) {
-        // Done this way instead of passing into above function so we can avoid deleting Strings
-        deserializer.deserialize_size_t(); // skip serial size
-        kind_ = static_cast<MsgKind>(deserializer.deserialize_size_t());
-        sender_ = String::deserialize(deserializer);
-        target_ = String::deserialize(deserializer);
-        id_ = deserializer.deserialize_size_t();
-    }
-
 
     void DMessage_() {
         delete sender_;
@@ -74,7 +66,6 @@ class Message : public Object {
             + sizeof(size_t);
     }
 
-    // TODO: Put all serilize methods here and use a switch case
     virtual char* serialize() {
         size_t serial_size = serial_len();
         Serializer serializer(serial_size);
@@ -101,17 +92,6 @@ class Ack : public Message {
         message_ = message->clone();
     }
 
-    // TODO: Make deserializer constructors for everyone
-    Ack(Deserializer& deserializer) {
-        Message::Message_(deserializer); 
-        message_ = String::deserialize(deserializer);
-    }
-
-    Ack(char* serial) {
-        Deserializer deserializer(serial);
-        new Ack(deserializer);
-    }
-
     ~Ack() {
         Message::DMessage_();
         delete message_;
@@ -121,14 +101,12 @@ class Ack : public Message {
         return message_;
     }
 
-    // TODO: remove
     size_t serial_len() {
         // includes the total serial length at the beginning
         return Message::serial_len()
             + message_->serial_len();
     }
 
-    // TODO: remove all
     char* serialize() {
         size_t serial_size = serial_len();
         Serializer serializer(serial_size);
@@ -137,10 +115,23 @@ class Ack : public Message {
         return serializer.get_serial();
     }
 
-    // TODO: remove all deserialize methods
     static Ack* deserialize(char* serial) {
         Deserializer deserializer(serial);
-        return new Ack(deserializer);
+        return deserialize(deserializer);
+    }
+
+    static Ack* deserialize(Deserializer& deserializer) {
+        deserializer.deserialize_size_t(); // skip serial size
+        deserializer.deserialize_size_t(); // skip kind_
+        static String* sender = String::deserialize(deserializer);
+        static String* target = String::deserialize(deserializer);
+        deserializer.deserialize_size_t(); // skip id_
+        String* message = String::deserialize(deserializer);
+        Ack* new_ack = new Ack(sender, target, message);
+        delete sender;
+        delete target;
+        delete message;
+        return new_ack;
     }
 };
 
@@ -528,7 +519,7 @@ Message* deserialize_message(char* buff) {
     MsgKind msg_kind = get_msg_kind(buff);
     switch(msg_kind) {
         case MsgKind::Ack:
-            return new Ack::deserialize(buff);
+            return Ack::deserialize(buff);
         case MsgKind::Directory:
             return Directory::deserialize(buff);
         case MsgKind::Kill:
