@@ -392,8 +392,4 @@ class SoR {
     DataFrame* get_dataframe() {
         return dataframe_;
     }
-
-    void print() {
-        dataframe_->print();
-    }
 };

@@ -522,7 +522,8 @@ void test_schema() {
     assert(strcmp(schema.types_, schema_type) == 0);
 
     char* schema_serial = schema.serialize();
-    Schema* deserial_schema = Schema::deserialize(schema_serial);
+    Deserializer deserializer(schema_serial);
+    Schema* deserial_schema = new Schema(deserializer);
     assert(deserial_schema->num_cols_ == num_cols);
     assert(deserial_schema->num_rows_ == num_rows);
     assert(strcmp(deserial_schema->types_, schema_type) == 0);

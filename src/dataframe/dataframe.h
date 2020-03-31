@@ -62,6 +62,15 @@ class Schema : public Object {
     num_rows_ = 0;
   }
 
+  Schema(Deserializer& deserializer) {
+    deserializer.deserialize_size_t(); // skip serial_length
+    num_cols_ = deserializer.deserialize_size_t(); // skip num_cols_
+    num_rows_ = deserializer.deserialize_size_t();
+    types_size_ = deserializer.deserialize_size_t();
+    // Important: remove '\0' from deserial size with "types_size - 1"
+    types_ = deserializer.deserialize_char_array(types_size_ - 1); 
+  } 
+
   ~Schema() {
     delete[] types_;
   }
@@ -100,24 +109,6 @@ class Schema : public Object {
       serializer.serialize_chars(types_, types_size_ - 1);
       return serializer.get_serial();
   }
-
-  static Schema* deserialize(char* serial) {
-      Deserializer deserializer(serial);
-      return deserialize(deserializer);
-  }
-
-  static Schema* deserialize(Deserializer& deserializer) {
-      deserializer.deserialize_size_t(); // skip serial_length
-      deserializer.deserialize_size_t(); // skip num_cols_
-      size_t num_rows = deserializer.deserialize_size_t();
-      size_t types_size = deserializer.deserialize_size_t();
-      // Important: remove '\0' from deserial size with "types_size - 1"
-      char* types = deserializer.deserialize_char_array(types_size - 1); 
-      Schema* new_schema = new Schema(types);
-      new_schema->num_rows_ = num_rows;
-      delete[] types;
-      return new_schema;
-  }  
 
   /**
    * Helper function that will increase BOTH the types and col_names arrays (as they're both linked)
@@ -166,32 +157,6 @@ class Schema : public Object {
   size_t length() {
     return num_rows_;
   }
-};
- 
-// TODO: This can actually be deleted (as per Jan's request)
-/*****************************************************************************
- * Fielder::
- * A field vistor invoked by Row.
- */
-class Fielder : public Object {
-public:
-
-  /** Called before visiting a row, the argument is the row offset in the
-    dataframe. */
-  virtual void start(size_t r) = 0;
- 
-  /** Called for fields of the argument's type with the value of the field. */
-  virtual void accept(bool b) = 0;
-
-  virtual void accept(float f) = 0;
-
-  virtual void accept(int i) = 0;
-
-  virtual void accept(String* s) = 0;
- 
-  /** Called when all fields have been seen. */
-  virtual void done() = 0;
-  
 };
 
 /** 
@@ -366,126 +331,6 @@ class Row : public Object {
   char col_type(size_t idx) {
     return cols_->get(idx)->get_type();
   }
-
- 
-  /** Given a Fielder, visit every field of this row. The first argument is
-    * index of the row in the dataframe.
-    * Calling this method before the row's fields have been set is undefined. */
-  void visit(size_t idx, Fielder& f) {
-    f.start(idx);
-    for (size_t i = 0; i < width_; i++) {
-      switch (cols_->get(i)->get_type()) {
-        case 'I':
-          f.accept(get_int(i));
-          break;
-        case 'F':
-          f.accept(get_float(i));
-          break;
-        case 'B':
-          f.accept(get_bool(i));
-          break;
-        case 'S':
-          f.accept(get_string(i));
-          break;
-        default:
-          // Should never reach here 
-          assert(0);
-      }
-    }
-    f.done();
-  }
- 
-};
- 
-// TODO: Remove this as it will NOT be viable in the future with 10GB of data
-/*****************************************************************************
- * PrinterFielder::
- * Prints out each field in the row.
- */
-class PrinterFielder : public Fielder {
-public:
-
-  PrinterFielder() {
-
-  }
-
-  ~PrinterFielder() {
-    
-  }
- 
-  /** Called before visiting a row, the argument is the row offset in the
-    dataframe. */
-  void start(size_t r) {
-
-  }
- 
-  /** Called for fields of the argument's type with the value of the field. */
-  void accept(bool b) {
-    printf("<%d> ", b);
-  }
-
-  void accept(float f) {
-    printf("<%f> ", f);
-  }
-
-  void accept(int i) {
-    printf("<%d> ", i);
-  }
-  
-  void accept(String* s) {
-    if (s == nullptr) {
-      printf("<> ");
-    }
-    else {
-      printf("<%s> ", s->c_str());
-    }
-  }
- 
-  /** Called when all fields have been seen. */
-  void done() {
-    printf("\n");
-  }
-};
-
-/*******************************************************************************
- *  PrinterRower::
- *  A Rower to print all fields in the row.
- */
-class PrinterRower : public Rower {
- public:
-  PrinterFielder* fielder_;
-
-  PrinterRower() {
-    fielder_ = new PrinterFielder();
-  }
-
-  PrinterRower(PrinterFielder* fielder) {
-    fielder_ = fielder;
-  }
-
-  ~PrinterRower() {
-    delete fielder_;
-  }
-
-    /** Return a copy of the object; nullptr is considered an error */
-  Rower* clone() {
-    return new PrinterRower(fielder_);
-  }
-
-  /** Returns false if the row has all empty fields. */
-  bool accept(Row& r) {
-    r.visit(0, *fielder_);
-    return true;
-  }
-
-  /** Once traversal of the data frame is complete the rowers that were
-      split off will be joined.  There will be one join per split. The
-      original object will be the last to be called join on. The join method
-      is reponsible for cleaning up memory. */
-  void join_delete(Rower* other) {
-    delete other;
-  }
- 
 };
  
 /****************************************************************************
@@ -555,6 +400,13 @@ class DataFrame : public Object {
   DataFrame(DataFrame& df, String* name) : DataFrame(df.get_schema(), name, df.kv_) {
 
   }
+
+  // TODO: size_t can't be serialized here
+  DataFrame(Deserializer& deserializer, KV_Store* kv_store) : schema_(deserializer) {
+    cols_ = ColumnArray::deserialize(deserializer, kv_store);
+    name_ = new String(deserializer);
+    kv_ = kv_store;
+  }  
   
   ~DataFrame() {
     delete cols_;
@@ -594,21 +446,9 @@ class DataFrame : public Object {
 
   static DataFrame* deserialize(char* serial, KV_Store* kv_store) {
       Deserializer deserializer(serial);
-      return deserialize(deserializer, kv_store);
+      deserializer.deserialize_size_t();
+      return new DataFrame(deserializer, kv_store);
   }
-
-  static DataFrame* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
-      deserializer.deserialize_size_t(); // skip serial_length
-      Schema* schema = Schema::deserialize(deserializer);
-      ColumnArray* columns = ColumnArray::deserialize(deserializer, kv_store);
-      String* name = new String(deserializer);
-
-      DataFrame* new_dataframe = new DataFrame(*schema, name, kv_store, columns);
-      delete schema;
-      delete columns;
-      delete name;
-      return new_dataframe;
-  }  
 
   // Implemented in kd_store.h to remove circular dependency. See piazza post @963
   static DataFrame* from_scalar(Key* key, KD_Store* kd, int val);
@@ -892,30 +732,6 @@ class DataFrame : public Object {
       r.accept(*row);
     }
     delete row;
-  }
- 
-  // TODO: Remove this as Jan doesn't think we'll need it in the future
-  /** Create a new dataframe, constructed from rows for which the given Rower
-    * returned true from its accept method. */
-  DataFrame* filter(Rower& r, String* name) {
-    DataFrame* filtered_dataframe = new DataFrame(*this, name);
-    size_t num_rows = this->schema_.length();
-    Row* row = new Row(this->schema_);
-    for (size_t ii = 0; ii < num_rows; ii++) {
-      this->fill_row(ii, *row);
-      if (r.accept(*row)) {
-        filtered_dataframe->add_row(*row);
-      }
-    }
-    delete row;
-    return filtered_dataframe;
-  }
- 
-  /** Print the dataframe in SoR format to standard output. */
-  void print() {
-    PrinterRower* print_rower = new PrinterRower();
-    this->map(*print_rower);
-    delete print_rower;
   }
 
   /** call map on the rows from start to end, not include the endth row */

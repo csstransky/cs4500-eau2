@@ -10,52 +10,6 @@
 
 const int NUM_ROWS = 1000 * 1000;
 
-/*****************************************************************************
- * SumBytesFielder::
- * This fielder sums the size in bytes of each field.
- */
-class SumBytesFielder : public Fielder {
-public:
-  size_t* sum_;
-
-  SumBytesFielder(size_t* sum) {
-    sum_ = sum;
-  }
-
-  ~SumBytesFielder() {
-
-  }
-
-  /** Called before visiting a row, the argument is the row offset in the
-    dataframe. */
-  virtual void start(size_t r)  {
-
-  }
- 
-  /** Called for fields of the argument's type with the value of the field. */
-  virtual void accept(bool b) {
-    *sum_ += sizeof(bool);
-  }
-
-  virtual void accept(float f) {
-    *sum_ += sizeof(float);
-  }
-
-  virtual void accept(int i) {
-    *sum_ += sizeof(int);
-  }
-
-  virtual void accept(String* s) {
-    *sum_ += sizeof(String*);
-  }
- 
-  /** Called when all fields have been seen. */
-  virtual void done() {
-
-  }
-  
-};
-
 /*******************************************************************************
  *  NonEmptyFilterRower::
  *  A Rower to determine rows that consist of not all empty fields.
@@ -559,29 +513,6 @@ void test_set_get() {
   exit(0);
 }
 
-void test_sum_bytes() {
-  Schema* s = new Schema("IFSB");
-  Row* row = new Row(*s);
-  String* hi = new String("hi");
-  size_t sum_actual = 0;
-  SumBytesFielder* f = new SumBytesFielder(&sum_actual);
-  size_t sum_expect = sizeof(int) + sizeof(float) + sizeof(bool) + sizeof(String*);
-
-  row->set(0, 4);
-  row->set(1, (float)3.2);
-  row->set(2, hi);
-  row->set(3, (bool)0);
-  row->visit(0, *f);
-
-  GT_EQUALS(sum_actual, sum_expect);
-
-  delete row;
-  delete hi;
-  delete f;
-  delete s;
-  exit(0);
-}
-
 void test_nonempty_filter_rower() {
   Schema* s = new Schema("IFSB");
   Rower* rower = new NonEmptyFilterRower();
@@ -642,68 +573,6 @@ void test_map() {
   delete r;
   delete rower;
   
-  exit(0);
-}
-
-void test_filter() {
-  KV_Store kv(0);
-  String c("c");
-  Schema* s = new Schema("IFSB");
-  DataFrame* df = new DataFrame(*s, &c, &kv);
-  
-  Rower* rower = new NonEmptyFilterRower();
-  Row* row = new Row(*s);
-  String* hi = new String("hi");
-  String* empty = nullptr;
-
-  // Non empty row
-  row->set(0, 4);
-  row->set(1, (float)3.2);
-  row->set(2, hi);
-  row->set(3, (bool)0);
-  df->add_row(*row);
-
-  // Empty row
-  row->set(0, (int)0);
-  row->set(1, (float)0);
-  row->set(2, empty);
-  row->set(3, (bool)0);
-  df->add_row(*row);
-
-  // Empty row
-  row->set(0, (int)0);
-  row->set(1, (float)0);
-  row->set(2, empty);
-  row->set(3, (bool)0);
-  df->add_row(*row);
-
-  // Non empty row
-  row->set(0, 4);
-  row->set(1, (float)3.2);
-  row->set(2, hi);
-  row->set(3, (bool)0);
-  df->add_row(*row);
-
-  GT_EQUALS(df->nrows(), 4);
-  String filter("filtered");
-  DataFrame* df_new = df->filter(*rower, &filter);
-
-  GT_EQUALS(df_new->nrows(), 2);
-
-  for (size_t i = 0; i < 2; i++) {
-    GT_EQUALS(df_new->get_int((size_t)0,i), 4);
-    GT_EQUALS(df_new->get_float((size_t)1,i), (float)3.2);
-    GT_EQUALS(df_new->get_string((size_t)2,i)->equals(hi), 1);
-    GT_EQUALS(df_new->get_bool((size_t)3,i), (bool)0);
-  }
-
-  delete rower;
-  delete row;
-  delete hi;
-  delete empty;
-  delete df_new;
-  delete df;
-  delete s;
   exit(0);
 }
 
@@ -1254,15 +1123,11 @@ TEST(Row, test_row_width){ ASSERT_EXIT_ZERO(test_row_width); }
 TEST(Row, test_col_type){ ASSERT_EXIT_ZERO(test_col_type);}
 TEST(Row, test_set_get){ ASSERT_EXIT_ZERO(test_set_get);}
 
-// Fielder tests
-TEST(Fielder, test_sum_bytes){ ASSERT_EXIT_ZERO(test_sum_bytes);}
-
 // Rower tests
 TEST(Rower, test_nonempty_filter_rower){ ASSERT_EXIT_ZERO(test_nonempty_filter_rower);}
 
 // Dataframe tests
 TEST(DataFrame, test_map){ ASSERT_EXIT_ZERO(test_map);} 
-TEST(DataFrame, test_filter){ ASSERT_EXIT_ZERO(test_filter);}
 TEST(DataFrame, test_get_schema){ ASSERT_EXIT_ZERO(test_get_schema);}
 TEST(DataFrame, test_add_column){ ASSERT_EXIT_ZERO(test_add_column);}
 TEST(DataFrame, dataframe_constructor_tests){ ASSERT_EXIT_ZERO(dataframe_constructor_tests); }
