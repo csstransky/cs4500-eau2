@@ -268,6 +268,5 @@ public:
   StringArray* clone() { return new StringArray(*this); }
   String* get(size_t index) { return static_cast<String*>(ObjectArray::get(index)); }
   String* remove(size_t index) { return static_cast<String*>(ObjectArray::remove(index)); }
-  String* replace(size_t index, String* const to_add) { return static_cast<String*>(ObjectArray::replace(index, to_add));
-  }
+  String* replace(size_t index, String* const to_add) { return static_cast<String*>(ObjectArray::replace(index, to_add)); }
 };
