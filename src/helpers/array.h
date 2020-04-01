@@ -41,18 +41,43 @@ public:
     }
   }
 
+  Array(char* serial) {
+    Deserializer deserializer(serial);
+    deserialize_basic_array_(deserializer);
+  }
+
+  Array(Deserializer& deserializer) {
+    deserialize_basic_array_;
+  }
+
+  // IMPORTANT: ObjectArray subclasses will need to deserialize its own specific Objects to 
+  // each of the indices in its elements_ (like StringArray)
+  void deserialize_basic_array_(Deserializer& deserializer) {
+    deserializer.deserialize_size_t(); // skip serial_size
+    size_ = deserializer.deserialize_size_t();
+    count_ = deserializer.deserialize_size_t();
+    type_ = deserializer.deserialize_char();
+    elements_ = new Payload[size_];
+    for (size_t ii = 0; ii < count_ && type_ != 'O'; ii++) {
+      switch(type_) {
+        case 'I': elements_[ii].i = deserializer.deserialize_int(); break;
+        case 'B': elements_[ii].b = deserializer.deserialize_bool(); break;
+        case 'D': elements_[ii].d = deserializer.deserialize_double(); break;
+      }
+    }
+  }
+
   ~Array() {
     if (type_ == 'O') {
-      for (size_t ii = 0; ii < count_; ii++) {
-        delete elements_[ii].o;
-      }
+      for (size_t ii = 0; ii < count_; ii++)
+        delete elements_[ii].o;  
     }
     delete[] elements_;
   }
 
   bool equals(Object* const obj) {
     Array* arr = dynamic_cast<Array*>(obj); 
-    if (!arr || type_ != arr->type_) { return false; }
+    if (!arr || type_ != arr->type_) return false;
     for (size_t i = 0; i < count_; i++) {
       switch(type_) {
         case 'I': if (elements_[i].i != arr->elements_[i].i) return false;
@@ -92,11 +117,16 @@ public:
   
   size_t length() { return count_;  }
 
-  size_t push_payload_(Payload to_add) {
+  size_t push_payload(Payload to_add) {
     if (count_ + 1 > size_)
       increase_array_();
     elements_[count_] = to_add;
     return count_++;
+  }
+
+  Payload get_payload(size_t index) {
+    assert(count_ > 0 && index < count_);
+    return elements_[index];
   }
 
   size_t index_of_payload_(Payload payload) {
@@ -120,9 +150,8 @@ public:
   Payload remove_payload_(size_t index) {
     assert(count_ > 0 && index < count_);
     Payload element = elements_[index];
-    for (size_t i = index; i < count_ - 1; i++) {
+    for (size_t i = index; i < count_ - 1; i++)
       elements_[i] = elements_[i + 1];
-    }
     count_--;
     return element;
   }
@@ -180,15 +209,6 @@ public:
     }
     return serializer.get_serial();
   }
-
-  // NOTE: creates a new Array WITH NO ELEMENTS inside, but count is kept
-  static Array* deserialize_new_array_(Deserializer& deserializer) {
-    deserializer.deserialize_size_t(); // skip serial_size
-    size_t size = deserializer.deserialize_size_t();
-    size_t count = deserializer.deserialize_size_t();
-    char type = deserializer.deserialize_char();
-    return new Array(type, size, count);
-  }
 };
 
 /**
@@ -199,20 +219,19 @@ public:
   BoolArray() : BoolArray(1) { }
   BoolArray(const size_t size) : Array('B', size) { }
   BoolArray(BoolArray& arr) : Array(arr) { }
+  BoolArray(char* serial) : Array(serial) { }
+  BoolArray(Deserializer& deserializer) : Array(deserializer) { }
 
   BoolArray* clone() { return new BoolArray(*this); }
 
   /** Adds a bool to the end of the Array, returns the new length */
-  size_t push(bool to_add) { return push_payload_(bool_to_payload_(to_add)); }
+  size_t push(bool to_add) { return push_payload(bool_to_payload(to_add)); }
 
   /** Gets a Boolean. Throws an error if not found or out of range or no elements in array */
-  bool get(size_t index) {
-    assert(count_ > 0 && index < count_);
-    return elements_[index].b;
-  }
+  bool get(size_t index) { return get_payload(index).b; }
 
   /* Returns the index of the given bool, -1 if bool is not found */
-  size_t index_of(bool to_find) { return index_of_payload_(bool_to_payload_(to_find)); }
+  size_t index_of(bool to_find) { return index_of_payload_(bool_to_payload(to_find)); }
 
   /* Removes an bool at the given index, returns removed bool */
   /* Throws an error if not found or out of range or no elements in array*/
@@ -221,21 +240,7 @@ public:
   /* Replaces an bool at the given index with the given bool, returns the replaced bool */
   /* Throws an error if not found or out of range or no elements in array*/
   bool replace(size_t index, bool to_add) {
-    return replace_payload_(index, bool_to_payload_(to_add)).b;
-  }
-
-  static BoolArray* deserialize(char* serial) {
-    Deserializer deserializer(serial);
-    return deserialize(deserializer);
-  }
-
-  static BoolArray* deserialize(Deserializer& deserializer) {
-    Array* new_array = deserialize_new_array_(deserializer);
-    BoolArray* new_bool_array = static_cast<BoolArray*>(new_array);
-    for (size_t ii = 0; ii < new_bool_array->count_; ii++) {
-      new_bool_array->replace(ii, deserializer.deserialize_bool());
-    }
-    return new_bool_array;
+    return replace_payload_(index, bool_to_payload(to_add)).b;
   }
 };
 
@@ -247,21 +252,20 @@ public:
   DoubleArray() : DoubleArray(1) { }
   DoubleArray(const size_t size) : Array('D', size) { }
   DoubleArray(DoubleArray& arr) : Array(arr) { }
+  DoubleArray(char* serial) : Array(serial) { }
+  DoubleArray(Deserializer& deserializer) : Array(deserializer) { }
 
   DoubleArray* clone() { return new DoubleArray(*this); }
 
   /** Adds a double to the end of the Array, returns the new length */
   size_t push(double to_add) { 
-    return push_payload_(double_to_payload_(to_add)); }
+    return push_payload(double_to_payload(to_add)); }
 
   /** Gets a double. Throws an error if not found or out of range  or no elements in array*/
-  double get(size_t index) {
-    assert(count_ > 0 && index < count_);
-    return elements_[index].d;
-  }
+  double get(size_t index) { return get_payload(index).d; }
 
   /* Returns the index of the given double, -1 if double is not found */
-  size_t index_of(double to_find) { return index_of_payload_(double_to_payload_(to_find)); }
+  size_t index_of(double to_find) { return index_of_payload_(double_to_payload(to_find)); }
 
   /* Removes a double at the given index, returns removed double */
   /* Throws an error if not found or out of range or no elements in array*/  
@@ -270,22 +274,7 @@ public:
   /* Replaces a double at the given index with the given double, returns the replaced double */
   /* Throws an error if not found or out of range or no elements in array*/
   double replace(size_t index, double to_add) {
-    return replace_payload_(index, double_to_payload_(to_add)).d;
-  }
-
-  static DoubleArray* deserialize(char* serial) {
-    Deserializer deserializer(serial);
-    return deserialize(deserializer);
-  }
-
-  static DoubleArray* deserialize(Deserializer& deserializer) {
-    Array* new_array = deserialize_new_array_(deserializer);
-    DoubleArray* new_double_array = static_cast<DoubleArray*>(new_array);
-    new_double_array->elements_[100];
-    for (size_t ii = 0; ii < new_double_array->count_; ii++) {
-      new_double_array->replace(ii, deserializer.deserialize_double());
-    }
-    return new_double_array;
+    return replace_payload_(index, double_to_payload(to_add)).d;
   }
 };
 
@@ -297,20 +286,19 @@ public:
   IntArray() : IntArray(1) { }
   IntArray(const size_t size) : Array('I', size) { }
   IntArray(IntArray& arr) : Array(arr) { }
+  IntArray(char* serial) : Array(serial) { }
+  IntArray(Deserializer& deserializer) : Array(deserializer) { }
 
   IntArray* clone() { return new IntArray(*this); }
 
   /** Adds an int to the end of the Array, returns the new length */
-  size_t push(int to_add) { return push_payload_(int_to_payload_(to_add)); }
+  size_t push(int to_add) { return push_payload(int_to_payload(to_add)); }
 
   /** Gets an int. Throws an error if not found or out of range or no elements in array */
-  int get(size_t index) {
-    assert(count_ > 0 && index < count_);
-    return elements_[index].i;
-  }
+  int get(size_t index) { return get_payload(index).i; }
 
   /* Returns the index of the given int, -1 if int is not found */
-  size_t index_of(int to_find) { return index_of_payload_(int_to_payload_(to_find)); }
+  size_t index_of(int to_find) { return index_of_payload_(int_to_payload(to_find)); }
 
   /* Removes an int at the given index, returns removed int */
   /* Throws an error if not found or out of range or no elements in array*/
@@ -319,21 +307,7 @@ public:
   /* Replaces an int at the given index with the given int, returns the replaced int */
   /* Throws an error if not found or out of range or no elements in array*/
   int replace(size_t index, int to_add) {
-    return replace_payload_(index, int_to_payload_(to_add)).i;
-  }
-
-  static IntArray* deserialize(char* serial) {
-    Deserializer deserializer(serial);
-    return deserialize(deserializer);
-  }
-
-  static IntArray* deserialize(Deserializer& deserializer) {
-    Array* new_array = deserialize_new_array_(deserializer);
-    IntArray* new_int_array = static_cast<IntArray*>(new_array);
-    for (size_t ii = 0; ii < new_int_array->count_; ii++) {
-      new_int_array->replace(ii, deserializer.deserialize_int());
-    }
-    return new_int_array;
+    return replace_payload_(index, int_to_payload(to_add)).i;
   }
 };
 
@@ -351,17 +325,14 @@ public:
  /** Adds a Object to the end of the Array, returns the new length */
   virtual size_t push(Object* const to_add) { 
     Object* object_clone = to_add ? to_add->clone() : nullptr;
-    return push_payload_(object_to_payload_(object_clone)); 
+    return push_payload(object_to_payload(object_clone)); 
   }
 
   /** Gets an Object. Throws an error if not found or out of range or no elements in array */
-  Object* get(size_t index) {
-    assert(count_ > 0 && index < count_);
-    return elements_[index].o;
-  }
+  Object* get(size_t index) { return get_payload(index).o; }
 
   /* Returns the index of the given Object, -1 if Object is not found */
-  size_t index_of(Object* to_find) { return index_of_payload_(object_to_payload_(to_find)); }
+  size_t index_of(Object* to_find) { return index_of_payload_(object_to_payload(to_find)); }
 
   /* Removes a Object at the given index, returns removed Object */
   /* Throws an error if not found or out of range or no elements in array*/
@@ -371,7 +342,7 @@ public:
   /* Throws an error if not found or out of range or no elements in array*/
   Object* replace(size_t index, Object* to_add) {
     Object* object_clone = to_add ? to_add->clone() : nullptr;
-    return replace_payload_(index, object_to_payload_(object_clone)).o;
+    return replace_payload_(index, object_to_payload(object_clone)).o;
   }
 };
 
@@ -383,6 +354,19 @@ public:
   StringArray() : StringArray(1) {  }
   StringArray(size_t size) : ObjectArray(size) { }
   StringArray(StringArray& arr) : ObjectArray(arr) { }
+  StringArray(char* serial) { 
+    Deserializer deserializer(serial);
+    deserialize_string_array_(deserializer);
+  }
+  StringArray(Deserializer& deserializer) {
+    deserialize_string_array_(deserializer);
+  }
+
+  void deserialize_string_array_(Deserializer& deserializer) {
+    deserialize_basic_array_(deserializer);
+    for (size_t ii = 0; ii < count_; ii++)
+      elements_[ii].o = new String(deserializer);
+  }
 
   StringArray* clone() { return new StringArray(*this); }
 
@@ -403,24 +387,5 @@ public:
   /* Throws an error if not found or out of range or no elements in array*/
   String* replace(size_t index, String* const to_add) {
     return static_cast<String*>(ObjectArray::replace(index, to_add));
-  }
-
-  static StringArray* deserialize(char* serial) {
-      Deserializer deserializer(serial);
-      return deserialize(deserializer);
-  }
-
-  static StringArray* deserialize(Deserializer& deserializer) {
-      // Don't need serial size, so we skip it
-      deserializer.deserialize_size_t();
-      size_t size = deserializer.deserialize_size_t();
-      size_t count = deserializer.deserialize_size_t();
-      StringArray* new_array = new StringArray(size);
-      for (size_t ii = 0; ii < count; ii++) {
-        String* new_object = new String(deserializer);
-        new_array->push(new_object);
-        delete new_object;
-      }
-      return new_array;
   }
 };

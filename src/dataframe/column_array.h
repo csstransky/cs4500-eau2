@@ -11,6 +11,19 @@ public:
   ColumnArray() : ColumnArray(1) { }
   ColumnArray(const size_t size) : ObjectArray(size) { }
   ColumnArray(ColumnArray& arr) : ObjectArray(arr) { }
+  ColumnArray(char* serial, KV_Store* kv_store) { 
+    Deserializer deserializer(serial);
+    deserialize_column_array_(deserializer, kv_store);
+  }
+  ColumnArray(Deserializer& deserializer, KV_Store* kv_store) {
+    deserialize_column_array_(deserializer, kv_store);
+  }
+
+  void deserialize_column_array_(Deserializer& deserializer, KV_Store* kv_store) {
+    deserialize_basic_array_(deserializer);
+    for (size_t ii = 0; ii < count_; ii++)
+      elements_[ii].o = new Column(deserializer, kv_store);
+  }
 
   ColumnArray* clone() { return new ColumnArray(*this); }
 
@@ -32,21 +45,5 @@ public:
   /* Throws an error if not found or out of range or no elements in array*/
   Column* replace(size_t index, Column* const to_add) {
     return static_cast<Column*>(ObjectArray::replace(index, to_add));
-  }
-
-  static ColumnArray* deserialize(char* serial, KV_Store* kv_store) {
-    Deserializer deserializer(serial);
-    return deserialize(deserializer, kv_store);
-  }
-
-  static ColumnArray* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
-    Array* new_array = deserialize_new_array_(deserializer);
-    ColumnArray* new_column_array = static_cast<ColumnArray*>(new_array);
-    for (size_t ii = 0; ii < new_column_array->count_; ii++) {
-      Column* new_object = Column::deserialize(deserializer, kv_store);
-      new_column_array->replace(ii, new_object);
-      delete new_object;
-    }
-    return new_column_array;
   }
 };

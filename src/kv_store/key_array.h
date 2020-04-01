@@ -12,6 +12,19 @@ public:
   KeyArray() : KeyArray(1) { }
   KeyArray(const size_t size) : ObjectArray(size) { }
   KeyArray(KeyArray& arr) : ObjectArray(arr) { }
+  KeyArray(char* serial) { 
+    Deserializer deserializer(serial);
+    deserialize_key_array_(deserializer);
+  }
+  KeyArray(Deserializer& deserializer) {
+    deserialize_key_array_(deserializer);
+  }
+
+  void deserialize_key_array_(Deserializer& deserializer) {
+    deserialize_basic_array_(deserializer);
+    for (size_t ii = 0; ii < count_; ii++)
+      elements_[ii].o = new Key(deserializer);
+  }
 
   KeyArray* clone() { return new KeyArray(*this); }
 
@@ -33,21 +46,5 @@ public:
   /* Throws an error if not found or out of range or no elements in array*/
   Key* replace(size_t index, Key* const to_add) {
     return static_cast<Key*>(ObjectArray::replace(index, to_add));
-  }
-
-  static KeyArray* deserialize(char* serial) {
-    Deserializer deserializer(serial);
-    return deserialize(deserializer);
-  }
-
-  static KeyArray* deserialize(Deserializer& deserializer) {
-    Array* new_array = deserialize_new_array_(deserializer);
-    KeyArray* new_key_array = static_cast<KeyArray*>(new_array);
-    for (size_t ii = 0; ii < new_key_array->count_; ii++) {
-      Key* new_object = Key::deserialize(deserializer);
-      new_key_array->replace(ii, new_object);
-      delete new_object;
-    }
-    return new_key_array;
   }
 };

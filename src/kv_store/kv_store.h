@@ -156,6 +156,13 @@ class KV_Store : public Node {
 
     }
 
+    Array* get_array(Key* key) {
+        char* kv_serial = get_value_serial(key);
+        Array* array = new Array(kv_serial);
+        delete[] kv_serial;
+        return array;
+    }
+
     // Returns a new IntArray, make sure to delete it later
     IntArray* get_int_array(Key* key) {
         char* kv_serial = get_value_serial(key);

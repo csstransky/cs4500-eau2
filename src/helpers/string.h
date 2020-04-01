@@ -43,7 +43,16 @@ public:
     }
 
     String(Deserializer& deserializer) {
-        deserializer.deserialize_size_t();
+        deserialize_string_(deserializer);
+    }
+
+    String(char* serial) {
+        Deserializer deserializer(serial);
+        deserialize_string_(deserializer);
+    }
+
+    void deserialize_string_(Deserializer& deserializer) {
+        deserializer.deserialize_size_t(); // skip serial_size
         size_ = deserializer.deserialize_size_t();
         cstr_ = deserializer.deserialize_char_array(size_);
     }

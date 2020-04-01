@@ -22,6 +22,21 @@ class Key : public Object {
         node_index_ = from.node_index_;
     }
 
+    Key(char* serial) {
+        Deserializer deserializer(serial);
+        deserializer_key_(deserializer);
+    }
+
+    Key(Deserializer& deserializer) {
+        deserializer_key_(deserializer);
+    }
+
+    void deserializer_key_(Deserializer& deserializer) {
+        deserializer.deserialize_size_t(); // skip serial_size
+        key_ = new String(deserializer); 
+        node_index_ = deserializer.deserialize_size_t();
+    }
+
     ~Key() {
         delete key_;
     }
@@ -58,19 +73,5 @@ class Key : public Object {
         serializer.serialize_object(key_);
         serializer.serialize_size_t(node_index_);
         return serializer.get_serial();
-    }
-
-    static Key* deserialize(char* serial) {
-        Deserializer deserializer(serial);
-        return deserialize(deserializer);
-    }
-
-    static Key* deserialize(Deserializer& deserializer) {
-        deserializer.deserialize_size_t();
-        String* key_string = new String(deserializer);
-        size_t node_index = deserializer.deserialize_size_t();
-        Key* new_key = new Key(key_string, node_index);
-        delete key_string;
-        return new_key;
     }
 };
