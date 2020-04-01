@@ -156,44 +156,16 @@ class KV_Store : public Node {
 
     }
 
-    Array* get_array(Key* key) {
+    Array* get_array(Key* key, char type) {
         char* kv_serial = get_value_serial(key);
-        Array* array = new Array(kv_serial);
+        Deserializer deserializer(kv_serial);
         delete[] kv_serial;
-        return array;
-    }
-
-    // TODO: Change this later to use ONE Array class
-    // Returns a new IntArray, make sure to delete it later
-    IntArray* get_int_array(Key* key) {
-        char* kv_serial = get_value_serial(key);
-        IntArray* int_array = new IntArray(kv_serial);
-        delete[] kv_serial;
-        return int_array;
-    }
-
-    // Returns a new BoolArray, make sure to delete it later
-    BoolArray* get_bool_array(Key* key) {
-        char* kv_serial = get_value_serial(key);
-        BoolArray* bool_array = new BoolArray(kv_serial);
-        delete[] kv_serial;
-        return bool_array;
-    }
-
-    // Returns a new DoubleArray, make sure to delete it later
-    DoubleArray* get_double_array(Key* key) {
-        char* kv_serial = get_value_serial(key);
-        DoubleArray* double_array = new DoubleArray(kv_serial);
-        delete[] kv_serial;
-        return double_array;
-    }
-
-    // Returns a new StringArray, make sure to delete it later
-    StringArray* get_string_array(Key* key) {
-        char* kv_serial = get_value_serial(key);
-        StringArray* string_array = new StringArray(kv_serial);
-        delete[] kv_serial;
-        return string_array;
+        switch(type) {
+            case 'I': return new IntArray(deserializer);
+            case 'B': return new BoolArray(deserializer);
+            case 'D': return new DoubleArray(deserializer);
+            case 'S': return new StringArray(deserializer);
+        }
     }
 
     size_t get_node_index(size_t index) {

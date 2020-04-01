@@ -9,7 +9,7 @@ void test_one_dataframe() {
     Key key("key", 0);
     KD_Store kd(0);
 
-    IntColumn col(kd.get_kv(), key.get_key(), 0);
+    Column col('I', kd.get_kv(), key.get_key(), 0);
     for (int i = 0; i < 200; i++) {
         col.push_back(i);
     }
@@ -40,24 +40,24 @@ void test_multiple_dataframe() {
     Key key2("key2", 0);
     KD_Store kd(0);
 
-    IntColumn col_int(kd.get_kv(), key.get_key(), 0);
-    DoubleColumn col_double(kd.get_kv(), key.get_key(), 1);
-    BoolColumn col_bool(kd.get_kv(), key.get_key(), 2);
-    StringColumn col_string(kd.get_kv(), key.get_key(), 3);
+    Column col_int('I', kd.get_kv(), key.get_key(), 0);
+    Column col_double('D', kd.get_kv(), key.get_key(), 1);
+    Column col_bool('B', kd.get_kv(), key.get_key(), 2);
+    Column col_string('S', kd.get_kv(), key.get_key(), 3);
     String test("test");
     for (size_t i = 0; i < rows; i++) {
-        col_int.push_back(i);
-        assert(col_int.get(i) == i);
+        col_int.push_back((int)i);
+        assert(col_int.get_int(i) == i);
         col_double.push_back((double)i + 0.1);
         col_bool.push_back((bool)(i % 2));
         col_string.push_back(&test);
     }
 
     for (size_t i = 0; i < rows; i++) {
-        assert(col_int.get(i) == i);
-        assert(col_double.get(i) == (double)(i + 0.1));
-        assert(col_bool.get(i) == (bool)(i % 2));
-        assert(col_string.get(i)->equals(&test));
+        assert(col_int.get_int(i) == i);
+        assert(col_double.get_double(i) == (double)(i + 0.1));
+        assert(col_bool.get_bool(i) == (bool)(i % 2));
+        assert(col_string.get_string(i)->equals(&test));
     }
 
     Schema s("");

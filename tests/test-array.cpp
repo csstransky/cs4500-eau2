@@ -286,38 +286,39 @@ void concat_string_test() {
   t_true(string1.size() == 13, "13c");
   t_true(strncmp(string1.c_str(), "goodbye world", string1.size()) == 0, "13d");
   t_true(strncmp(string2.c_str(), "world", string2.size()) == 0, "13e");  
-  string1.concat(243);
+  string1.concat((size_t)243);
   t_true(string1.size() == 16, "13f");
   t_true(strncmp(string1.c_str(), "goodbye world243", string1.size()) == 0, "13g");
+  string1.concat('a');
+  t_true(string1.size() == 17, "13h");
+  t_true(strncmp(string1.c_str(), "goodbye world243a", string1.size()) == 0, "13g");
 
   OK("13");
 }
 
+
 void basic_columnarray_test() {
-  Column col_col;
-  IntColumn int_col;
+  Column int_col('I');
   int_col.push_back(3);
-  DoubleColumn double_col;
+  Column double_col('D');
   double_col.push_back(232.3);
-  BoolColumn bool_col;
+  Column bool_col('B');
   bool_col.push_back(true);
-  StringColumn string_col;
+  Column string_col('S');
   String str("hell");
   string_col.push_back(&str);
   ColumnArray arr(10);
-  arr.push(&col_col);
   arr.push(&int_col);
   arr.push(&double_col);
   arr.push(&bool_col);
   arr.push(&string_col);
 
-  t_true(arr.length() == 5, "14a");
+  t_true(arr.length() == 4, "14a");
   // Test to show that a normal Column does not work, and must be IntColumn, DoubleColumn, etc.
-  t_true(arr.get(0) == nullptr, "14b");
-  t_true(arr.get(1)->as_int()->get(0) == 3, "14c");
-  t_true(arr.get(2)->as_double()->get(0) == (double)232.3, "14d");
-  t_true(arr.get(3)->as_bool()->get(0), "14e");
-  t_true(arr.get(4)->as_string()->get(0)->equals(&str), "14f");
+  t_true(arr.get(1)->get_int(0) == 3, "14c");
+  t_true(arr.get(2)->get_double(0) == (double)232.3, "14d");
+  t_true(arr.get(3)->get_bool(0), "14e");
+  t_true(arr.get(4)->get_string(0)->equals(&str), "14f");
 
   arr.clear();
   t_true(arr.length() == 0, "14h");
@@ -354,6 +355,26 @@ void basic_keyarray_test() {
   OK("15");
 }
 
+void array_test() {
+  Array array('I');
+
+  for (size_t ii = 0; ii < 100; ii++) {
+    Payload p;
+    p.i = ii;
+    array.push(p);
+  }
+
+  for (size_t ii = 0; ii < 100; ii++) {
+    assert(array.get(ii).i == ii);
+  }
+
+  assert(array.index_of(int_to_payload(10)) == 10);
+  assert(array.replace(10, int_to_payload(0)).i == 10);
+  assert(array.remove(10).i == 0);
+
+  OK("16");
+}
+
 int main() {
   basic_object_test();
   basic_string_test();
@@ -375,6 +396,7 @@ int main() {
   concat_string_test();
   basic_columnarray_test();
   basic_keyarray_test();
+  array_test();
 
   exit(0);
 }

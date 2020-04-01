@@ -32,7 +32,7 @@ void test_int_array() {
     KV_Store kv(0);
 
     kv.put(&key, array);
-    IntArray* result = kv.get_int_array(&key);
+    IntArray* result = dynamic_cast<IntArray*>(kv.get_array(&key, 'I'));
 
     for (int i = 0; i < 500; i++) {
         assert(result->get(i) == i);
@@ -57,7 +57,7 @@ void test_double_array() {
     KV_Store kv(0);
 
     kv.put(&key, array);
-    DoubleArray* result = kv.get_double_array(&key);
+    DoubleArray* result = dynamic_cast<DoubleArray*>(kv.get_array(&key, 'D'));
 
     for (int i = 0; i < 500; i++) {
         assert(result->get(i) == (double)i);
@@ -82,7 +82,7 @@ void test_bool_array() {
     KV_Store kv(0);
 
     kv.put(&key, array);
-    BoolArray* result = kv.get_bool_array(&key);
+    BoolArray* result = dynamic_cast<BoolArray*>(kv.get_array(&key, 'B'));
 
     for (int i = 0; i < 500; i++) {
         assert(result->get(i) == (bool)i%2);
@@ -108,7 +108,7 @@ void test_string_array() {
     KV_Store kv(0);
 
     kv.put(&key, array);
-    StringArray* result = kv.get_string_array(&key);
+    StringArray* result = dynamic_cast<StringArray*>(kv.get_array(&key, 'S'));
 
     for (int i = 0; i < 500; i++) {
         assert(result->get(i)->equals(&s));
@@ -170,28 +170,28 @@ void test_multiple() {
         snprintf(buf, 6, "ki_%d", i);
         String si(buf);
         Key ki(&si, 0);
-        IntArray* int_result = kv.get_int_array(&ki); 
+        Array* int_result = kv.get_array(&ki, 'I'); 
         assert(int_result->equals(int_array));
         delete int_result;
 
         snprintf(buf, 6, "kf_%d", i);
         String sf(buf);
         Key kf(&sf, 0);
-        DoubleArray* double_result = kv.get_double_array(&kf); 
+        Array* double_result = kv.get_array(&kf, 'D'); 
         assert(double_result->equals(double_array));
         delete double_result; 
 
         snprintf(buf, 6, "kb_%d", i);
         String sb(buf);
         Key kb(&sb, 0);
-        BoolArray* bool_result = kv.get_bool_array(&kb); 
+        Array* bool_result = kv.get_array(&kb, 'B'); 
         assert(bool_result->equals(bool_array));
         delete bool_result;
 
         snprintf(buf, 6, "ks_%d", i);
         String ss(buf);
         Key ks(&ss, 0);
-        StringArray* string_result = kv.get_string_array(&ks); 
+        Array* string_result = kv.get_array(&ks, 'S'); 
         assert(string_result->equals(string_array));
         delete string_result;
     }
@@ -266,9 +266,9 @@ void test_put_other_node() {
         Key* key = new Key("key", 0);
 
         assert(kv->kv_map_->size() == 1);
-        IntArray* array = kv->get_int_array(key);
+        Array* array = kv->get_array(key, 'I');
         assert(array);
-        assert(array->get(0) == 1);
+        assert(array->get(0).i == 1);
 
         kv->wait_for_shutdown();
 
@@ -363,9 +363,9 @@ void test_get_other_node() {
 
         Key* key = new Key("key", 1);
 
-        IntArray* array = kv->get_int_array(key);
+        Array* array = kv->get_array(key, 'I');
         assert(array);
-        assert(array->get(0) == 1);
+        assert(array->get(0).i == 1);
 
         kv->wait_for_shutdown();
 
@@ -467,9 +467,9 @@ void test_wait_get() {
         Key* key = new Key("key", 1);
 
         char* serial = kv->wait_get_value_serial(key);
-        IntArray* array = IntArray::deserialize(serial);
+        Array* array = kv->get_array(key, 'I');
         assert(array);
-        assert(array->get(0) == 1);
+        assert(array->get(0).i == 1);
 
         kv->wait_for_shutdown();
 
@@ -569,7 +569,8 @@ void test_wait_local_get() {
         Key* key = new Key("key", 0);
 
         char* serial = kv->wait_get_value_serial(key);
-        IntArray* array = IntArray::deserialize(serial);
+        Deserializer deserializer(serial);
+        IntArray* array = new IntArray(deserializer);
         assert(array);
         assert(array->get(0) == 1);
 

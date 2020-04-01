@@ -14,10 +14,6 @@ const bool DEFAULT_BOOL_VALUE = 0;
 String DEFAULT_STRING_VALUE("");
 const int NUM_THREADS = 4;
 
-class IntColumn;
-class DoubleColumn;
-class BoolColumn;
-class StringColumn;
 class KD_Store;
 class ColumnArray;
 
@@ -63,7 +59,13 @@ class Column : public Object {
   Column(char type, KV_Store* kv, String* name, size_t index) 
     : Column(type, kv, name, index, 0, nullptr, nullptr) { 
       keys_ = new KeyArray(1);
-      buffered_elements_ = new Array(type, ELEMENT_ARRAY_SIZE);
+      switch(type) {
+        case 'I': buffered_elements_ = new IntArray(ELEMENT_ARRAY_SIZE); break;
+        case 'B': buffered_elements_ = new BoolArray(ELEMENT_ARRAY_SIZE); break;
+        case 'D': buffered_elements_ = new DoubleArray(ELEMENT_ARRAY_SIZE); break;
+        case 'S': buffered_elements_ = new StringArray(ELEMENT_ARRAY_SIZE); break;
+      }
+      
     }
 
   Column(Column& other) 
@@ -72,18 +74,8 @@ class Column : public Object {
 
   Column(char type) : Column(type, nullptr, nullptr, 0) {  }
 
-  Column(char* serial, KV_Store* kv_store) {
-    Deserializer deserializer(serial);
-    deserialize_column_(deserializer, kv_store);
-  }
-
   Column(Deserializer& deserializer, KV_Store* kv_store) {
-    deserialize_column_(deserializer, kv_store);
-  }
-
-  void deserialize_column_(Deserializer& deserializer, KV_Store* kv_store) {
     kv_ = kv_store;
-    deserializer.deserialize_size_t(); // skip serial_size
     type_ = deserializer.deserialize_char();
     size_ = deserializer.deserialize_size_t(); 
     dataframe_name_ = new String(deserializer);
@@ -101,6 +93,35 @@ class Column : public Object {
   }
 
   Column* clone() { return new Column(*this); }
+
+  Key* generate_key_(size_t array_index) {
+    String key_name(*dataframe_name_);
+    key_name.concat("_");
+    key_name.concat(column_index_);
+    key_name.concat("_");
+    key_name.concat(array_index);
+
+    size_t home_index = kv_->get_node_index(node_for_chunk_++ % kv_->get_num_other_nodes());
+    Key* new_key = new Key(&key_name, home_index);
+    return new_key;    
+  }
+
+  bool is_buffer_full_() { return size_ % ELEMENT_ARRAY_SIZE == ELEMENT_ARRAY_SIZE - 1; }
+
+  void store_buffer_in_kv_() {
+    size_t key_index = size_ / ELEMENT_ARRAY_SIZE;
+    Key* k = generate_key_(key_index);
+    keys_->push(k);
+    kv_->put(k, buffered_elements_); 
+    delete k;
+    buffered_elements_->clear();
+  }
+
+  void push_back_payload_(Payload payload) {
+    buffered_elements_->push(payload);
+    if (is_buffer_full_()) store_buffer_in_kv_();
+    size_++;
+  }
  
   /** Type appropriate push_back methods. Calling the wrong method is
     * undefined behavior. **/
@@ -125,22 +146,34 @@ class Column : public Object {
     push_back_payload_(object_to_payload(string_clone));
   }
 
-  void push_back_payload_(Payload payload) {
-    buffered_elements_->push_payload(payload);
-    if (is_buffer_full_()) store_buffer_in_kv_();
-    size_++;
+  // TODO: Change this to a cache that uses both get and put correctly in the future
+  Payload get_cached_element_(size_t idx) {
+    size_t index = idx % ELEMENT_ARRAY_SIZE;
+    return buffered_elements_->get(index);
   }
 
-  bool is_buffer_full_() { return size_ % ELEMENT_ARRAY_SIZE == ELEMENT_ARRAY_SIZE - 1; }
+  Payload get_kv_stored_element_(size_t idx) {
+    size_t index = idx % ELEMENT_ARRAY_SIZE;
+    size_t array = idx / ELEMENT_ARRAY_SIZE;
+    Key* k = keys_->get(array);
+    Array* data = kv_->get_array(k, type_);
+    Payload payload = data->get(index);
+    if (type_ == 'S') payload.o = payload.o->clone();
+    delete data;
+    return payload;
+  }
 
-  void store_buffer_in_kv_() {
-    size_t key_index = size_ / ELEMENT_ARRAY_SIZE;
-    Key* k = generate_key_(key_index);
-    keys_->push(k);
-    kv_->put(k, buffered_elements_); 
-    delete k;
-    delete buffered_elements_;
-    buffered_elements_ = new Array(ELEMENT_ARRAY_SIZE);
+  bool is_index_in_cache_(size_t idx) { 
+    return size_ / ELEMENT_ARRAY_SIZE == idx / ELEMENT_ARRAY_SIZE;
+  }
+
+  Payload get_element_(size_t idx) {
+    assert(idx < size_);
+    if (is_index_in_cache_(idx))
+      return get_cached_element_(idx);
+    else {
+      return get_kv_stored_element_(idx);
+    }
   }
 
   int get_int(size_t idx) {
@@ -160,55 +193,9 @@ class Column : public Object {
 
   String* get_string(size_t idx) {
     assert(type_ == 'S');
-    return static_cast<String*>(get_element_(idx).o);
-  }
-
-  Payload get_element_(size_t idx) {
-    assert(idx < size_);
-    if (is_index_in_cache_(idx))
-      return get_cached_element_(idx);
-    else {
-      return get_kv_stored_element_(idx);
-    }
-  }
-
-  bool is_index_in_cache_(size_t idx) { 
-    return size_ / ELEMENT_ARRAY_SIZE == idx / ELEMENT_ARRAY_SIZE;
-  }
-
-  // TODO: Change this to a cache that uses both get and put correctly in the future
-  Payload get_cached_element_(size_t idx) {
-    size_t index = idx % ELEMENT_ARRAY_SIZE;
-    return buffered_elements_->get_payload(index);
-  }
-
-  Payload get_kv_stored_element_(size_t idx) {
-    size_t index = idx % ELEMENT_ARRAY_SIZE;
-    size_t array = idx / ELEMENT_ARRAY_SIZE;
-    Key* k = keys_->get(array);
-    Array* data = kv_->get_array(k);
-    Payload payload = data->get_payload(index);
-    if (type_ == 'S') payload.o = payload.o->clone();
-    delete data;
-    return payload;
-  }
-
-  // TODO: Should we get rid of this? It's mainly used for testing
-  size_t get_num_arrays() {
-    return size_ / ELEMENT_ARRAY_SIZE + 1;
-  }
-
-  Key* generate_key_(size_t array_index) {
-    String key_name(*dataframe_name_);
-    key_name.concat("_");
-    key_name.concat(column_index_);
-    key_name.concat("_");
-    key_name.concat(array_index);
-
-    // TODO: Cristian change get_random_node_index if you don't want it completely random
-    size_t home_index = kv_->get_node_index(node_for_chunk_++ % kv_->get_num_other_nodes());
-    Key* new_key = new Key(&key_name, home_index);
-    return new_key;    
+    delete cache_string_;
+    cache_string_ = static_cast<String*>(get_element_(idx).o);
+    return cache_string_;
   }
  
   /** Returns the number of elements in the column. */
@@ -222,8 +209,7 @@ class Column : public Object {
   }
 
   size_t serial_len() {
-    return sizeof(size_t) // serial_size
-      + sizeof(char) // type_
+    return sizeof(char) // type_
       + sizeof(size_t) // size_
       + dataframe_name_->serial_len()
       + sizeof(column_index_) // column_index_
@@ -234,7 +220,6 @@ class Column : public Object {
   char* serialize() {
     size_t serial_size = serial_len();
     Serializer serializer(serial_size);
-    serializer.serialize_size_t(serial_size);
     serializer.serialize_char(type_);
     serializer.serialize_size_t(size_);
     serializer.serialize_object(dataframe_name_);

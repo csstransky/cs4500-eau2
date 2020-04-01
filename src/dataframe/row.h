@@ -27,10 +27,10 @@ class Row : public Object {
     cells_ = new Array('I', width);
     for (size_t i = 0; i < width; i++) 
       switch (schema_.col_type(i)) {
-        case 'I': cells_->push_payload(int_to_payload(DEFAULT_INT_VALUE)); break;
-        case 'D': cells_->push_payload(double_to_payload(DEFAULT_DOUBLE_VALUE)); break;
-        case 'B': cells_->push_payload(bool_to_payload(DEFAULT_BOOL_VALUE)); break;
-        case 'S': cells_->push_payload(object_to_payload(DEFAULT_STRING_VALUE.clone())); break;
+        case 'I': cells_->push(int_to_payload(DEFAULT_INT_VALUE)); break;
+        case 'D': cells_->push(double_to_payload(DEFAULT_DOUBLE_VALUE)); break;
+        case 'B': cells_->push(bool_to_payload(DEFAULT_BOOL_VALUE)); break;
+        case 'S': cells_->push(object_to_payload(DEFAULT_STRING_VALUE.clone())); break;
       }
     // TODO: Didn't Jan say we can delete this? Do we really need index?
     // Default value of idx
@@ -40,7 +40,7 @@ class Row : public Object {
   ~Row() {
     for (size_t ii = 0; ii < schema_.width(); ii++)
       if (schema_.col_type(ii) == 'O')
-        delete cells_->get_payload(ii).o;
+        delete cells_->get(ii).o;
     delete cells_;
   }
  
@@ -48,26 +48,24 @@ class Row : public Object {
     * a value of the wrong type is undefined. */
   void set(size_t col, int val) { 
     assert(schema_.col_type(col) == 'I');
-    // TODO: See if this works later
-    // cells_->get_payload(col) = int_to_payload(val);
-    cells_->elements_[col].i = val;
+    cells_->replace(col, int_to_payload(val));
   }
 
   void set(size_t col, double val) {
     assert(schema_.col_type(col) == 'D');
-    cells_->get_payload(col) = double_to_payload(val);
+    cells_->replace(col, double_to_payload(val));
   }
 
   void set(size_t col, bool val) {
     assert(schema_.col_type(col) == 'B');
-    cells_->get_payload(col) = bool_to_payload(val);
+    cells_->replace(col, bool_to_payload(val));
   }
 
   /** Acquire ownership of the string. */
   void set(size_t col, String* val) {
     assert(schema_.col_type(col) == 'S');
-    delete cells_->get_payload(col).o;
-    cells_->get_payload(col) = object_to_payload(val);
+    Payload p = cells_->replace(col, object_to_payload(val));
+    delete p.o;
   }
  
   /** Set/get the index of this row (ie. its position in the dataframe. This is
@@ -81,24 +79,24 @@ class Row : public Object {
     * of the requested type, the result is undefined. */
   int get_int(size_t col) { 
     assert(schema_.col_type(col) == 'I');
-    return cells_->get_payload(col).i; 
+    return cells_->get(col).i; 
   }
 
   bool get_bool(size_t col) { 
     assert(schema_.col_type(col) == 'B');
-    return cells_->get_payload(col).b; 
+    return cells_->get(col).b; 
   }
 
   double get_double(size_t col) {
     assert(schema_.col_type(col) == 'D');
-    return cells_->get_payload(col).d; 
+    return cells_->get(col).d; 
   }
   
   // NOTE: Returns a pointer that can be volatile (if coming from KV store, will overwrite the old
   // cache String pointer, so String address CAN change later), clone if needed longer
   String* get_string(size_t col) {
     assert(schema_.col_type(col) == 'S');
-    return static_cast<String*>(cells_->get_payload(col).o);
+    return static_cast<String*>(cells_->get(col).o);
     
   }
  
