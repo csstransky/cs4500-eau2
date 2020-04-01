@@ -15,8 +15,8 @@ const int LOCAL_SOCKET_DESCRIPTOR = 0;
 
 class KV_Store : public Node {
     public:
-    SOMap* kv_map_; // String* -> Serializer* 
-    SIAMap* get_queue_;
+    Map* kv_map_; // String* -> Serializer* 
+    Map* get_queue_;
     size_t local_node_index_;
     std::mutex kv_map_mutex_;
     std::mutex get_queue_mutex_;
@@ -24,14 +24,14 @@ class KV_Store : public Node {
     
     KV_Store(const char* client_ip_address, const char* server_ip_address, size_t local_node_index) 
         : Node(client_ip_address, server_ip_address) {
-        kv_map_ = new SOMap();
-        get_queue_ = new SIAMap();
+        kv_map_ = new Map();
+        get_queue_ = new Map();
         local_node_index_ = local_node_index;
     }
 
     KV_Store(size_t local_node_index) : Node() {
-        kv_map_ = new SOMap();
-        get_queue_ = new SIAMap();
+        kv_map_ = new Map();
+        get_queue_ = new Map();
         local_node_index_ = local_node_index;
     }
 
@@ -121,7 +121,7 @@ class KV_Store : public Node {
     }
 
     void put_socket_into_queue_(String* key_name, int socket_descriptor) {
-        IntArray* sockets = get_queue_->get(key_name);
+        IntArray* sockets = dynamic_cast<IntArray*>(get_queue_->get(key_name));
         if (sockets) {
             sockets->push(socket_descriptor);
         } else {
