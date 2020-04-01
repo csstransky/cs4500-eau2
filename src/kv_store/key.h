@@ -23,7 +23,6 @@ class Key : public Object {
     }
 
     Key(Deserializer& deserializer) {
-        deserializer.deserialize_size_t(); // skip serial_size
         key_ = new String(deserializer); 
         node_index_ = deserializer.deserialize_size_t();
     }
@@ -44,12 +43,11 @@ class Key : public Object {
 
     Key* clone() { return new Key(*this); }
 
-    size_t serial_len() { return sizeof(size_t) + key_->serial_len() + sizeof(size_t); }
+    size_t serial_len() { return key_->serial_len() + sizeof(size_t); }
 
     char* serialize() {
         size_t serial_size = serial_len();
         Serializer serializer(serial_size);
-        serializer.serialize_size_t(serial_size);
         serializer.serialize_object(key_);
         serializer.serialize_size_t(node_index_);
         return serializer.get_serial();

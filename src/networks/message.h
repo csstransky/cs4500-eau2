@@ -54,9 +54,7 @@ class Message : public Object {
     }
 
     virtual size_t serial_len() {
-        // includes the total serial length at the beginning
         return sizeof(size_t) 
-            + sizeof(size_t) 
             + sender_->serial_len() 
             + target_->serial_len();
     }
@@ -69,7 +67,6 @@ class Message : public Object {
     }
 
     virtual void serialize_message_(Serializer& serializer) {
-        serializer.serialize_size_t(serializer.get_serial_size());
         serializer.serialize_size_t(static_cast<size_t>(kind_));
         serializer.serialize_object(sender_);
         serializer.serialize_object(target_);
@@ -214,7 +211,7 @@ class Put : public Message {
         key_name_ = new String(deserializer);
         size_t len = deserializer.deserialize_size_t();
         char* serial = deserializer.deserialize_char_array(len - 1);
-        value_ = new Serializer(serial);
+        value_ = new Serializer(serial, len);
         delete[] serial;
     }
 
@@ -314,7 +311,7 @@ class Value : public Message {
     Value(Deserializer& deserializer) : Message(MsgKind::Value, deserializer) {
         size_t len = deserializer.deserialize_size_t();
         char* serial = deserializer.deserialize_char_array(len - 1);
-        value_ = new Serializer(serial);
+        value_ = new Serializer(serial, len);
         delete[] serial;
     }
 
@@ -352,7 +349,6 @@ class Value : public Message {
 
 Message* Message::deserialize_message(char* buff) {
     Deserializer deserializer(buff);
-    deserializer.deserialize_size_t(); // skip serial size
     MsgKind msg_kind = static_cast<MsgKind>(deserializer.deserialize_size_t());
     switch(msg_kind) {
         case MsgKind::Ack:

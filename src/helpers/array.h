@@ -36,7 +36,6 @@ public:
   }
 
   Array(Deserializer& deserializer) {
-    deserializer.deserialize_size_t(); // skip serial_size
     size_ = deserializer.deserialize_size_t();
     count_ = deserializer.deserialize_size_t();
     type_ = deserializer.deserialize_char();
@@ -164,8 +163,7 @@ public:
   }
 
   size_t serial_len() {
-    return sizeof(size_t) // serial_length
-      + sizeof(size_t) // size_
+    return sizeof(size_t) // size_
       + sizeof(size_t) // count_
       + sizeof(char) // type_
       + elements_serial_len_();
@@ -174,7 +172,6 @@ public:
   char* serialize() {
     size_t serial_size = serial_len();
     Serializer serializer(serial_size);
-    serializer.serialize_size_t(serializer.get_serial_size());
     serializer.serialize_size_t(size_);
     serializer.serialize_size_t(count_);
     serializer.serialize_char(type_);

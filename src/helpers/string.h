@@ -43,16 +43,6 @@ public:
     }
 
     String(Deserializer& deserializer) {
-        deserialize_string_(deserializer);
-    }
-
-    String(char* serial) {
-        Deserializer deserializer(serial);
-        deserialize_string_(deserializer);
-    }
-
-    void deserialize_string_(Deserializer& deserializer) {
-        deserializer.deserialize_size_t(); // skip serial_size
         size_ = deserializer.deserialize_size_t();
         cstr_ = deserializer.deserialize_char_array(size_);
     }
@@ -131,13 +121,12 @@ public:
 
     size_t serial_len() {
         // Includes the seial length, size of the string, and the char array itself
-        return sizeof(size_t) + sizeof(size_t) + sizeof(char) * (size_ + 1);
+        return sizeof(size_t) + sizeof(char) * (size_ + 1);
     }
 
     char* serialize() {
         size_t serial_size = serial_len();
         Serializer serializer(serial_size);
-        serializer.serialize_size_t(serial_size);
         serializer.serialize_size_t(size_);
         serializer.serialize_chars(cstr_, size_);
         return serializer.get_serial();

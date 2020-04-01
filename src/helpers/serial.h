@@ -89,8 +89,8 @@ class Serializer : public Object {
         serial_ = new char[serial_size];
     }
 
-    Serializer(char* serial) {
-        memcpy(&serial_size_, serial, sizeof(size_t));
+    Serializer(char* serial, size_t size) {
+        serial_size_ = size;
         serial_index_ = serial_size_;
         serial_ = new char[serial_size_];
         memcpy(serial_, serial, serial_size_);
@@ -101,19 +101,6 @@ class Serializer : public Object {
         serial_size_ = from.serial_size_;
         serial_ = new char[serial_size_];
         memcpy(serial_, from.serial_, serial_size_);
-    }
-
-    // TODO: This is REALLY ugly, I'm sure there's a way to get rid of this in kv_store and use
-    // something else instead
-    Serializer(Deserializer& deserial) {
-        size_t starting_index = deserial.get_serial_index();
-        serial_size_ = deserial.deserialize_size_t();
-        deserial.set_serial_index(starting_index); // bring deserial back to the beginning
-
-        // NOTE: we include all values in serial_size, but need to ignore '\0' of usual character
-        // array with "serial_size - 1"
-        serial_ = deserial.deserialize_char_array(serial_size_ - 1);
-        serial_index_ = serial_size_;
     }
 
     ~Serializer() {
@@ -177,14 +164,6 @@ class Serializer : public Object {
     }
 
     /******* METHODS FROM OBJECT ******/
-
-    size_t serial_len() {
-        return get_serial_size();
-    }
-
-    char* serialize() {
-        return get_serial();
-    }
 
     bool equals(Object* other) {
         Serializer* other_serial = dynamic_cast<Serializer*>(other);
