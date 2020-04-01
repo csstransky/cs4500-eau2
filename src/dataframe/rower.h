@@ -1,8 +1,7 @@
 #pragma once
 
-#include "../helpers/object.h"
-
-class Row;
+#include "fielder.h"
+#include "row.h"
 
 /*******************************************************************************
  *  Rower::
@@ -25,4 +24,44 @@ class Rower : public Object {
   virtual void join_delete(Rower* other) = 0;
 
   virtual Rower* clone() { assert(0); }
+};
+
+/*******************************************************************************
+ *  PrinterRower::
+ *  A Rower to print all fields in the row.
+ */
+class PrinterRower : public Rower {
+ public:
+  PrinterFielder* fielder_;
+
+  PrinterRower() {
+    fielder_ = new PrinterFielder();
+  }
+
+  PrinterRower(PrinterFielder* fielder) {
+    fielder_ = fielder;
+  }
+
+  ~PrinterRower() {
+    delete fielder_;
+  }
+
+    /** Return a copy of the object; nullptr is considered an error */
+  Rower* clone() {
+    return new PrinterRower(fielder_);
+  }
+
+  /** Returns false if the row has all empty fields. */
+  bool accept(Row& r) {
+    r.visit(0, *fielder_);
+    return true;
+  }
+
+  /** Once traversal of the data frame is complete the rowers that were
+      split off will be joined.  There will be one join per split. The
+      original object will be the last to be called join on. The join method
+      is reponsible for cleaning up memory. */
+  void join_delete(Rower* other) {
+    delete other;
+  }
 };
