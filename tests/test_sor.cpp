@@ -28,8 +28,8 @@ void test_file(char* file_path, size_t file_columns, size_t file_rows) {
                     assert(bool_value || !bool_value);
                     break;
                 }
-                case 'D': {
-                    assert(dataframe->get_double(ii, jj));
+                case 'F': {
+                    assert(dataframe->get_float(ii, jj));
                     break;
                 }
                 case 'S': {
@@ -58,7 +58,7 @@ void test_easy_txt(char* file_path) {
 
     String string1("hi");
     assert(dataframe->get_string(0, 0)->equals(&string1));
-    assert(dataframe->get_double(1, 0) == (double)12.34);
+    assert(dataframe->get_float(1, 0) == (float)12.34);
     assert(dataframe->get_int(2, 0) == 22);
     assert(!dataframe->get_bool(3, 0));
     String string2("true");

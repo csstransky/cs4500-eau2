@@ -37,7 +37,7 @@ void test_ack() {
     assert(ack_message->get_message()->equals(&message));
 
     char* serial = ack_message->serialize();
-    Ack* ack_deserial = Ack::deserialize(serial);
+    Ack* ack_deserial = dynamic_cast<Ack*>(Message::deserialize_message(serial));
     assert(ack_deserial->get_kind() == MsgKind::Ack);
     assert(ack_deserial->get_sender()->equals(ip1));
     assert(ack_deserial->get_target()->equals(ip2));
@@ -60,7 +60,7 @@ void test_kill() {
     assert(kill_message.get_kind() == MsgKind::Kill);
 
     char* kill_serial = kill_message.serialize();
-    Message* message = deserialize_message(kill_serial);
+    Message* message = Message::deserialize_message(kill_serial);
     Kill* kill_deserial = reinterpret_cast<Kill*>(message);
 
     assert(kill_deserial->get_sender()->equals(&ip2));
@@ -83,7 +83,7 @@ void test_register() {
     assert(register_message.get_kind() == MsgKind::Register);
 
     char* register_serial = register_message.serialize();
-    Message* message = deserialize_message(register_serial);
+    Message* message = Message::deserialize_message(register_serial);
     Register* register_deserial = reinterpret_cast<Register*>(message);
 
     assert(register_deserial->get_sender()->equals(&ip2));
@@ -116,7 +116,7 @@ void test_put() {
     assert(put_message.get_kind() == MsgKind::Put);
 
     char* put_serial = put_message.serialize();
-    Message* message = deserialize_message(put_serial);
+    Message* message = Message::deserialize_message(put_serial);
     Put* put_deserial = reinterpret_cast<Put*>(message);
     assert(put_deserial->get_sender()->equals(&ip1));
     assert(put_deserial->get_target()->equals(&ip2));
@@ -150,7 +150,7 @@ void test_get() {
     assert(get_message.get_kind() == MsgKind::Get);
 
     char* get_serial = get_message.serialize();
-    Message* message = deserialize_message(get_serial);
+    Message* message = Message::deserialize_message(get_serial);
     Get* get_deserial = reinterpret_cast<Get*>(message);
     assert(get_deserial->get_sender()->equals(&ip1));
     assert(get_deserial->get_target()->equals(&ip2));
@@ -173,7 +173,7 @@ void test_wait_get() {
     assert(get_message.get_kind() == MsgKind::WaitAndGet);
 
     char* get_serial = get_message.serialize();
-    Message* message = deserialize_message(get_serial);
+    Message* message = Message::deserialize_message(get_serial);
     WaitAndGet* get_deserial = reinterpret_cast<WaitAndGet*>(message);
     assert(get_deserial->get_sender()->equals(&ip1));
     assert(get_deserial->get_target()->equals(&ip2));
@@ -205,7 +205,7 @@ void test_value() {
     assert(value_message.get_kind() == MsgKind::Value);
 
     char* value_serial = value_message.serialize();
-    Message* message = deserialize_message(value_serial);
+    Message* message = Message::deserialize_message(value_serial);
     Value* value_deserial = reinterpret_cast<Value*>(message);
     assert(value_deserial->get_sender()->equals(&ip1));
     assert(value_deserial->get_target()->equals(&ip2));
@@ -258,7 +258,7 @@ void test_directory() {
     assert(directory_message.get_kind() == MsgKind::Directory);
 
     char* directory_serial = directory_message.serialize();
-    Message* message = deserialize_message(directory_serial);
+    Message* message = Message::deserialize_message(directory_serial);
     Directory* directory_deserial = reinterpret_cast<Directory*>(message);
     assert(directory_deserial->get_sender()->equals(&ip1));
     assert(directory_deserial->get_target()->equals(&ip2));
@@ -294,7 +294,7 @@ void test_directory() {
     assert(directory_message2.get_node_indexes()->get(3) == node_4);
 
     char* directory_serial2 = directory_message2.serialize();
-    Message* message2 = deserialize_message(directory_serial2);
+    Message* message2 = Message::deserialize_message(directory_serial2);
     Directory* directory_deserial2 = reinterpret_cast<Directory*>(message2);
     assert(directory_deserial2->get_sender()->equals(&ip4));
     assert(directory_deserial2->get_target()->equals(&ip3));
@@ -522,7 +522,8 @@ void test_schema() {
     assert(strcmp(schema.types_, schema_type) == 0);
 
     char* schema_serial = schema.serialize();
-    Schema* deserial_schema = Schema::deserialize(schema_serial);
+    Deserializer deserializer(schema_serial);
+    Schema* deserial_schema = new Schema(deserializer);
     assert(deserial_schema->num_cols_ == num_cols);
     assert(deserial_schema->num_rows_ == num_rows);
     assert(strcmp(deserial_schema->types_, schema_type) == 0);
@@ -1136,10 +1137,10 @@ int main(int argc, char const *argv[])
     test_directory();
     test_kill();
     test_register();
+    test_bool_array();
     test_double_array();
     test_int_array();
     test_string_array();
-    test_bool_array();
     test_key();
     test_schema();
     test_int_column();
