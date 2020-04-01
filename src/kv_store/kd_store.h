@@ -49,11 +49,12 @@ class KD_Store : public Object {
 
 };
 
+// TODO: abstract this code later on with a helper function inside
 // Moved here to remove circular dependency. See piazza post @963
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, int* array) {
     Schema s("");
     DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
-    IntColumn col(kd->get_kv(), key->get_key(), 0);
+    Column col('I', kd->get_kv(), key->get_key(), 0);
     for (size_t i = 0; i < num; i++) {
         col.push_back(array[i]);
     }
@@ -68,7 +69,7 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, int* array)
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, double* array) {
     Schema s("");
     DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
-    DoubleColumn col(kd->get_kv(), key->get_key(), 0);
+    Column col('D', kd->get_kv(), key->get_key(), 0);
     for (size_t i = 0; i < num; i++) {
         col.push_back(array[i]);
     }
@@ -83,7 +84,7 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, double* arr
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, bool* array) {
     Schema s("");
     DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
-    BoolColumn col(kd->get_kv(), key->get_key(), 0);
+    Column col('B', kd->get_kv(), key->get_key(), 0);
     for (size_t i = 0; i < num; i++) {
         col.push_back(array[i]);
     }
@@ -98,7 +99,7 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, bool* array
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, String** array) {
     Schema s("");
     DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
-    StringColumn col(kd->get_kv(), key->get_key(), 0);
+    Column col('S', kd->get_kv(), key->get_key(), 0);
     for (size_t i = 0; i < num; i++) {
         col.push_back(array[i]);
     }
