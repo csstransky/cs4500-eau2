@@ -47,7 +47,7 @@ public:
   }
 
   Array(Deserializer& deserializer) {
-    deserialize_basic_array_;
+    deserialize_basic_array_(deserializer);
   }
 
   // IMPORTANT: ObjectArray subclasses will need to deserialize its own specific Objects to 

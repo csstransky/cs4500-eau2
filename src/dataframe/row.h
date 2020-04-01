@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../helpers/array.h"
 #include "schema.h"
 
@@ -46,24 +48,26 @@ class Row : public Object {
     * a value of the wrong type is undefined. */
   void set(size_t col, int val) { 
     assert(schema_.col_type(col) == 'I');
-    cells_->get_payload(col).i = val;
+    // TODO: See if this works later
+    // cells_->get_payload(col) = int_to_payload(val);
+    cells_->elements_[col].i = val;
   }
 
   void set(size_t col, double val) {
     assert(schema_.col_type(col) == 'D');
-    cells_->get_payload(col).d = val;
+    cells_->get_payload(col) = double_to_payload(val);
   }
 
   void set(size_t col, bool val) {
     assert(schema_.col_type(col) == 'B');
-    cells_->get_payload(col).b = val;
+    cells_->get_payload(col) = bool_to_payload(val);
   }
 
   /** Acquire ownership of the string. */
   void set(size_t col, String* val) {
     assert(schema_.col_type(col) == 'S');
     delete cells_->get_payload(col).o;
-    cells_->get_payload(col).o = val;
+    cells_->get_payload(col) = object_to_payload(val);
   }
  
   /** Set/get the index of this row (ie. its position in the dataframe. This is

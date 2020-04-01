@@ -53,15 +53,18 @@ class Column : public Object {
     kv_ = kv;
     dataframe_name_ = dataframe_name->clone();
     column_index_ = index;
-    keys_ = keys->clone();
+    keys_ = keys ? keys->clone() : nullptr;
     node_for_chunk_ = kv->local_node_index_; // TODO: remove this field in the future
-    buffered_elements_ = local_array->clone();
+    buffered_elements_ = local_array ? local_array->clone() : nullptr;
     cache_string_ = nullptr;
   }
 
   // TODO: I think I'm gonna have to valgrind this and fix it later
   Column(char type, KV_Store* kv, String* name, size_t index) 
-    : Column(type, kv, name, index, 0, &KeyArray(1), &Array(type, ELEMENT_ARRAY_SIZE)) { }
+    : Column(type, kv, name, index, 0, nullptr, nullptr) { 
+      keys_ = new KeyArray(1);
+      buffered_elements_ = new Array(type, ELEMENT_ARRAY_SIZE);
+    }
 
   Column(Column& other) 
     : Column(other.type_, other.kv_, other.dataframe_name_, other.column_index_, other.size_, 

@@ -1,4 +1,4 @@
-
+#pragma once
 #include "column_array.h"
 
 // TODO: This can actually be deleted (as per Jan's request)
