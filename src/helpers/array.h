@@ -242,7 +242,7 @@ public:
   ObjectArray() : ObjectArray(1) { }
   ObjectArray(size_t size) : Array('O', size) { }
   ObjectArray(ObjectArray& arr) : Array(arr) { }
-  ObjectArray(Deserializer deserializer) : Array(deserializer) { }
+  ObjectArray(Deserializer& deserializer) : Array(deserializer) { }
   ObjectArray* clone() { return new ObjectArray(*this); }
   virtual size_t push(Object* const to_add) { return Array::push(object_to_payload(to_add ? to_add->clone() : nullptr)); }
   Object* get(size_t index) { return Array::get(index).o; }
