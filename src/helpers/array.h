@@ -258,23 +258,19 @@ public:
   StringArray() : StringArray(1) {  }
   StringArray(size_t size) : ObjectArray(size) { }
   StringArray(StringArray& arr) : ObjectArray(arr) { }
-
+  
   StringArray(Deserializer& deserializer) : ObjectArray(deserializer) {
     for (size_t ii = 0; ii < count_; ii++) elements_[ii].o = new String(deserializer);
   }
-
-  StringArray* clone() { return new StringArray(*this); }
 
   size_t push(Object* const to_add) { 
     assert(dynamic_cast<String*>(to_add));
     return ObjectArray::push(to_add); 
   }
 
+  StringArray* clone() { return new StringArray(*this); }
   String* get(size_t index) { return static_cast<String*>(ObjectArray::get(index)); }
-
   String* remove(size_t index) { return static_cast<String*>(ObjectArray::remove(index)); }
-
-  String* replace(size_t index, String* const to_add) {
-    return static_cast<String*>(ObjectArray::replace(index, to_add));
+  String* replace(size_t index, String* const to_add) { return static_cast<String*>(ObjectArray::replace(index, to_add));
   }
 };
