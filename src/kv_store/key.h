@@ -22,16 +22,7 @@ class Key : public Object {
         node_index_ = from.node_index_;
     }
 
-    Key(char* serial) {
-        Deserializer deserializer(serial);
-        deserializer_key_(deserializer);
-    }
-
     Key(Deserializer& deserializer) {
-        deserializer_key_(deserializer);
-    }
-
-    void deserializer_key_(Deserializer& deserializer) {
         deserializer.deserialize_size_t(); // skip serial_size
         key_ = new String(deserializer); 
         node_index_ = deserializer.deserialize_size_t();
