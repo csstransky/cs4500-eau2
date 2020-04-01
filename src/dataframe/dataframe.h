@@ -279,30 +279,6 @@ class DataFrame : public Object {
     }
     delete row;
   }
- 
-  // TODO: Remove this as Jan doesn't think we'll need it in the future
-  /** Create a new dataframe, constructed from rows for which the given Rower
-    * returned true from its accept method. */
-  DataFrame* filter(Rower& r, String* name) {
-    DataFrame* filtered_dataframe = new DataFrame(*this, name);
-    size_t num_rows = this->schema_.length();
-    Row* row = new Row(this->schema_);
-    for (size_t ii = 0; ii < num_rows; ii++) {
-      this->fill_row(ii, *row);
-      if (r.accept(*row)) {
-        filtered_dataframe->add_row(*row);
-      }
-    }
-    delete row;
-    return filtered_dataframe;
-  }
- 
-  /** Print the dataframe in SoR format to standard output. */
-  void print() {
-    PrinterRower* print_rower = new PrinterRower();
-    this->map(*print_rower);
-    delete print_rower;
-  }
 
   /** call map on the rows from start to end, not include the endth row */
   void thread_map_(size_t start, size_t end, Rower& r) {

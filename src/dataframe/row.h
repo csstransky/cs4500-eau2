@@ -105,20 +105,5 @@ class Row : public Object {
  
    /** Type of the field at the given position. An idx >= width is  undefined. */
   char col_type(size_t idx) { return schema_.col_type(idx); }
- 
-  /** Given a Fielder, visit every field of this row. The first argument is
-    * index of the row in the dataframe.
-    * Calling this method before the row's fields have been set is undefined. */
-  void visit(size_t idx, Fielder& f) {
-    f.start(idx);
-    for (size_t i = 0; i < width(); i++)
-      switch (col_type(i)) {
-        case 'I': f.accept(get_int(i)); break;
-        case 'D': f.accept(get_double(i)); break;
-        case 'B': f.accept(get_bool(i)); break;
-        case 'S': f.accept(get_string(i)); break;
-      }
-    f.done();
-  }
 };
  
