@@ -99,16 +99,22 @@ public:
         return hash;
     }
 
-    // TODO: I'm sure all these concats can be abstracted in the future
-    void concat(char character) {
-        strncat(cstr_, &character, 1);
-        size_++;
-    }
-
     void concat(char* chars) {
         size_t chars_len = strlen(chars);
-        strncat(cstr_, chars, chars_len);
+        char* new_c = new char[size_ + chars_len + 1];
+        memcpy(new_c, cstr_, size_);
+        new_c[size_] = 0;
+        strncat(new_c, chars, chars_len);
         size_ += chars_len;
+        delete[] cstr_;
+        cstr_ = new_c;
+    }
+
+    void concat(char character) {
+        char c[2];
+        c[0] = character;
+        c[1] = 0;
+        concat(c);
     }
 
     void concat(const char* chars) {
