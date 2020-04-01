@@ -27,14 +27,14 @@ class KD_Store : public Object {
 
     DataFrame* get(Key* key) {
         char* kv_serial = kv_->get_value_serial(key);
-        DataFrame* df = DataFrame::deserialize(kv_serial, kv_);
+        DataFrame* df = new DataFrame(kv_serial, kv_);
         delete[] kv_serial;
         return df; 
     }
 
     DataFrame* wait_and_get(Key* key) {
        char* serial = kv_->wait_get_value_serial(key);
-       DataFrame* df = DataFrame::deserialize(serial, kv_);
+       DataFrame* df = new DataFrame(serial, kv_);
        delete[] serial;
        return df;
     }

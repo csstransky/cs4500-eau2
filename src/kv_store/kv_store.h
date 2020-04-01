@@ -163,10 +163,11 @@ class KV_Store : public Node {
         return array;
     }
 
+    // TODO: Change this later to use ONE Array class
     // Returns a new IntArray, make sure to delete it later
     IntArray* get_int_array(Key* key) {
         char* kv_serial = get_value_serial(key);
-        IntArray* int_array = IntArray::deserialize(kv_serial);
+        IntArray* int_array = new IntArray(kv_serial);
         delete[] kv_serial;
         return int_array;
     }
@@ -174,7 +175,7 @@ class KV_Store : public Node {
     // Returns a new BoolArray, make sure to delete it later
     BoolArray* get_bool_array(Key* key) {
         char* kv_serial = get_value_serial(key);
-        BoolArray* bool_array = BoolArray::deserialize(kv_serial);
+        BoolArray* bool_array = new BoolArray(kv_serial);
         delete[] kv_serial;
         return bool_array;
     }
@@ -182,7 +183,7 @@ class KV_Store : public Node {
     // Returns a new DoubleArray, make sure to delete it later
     DoubleArray* get_double_array(Key* key) {
         char* kv_serial = get_value_serial(key);
-        DoubleArray* double_array = DoubleArray::deserialize(kv_serial);
+        DoubleArray* double_array = new DoubleArray(kv_serial);
         delete[] kv_serial;
         return double_array;
     }
@@ -190,7 +191,7 @@ class KV_Store : public Node {
     // Returns a new StringArray, make sure to delete it later
     StringArray* get_string_array(Key* key) {
         char* kv_serial = get_value_serial(key);
-        StringArray* string_array = StringArray::deserialize(kv_serial);
+        StringArray* string_array = new StringArray(kv_serial);
         delete[] kv_serial;
         return string_array;
     }

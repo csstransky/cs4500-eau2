@@ -67,9 +67,7 @@ class Column : public Object {
     : Column(other.type_, other.kv_, other.dataframe_name_, other.column_index_, other.size_, 
       other.keys_, other.buffered_elements_) { }
 
-  Column(char type) : Column(type, nullptr, nullptr, 0) {
-
-  }
+  Column(char type) : Column(type, nullptr, nullptr, 0) {  }
 
   Column(char* serial, KV_Store* kv_store) {
     Deserializer deserializer(serial);

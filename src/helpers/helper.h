@@ -1,4 +1,4 @@
-// Made by Kaylin Devchand and Cristian Stransky
+// Made by Jan Vitek, Kaylin Devchand and Cristian Stransky
 
 #pragma once
 //lang::Cpp
@@ -8,13 +8,9 @@
 #include <iostream>
 #include <assert.h>
 
-size_t max_(size_t a, size_t b) {
-  return (a > b) ? a : b;
-}
+size_t max(size_t a, size_t b) { return (a > b) ? a : b; }
 
-size_t min_(size_t a, size_t b) {
-  return (a < b) ? a : b;
-}
+size_t min(size_t a, size_t b) { return (a < b) ? a : b; }
 
 /** Helper class providing some C++ functionality and convenience
  *  functions. This class has no data, constructors, destructors or

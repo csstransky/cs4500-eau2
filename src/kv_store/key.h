@@ -37,17 +37,11 @@ class Key : public Object {
         node_index_ = deserializer.deserialize_size_t();
     }
 
-    ~Key() {
-        delete key_;
-    }
+    ~Key() { delete key_; }
 
-    String* get_key() {
-        return key_;
-    }
+    String* get_key() { return key_; }
 
-    size_t get_node_index() {
-        return node_index_;
-    }
+    size_t get_node_index() { return node_index_; }
 
     bool equals(Object* other) {
         if (other == this) return true;
@@ -57,14 +51,9 @@ class Key : public Object {
             && this->node_index_ == other_key->node_index_;
     }
 
-    Key* clone() {
-        return new Key(*this);
-    }
+    Key* clone() { return new Key(*this); }
 
-    size_t serial_len() {
-        // Includes the seial length, size of the key string, and size of node index
-        return sizeof(size_t) + key_->serial_len() + sizeof(size_t);
-    }
+    size_t serial_len() { return sizeof(size_t) + key_->serial_len() + sizeof(size_t); }
 
     char* serialize() {
         size_t serial_size = serial_len();

@@ -10,25 +10,9 @@
  */
 class Schema : public Object {
  public:
-  char* types_;
+  String* types_;
   size_t num_cols_;
-  size_t num_rows_;
-  size_t types_size_; // size of types_, INCLUDES '\0' character
-
-  /** Copying constructor */
-  Schema(Schema& from) : Schema(from.types_) {
-    // Since these are primitive types, we can get away with this
-    this->num_rows_ = from.num_rows_;
-  }
- 
-  /** Create an empty schema **/
-  Schema() {
-    types_size_ = 1;
-    types_ = new char[types_size_];
-    types_[0] = '\0';
-    num_cols_ = 0;
-    num_rows_ = 0;
-  }
+  size_t num_rows_; 
  
   /** Create a schema from a string of types. A string that contains
     * characters other than those identifying the four type results in
@@ -37,19 +21,40 @@ class Schema : public Object {
   Schema(const char* types) {
     assert(types != nullptr);
     size_t types_length = strlen(types);
-    for (size_t ii = 0; ii < types_length; ii++) {
+    for (size_t ii = 0; ii < types_length; ii++)
       assert(types[ii] == 'I' || types[ii] == 'D' || types[ii] == 'B' || types[ii] == 'S');
-    }
 
-    types_size_ = types_length + 1;
-    this->types_ = new char[types_size_];
-    strncpy(types_, types, types_size_);
+    types_ = new String(types, types_length);
     num_cols_ = types_length; 
     num_rows_ = 0;
   }
 
+  Schema() : Schema("") { }
+
+  Schema(Schema& from) { 
+    this->types_ = from.types_->clone();
+    this->num_cols_ = from.num_cols_;
+    this->num_rows_ = from.num_rows_; 
+  }
+
+  Schema(char* serial) {
+    Deserializer deserializer(serial);
+    deserialize_schema_(deserializer);
+  }
+
+  Schema(Deserializer& deserializer) {
+    deserialize_schema_(deserializer);
+  }
+
+  void deserialize_schema_(Deserializer& deserializer) {
+    deserializer.deserialize_size_t(); // skip serial_length
+    num_cols_ = deserializer.deserialize_size_t();
+    num_rows_ = deserializer.deserialize_size_t();
+    types_ = new String(deserializer); 
+  }  
+
   ~Schema() {
-    delete[] types_;
+    delete types_;
   }
 
   /** Subclasses should redefine */
@@ -59,20 +64,17 @@ class Schema : public Object {
       return other_schema != nullptr 
           && this->num_cols_ == other_schema->num_cols_
           && this->num_rows_ == other_schema->num_rows_
-          && strncmp(this->types_, other_schema->types_, this->types_size_) == 0;
+          && this->types_->equals(other_schema->types_);
   }
 
   /** Return a copy of the object; nullptr is considered an error */
-  Schema* clone() {
-    return new Schema(*this);
-  }
+  Schema* clone() { return new Schema(*this); }
 
   size_t serial_len() {
       return sizeof(size_t) // serial_length
         + sizeof(size_t) // num_cols_
         + sizeof(size_t) // num_rows_
-        + sizeof(size_t) // types_size_
-        + sizeof(char) * types_size_; // types_
+        + types_->serial_len();
   }
 
   char* serialize() {
@@ -81,40 +83,8 @@ class Schema : public Object {
       serializer.serialize_size_t(serial_size);
       serializer.serialize_size_t(num_cols_);
       serializer.serialize_size_t(num_rows_);
-      serializer.serialize_size_t(types_size_);
-      // Important: remove '\0' from serial size with "types_size_ - 1"
-      serializer.serialize_chars(types_, types_size_ - 1);
+      serializer.serialize_object(types_);
       return serializer.get_serial();
-  }
-
-  static Schema* deserialize(char* serial) {
-      Deserializer deserializer(serial);
-      return deserialize(deserializer);
-  }
-
-  static Schema* deserialize(Deserializer& deserializer) {
-      deserializer.deserialize_size_t(); // skip serial_length
-      deserializer.deserialize_size_t(); // skip num_cols_
-      size_t num_rows = deserializer.deserialize_size_t();
-      size_t types_size = deserializer.deserialize_size_t();
-      // Important: remove '\0' from deserial size with "types_size - 1"
-      char* types = deserializer.deserialize_char_array(types_size - 1); 
-      Schema* new_schema = new Schema(types);
-      new_schema->num_rows_ = num_rows;
-      delete[] types;
-      return new_schema;
-  }  
-
-  /**
-   * Helper function that will increase BOTH the types and col_names arrays (as they're both linked)
-   */
-  void increase_types_array_size_() {
-    this->types_size_ = types_size_ * 2;
-    char* new_types = new char[types_size_];
-    strcpy(new_types, types_);
-    new_types[num_cols_ + 1] = '\0';
-    delete[] types_;
-    this->types_ = new_types;
   }
 
   /** Add a column of the given type and name (can be nullptr), name
@@ -122,14 +92,9 @@ class Schema : public Object {
     * in undefined behavior. */
   void add_column(char typ) {
     assert(typ == 'I' || typ == 'D' || typ == 'B' || typ == 'S');
-    if (num_cols_ + 1 >= types_size_) {
-      increase_types_array_size_();
-    }
-    this->types_[num_cols_] = typ;
-    this->types_[num_cols_ + 1] = '\0';
+    this->types_->concat(typ);
     this->num_cols_++;
   }
-
  
   /** Add a row with a name (possibly nullptr), name is external.  Names are
    *  expectd to be unique, duplicates result in undefined behavior. */
@@ -140,16 +105,10 @@ class Schema : public Object {
   /** Return type of column at idx. An idx >= width is undefined. */
   char col_type(size_t idx) {
     assert(idx < num_cols_);
-    return this->types_[idx];
+    return this->types_->cstr_[idx];
   }
  
-  /** The number of columns */
-  size_t width() {
-    return num_cols_;
-  }
+  size_t width() { return num_cols_; }
  
-  /** The number of rows */
-  size_t length() {
-    return num_rows_;
-  }
+  size_t length() { return num_rows_; }
 };

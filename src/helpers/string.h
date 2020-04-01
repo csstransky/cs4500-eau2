@@ -99,13 +99,15 @@ public:
         return hash;
     }
 
+    // TODO: I'm sure all these concats can be abstracted in the future
+    void concat(char character) {
+        strncat(cstr_, &character, 1);
+        size_++;
+    }
+
     void concat(char* chars) {
         size_t chars_len = strlen(chars);
-        char* temp_cstr = new char[size_ + chars_len + 1]; // ensure that we copy the terminator
-        memcpy(temp_cstr, cstr_, size_);
-        memcpy(temp_cstr + size_, chars, chars_len + 1);
-        delete[] cstr_;
-        cstr_ = temp_cstr;
+        strncat(cstr_, chars, chars_len);
         size_ += chars_len;
     }
 
@@ -119,14 +121,7 @@ public:
         concat(str);
     }
 
-    void concat(String* other) {
-        char* temp_cstr = new char[size_ + other->size_ + 1]; // ensure that we copy the terminator
-        memcpy(temp_cstr, cstr_, size_);
-        memcpy(temp_cstr + size_, other->cstr_, other->size_ + 1);
-        delete[] cstr_;
-        cstr_ = temp_cstr;
-        size_ += other->size_;
-    }
+    void concat(String* other) { concat(other->cstr_); }
 
     size_t serial_len() {
         // Includes the seial length, size of the string, and the char array itself

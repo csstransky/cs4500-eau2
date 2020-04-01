@@ -11,6 +11,8 @@
 
 int MESSAGE_ID = 0;
 
+// TODO: MESSAGE STILL NEEDS TO BE REFACTORED
+
 enum class MsgKind { Ack, Put, Get, WaitAndGet, Value, Kill, Register, Directory, Complete };
 // TODO: A lot of repeated code, make sure to refactor this in the future
 class Message : public Object {
@@ -290,8 +292,8 @@ class Directory : public Message {
         String* sender = new String(deserializer);
         String* target = new String(deserializer);
         deserializer.deserialize_size_t(); // skip id_
-        StringArray* addresses = StringArray::deserialize(deserializer);
-        IntArray* node_indexes = IntArray::deserialize(deserializer);
+        StringArray* addresses = new StringArray(deserializer);
+        IntArray* node_indexes = new IntArray(deserializer);
         Directory* new_directory = new Directory(sender, target, addresses, node_indexes);
         delete sender;
         delete target;
