@@ -210,9 +210,12 @@ class Put : public Message {
         value_ = value->clone();
     }
 
-    Put(Deserializer deserializer) : Message(MsgKind::Put, deserializer) {
+    Put(Deserializer& deserializer) : Message(MsgKind::Put, deserializer) {
         key_name_ = new String(deserializer);
-        value_ = new Serializer(deserializer);
+        size_t len = deserializer.deserialize_size_t();
+        char* serial = deserializer.deserialize_char_array(len - 1);
+        value_ = new Serializer(serial);
+        delete[] serial;
     }
 
     ~Put() {
@@ -238,7 +241,7 @@ class Put : public Message {
     size_t serial_len() {
         return Message::serial_len() 
             + key_name_->serial_len()
-            + value_->serial_len();
+            + value_->get_serial_size() + sizeof(size_t);
     }
 
     char* serialize() {
@@ -246,7 +249,10 @@ class Put : public Message {
         Serializer serializer(serial_size);
         serialize_message_(serializer);
         serializer.serialize_object(key_name_);
-        serializer.serialize_object(value_);
+        serializer.serialize_size_t(value_->get_serial_size());
+        char* serial = value_->get_serial();
+        serializer.serialize_chars(serial, value_->get_serial_size() - 1);
+        delete[] serial;
         return serializer.get_serial();
     }
 };
@@ -259,7 +265,7 @@ class Get : public Message {
         key_name_ = key_name->clone();
     }
 
-    Get(Deserializer deserializer) : Message(MsgKind::Get, deserializer) {
+    Get(Deserializer& deserializer) : Message(MsgKind::Get, deserializer) {
         key_name_ = new String(deserializer);
     }
 
@@ -292,7 +298,7 @@ class WaitAndGet : public Get {
         kind_ = MsgKind::WaitAndGet;
     }
 
-    WaitAndGet(Deserializer deserializer) : Get(deserializer) {
+    WaitAndGet(Deserializer& deserializer) : Get(deserializer) {
         kind_ = MsgKind::WaitAndGet;
     }
 };
@@ -305,8 +311,11 @@ class Value : public Message {
         value_ = value->clone();
     }
 
-    Value(Deserializer deserializer) : Message(MsgKind::Value, deserializer) {
-        value_ = new Serializer(deserializer);
+    Value(Deserializer& deserializer) : Message(MsgKind::Value, deserializer) {
+        size_t len = deserializer.deserialize_size_t();
+        char* serial = deserializer.deserialize_char_array(len - 1);
+        value_ = new Serializer(serial);
+        delete[] serial;
     }
 
     ~Value() {
@@ -326,14 +335,17 @@ class Value : public Message {
 
     size_t serial_len() {
         return Message::serial_len() 
-            + value_->serial_len();
+            + value_->get_serial_size() + sizeof(size_t);
     }
 
     char* serialize() {
         size_t serial_size = serial_len();
         Serializer serializer(serial_size);
         serialize_message_(serializer);
-        serializer.serialize_object(value_);
+        serializer.serialize_size_t(value_->get_serial_size());
+        char* serial = value_->get_serial();
+        serializer.serialize_chars(serial, value_->get_serial_size() - 1);
+        delete[] serial;
         return serializer.get_serial();
     }
 };
