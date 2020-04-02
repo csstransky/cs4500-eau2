@@ -163,7 +163,11 @@ class Column : public Object {
     Key* k = keys_->get(array);
     Array* data = kv_->get_array(k, type_);
     Payload payload = data->get(index);
-    if (type_ == 'S') payload.o = payload.o->clone();
+    if (type_ == 'S') {
+      payload.o = payload.o->clone();
+      delete cache_string_;
+      cache_string_ = static_cast<String*>(payload.o);
+    }
     delete data;
     return payload;
   }
@@ -198,9 +202,7 @@ class Column : public Object {
 
   String* get_string(size_t idx) {
     assert(type_ == 'S');
-    delete cache_string_;
-    cache_string_ = static_cast<String*>(get_element_(idx).o);
-    return cache_string_;
+    return static_cast<String*>(get_element_(idx).o);
   }
  
   /** Returns the number of elements in the column. */
