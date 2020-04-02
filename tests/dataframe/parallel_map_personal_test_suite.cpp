@@ -198,7 +198,7 @@ void int_column_set_tests() {
     GT_EQUALS(int_column->get_int(0), 23);
     GT_EQUALS(int_column->get_int(3), 5234);
     GT_EQUALS(int_column->get_int(4), 2342);
-    GT_EQUALS(int_column->get_int(5), 3);
+    GT_EQUALS(int_column->get_int(5), 2);
     GT_EQUALS(int_column->get_int(6), 188);
 
     delete int_column;
@@ -211,15 +211,15 @@ void double_column_set_tests() {
     double_column->push_back(23.12);
     double_column->push_back(42.3);
     double_column->push_back(5.1);
-    double_column->push_back(5234);
+    double_column->push_back((double)5234);
     double_column->push_back(2342.33);
     double_column->push_back(2.1);
-    double_column->push_back(188);
+    double_column->push_back((double)188);
     GT_EQUALS(double_column->size(), 7);
     GT_EQUALS(double_column->get_double(0), (double)23.12);
     GT_EQUALS(double_column->get_double(3), (double)5234);
     GT_EQUALS(double_column->get_double(4), (double)2342.33);
-    GT_EQUALS(double_column->get_double(5), (double)2342.33);
+    GT_EQUALS(double_column->get_double(5), (double)2.1);
     GT_EQUALS(double_column->get_double(6), (double)188);
 
     delete double_column;
@@ -229,9 +229,9 @@ void double_column_set_tests() {
 
 void bool_column_set_tests() {
     Column* bool_column = new Column('B');
-    bool_column->push_back(0);
+    bool_column->push_back((bool)0);
     bool_column->push_back(false);
-    bool_column->push_back(1);
+    bool_column->push_back((bool)1);
     bool_column->push_back(true);
     bool_column->push_back(true);
     bool_column->push_back(false);
@@ -240,7 +240,7 @@ void bool_column_set_tests() {
     GT_EQUALS(bool_column->get_bool(0), 0);
     GT_EQUALS(bool_column->get_bool(3), true);
     GT_EQUALS(bool_column->get_bool(4), 1);
-    GT_EQUALS(bool_column->get_bool(5), 1);
+    GT_EQUALS(bool_column->get_bool(5), 0);
     GT_EQUALS(bool_column->get_bool(6), false);
 
     delete bool_column;

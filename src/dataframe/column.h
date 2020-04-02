@@ -47,10 +47,10 @@ class Column : public Object {
     type_ = type;
     size_ = size;
     kv_ = kv;
-    dataframe_name_ = dataframe_name->clone();
+    dataframe_name_ = dataframe_name? dataframe_name->clone() : nullptr;
     column_index_ = index;
     keys_ = keys ? keys->clone() : nullptr;
-    node_for_chunk_ = kv->local_node_index_; // TODO: remove this field in the future
+    node_for_chunk_ = 0; // TODO: remove this field in the future
     buffered_elements_ = local_array ? local_array->clone() : nullptr;
     cache_string_ = nullptr;
   }
@@ -81,7 +81,12 @@ class Column : public Object {
     dataframe_name_ = new String(deserializer);
     column_index_ = deserializer.deserialize_size_t();
     keys_ = new KeyArray(deserializer);
-    buffered_elements_ = new IntArray(deserializer);
+    switch(type_) {
+      case 'I': buffered_elements_ = new IntArray(deserializer); break;
+      case 'B': buffered_elements_ = new BoolArray(deserializer); break;
+      case 'D': buffered_elements_ = new DoubleArray(deserializer); break;
+      case 'S': buffered_elements_ = new StringArray(deserializer); break;
+    }
     cache_string_ = nullptr;
   }
 
