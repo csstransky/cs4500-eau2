@@ -315,10 +315,10 @@ void basic_columnarray_test() {
 
   t_true(arr.length() == 4, "14a");
   // Test to show that a normal Column does not work, and must be IntColumn, DoubleColumn, etc.
-  t_true(arr.get(1)->get_int(0) == 3, "14c");
-  t_true(arr.get(2)->get_double(0) == (double)232.3, "14d");
-  t_true(arr.get(3)->get_bool(0), "14e");
-  t_true(arr.get(4)->get_string(0)->equals(&str), "14f");
+  t_true(arr.get(0)->get_int(0) == 3, "14c");
+  t_true(arr.get(1)->get_double(0) == (double)232.3, "14d");
+  t_true(arr.get(2)->get_bool(0), "14e");
+  t_true(arr.get(3)->get_string(0)->equals(&str), "14f");
 
   arr.clear();
   t_true(arr.length() == 0, "14h");
