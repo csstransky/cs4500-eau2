@@ -20,8 +20,7 @@ class Row : public Object {
   size_t idx_;
  
   /** Build a row following a schema. */
-  Row(Schema& scm) {
-    schema_ = scm;
+  Row(Schema& scm) : schema_(scm) {
     size_t width = schema_.width();
     // Array is simply an IntArray to avoid bad deletes. Type handling is now done by the Schema.
     cells_ = new Array('I', width);

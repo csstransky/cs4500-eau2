@@ -39,21 +39,11 @@ class Schema : public Object {
     this->num_rows_ = from.num_rows_; 
   }
 
-  Schema(char* serial) {
-    Deserializer deserializer(serial);
-    deserialize_schema_(deserializer);
-  }
-
   Schema(Deserializer& deserializer) {
-    deserialize_schema_(deserializer);
-  }
-
-  void deserialize_schema_(Deserializer& deserializer) {
-    deserializer.deserialize_size_t(); // skip serial_length
     num_cols_ = deserializer.deserialize_size_t();
     num_rows_ = deserializer.deserialize_size_t();
     types_ = new String(deserializer); 
-  }  
+  } 
 
   ~Schema() {
     delete types_;
@@ -73,8 +63,7 @@ class Schema : public Object {
   Schema* clone() { return new Schema(*this); }
 
   size_t serial_len() {
-      return sizeof(size_t) // serial_length
-        + sizeof(size_t) // num_cols_
+      return sizeof(size_t) // num_cols_
         + sizeof(size_t) // num_rows_
         + types_->serial_len();
   }
@@ -82,7 +71,6 @@ class Schema : public Object {
   char* serialize() {
       size_t serial_size = serial_len();
       Serializer serializer(serial_size);
-      serializer.serialize_size_t(serial_size);
       serializer.serialize_size_t(num_cols_);
       serializer.serialize_size_t(num_rows_);
       serializer.serialize_object(types_);
