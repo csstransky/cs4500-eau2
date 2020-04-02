@@ -159,13 +159,15 @@ class KV_Store : public Node {
     Array* get_array(Key* key, char type) {
         char* kv_serial = get_value_serial(key);
         Deserializer deserializer(kv_serial);
-        delete[] kv_serial;
+        Array* array;
         switch(type) {
-            case 'I': return new IntArray(deserializer);
-            case 'B': return new BoolArray(deserializer);
-            case 'D': return new DoubleArray(deserializer);
-            case 'S': return new StringArray(deserializer);
+            case 'I': array = new IntArray(deserializer); break;
+            case 'B': array = new BoolArray(deserializer); break;
+            case 'D': array = new DoubleArray(deserializer); break;
+            case 'S': array = new StringArray(deserializer); break;
         }
+        delete[] kv_serial;
+        return array;
     }
 
     size_t get_node_index(size_t index) {
