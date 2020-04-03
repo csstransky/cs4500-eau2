@@ -1,6 +1,5 @@
 #pragma once
 
-// TODO: Refactor this entire file as there's things left in here we don't use (such as clear())
 #include "object.h"
 #include "string.h"
 #include "array.h"

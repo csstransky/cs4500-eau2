@@ -44,7 +44,6 @@ class KV_Store : public Node {
         for (int i = 0; i < sockets->length(); i++) {
             int socket = sockets->get(i);
             if (socket > LOCAL_SOCKET_DESCRIPTOR) {
-                // TODO: Target IPs will be removed in the future
                 String no_ip("NO TARGET IP");
                 Value value_message(my_ip_, &no_ip, value);
                 send_message(socket, &value_message);
@@ -191,7 +190,6 @@ class KV_Store : public Node {
                 if (!value) {
                     // There is no key value pair, for the given key
                     assert(0);
-                    // TODO: think of a better way to do this than an assert, maybe send an Nack message instead
                 }
                 Value value_message(my_ip_, get_message->get_sender(), value);
                 send_message(client_sockets_->get(client), &value_message);

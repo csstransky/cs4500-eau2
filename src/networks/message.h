@@ -11,16 +11,12 @@
 
 int MESSAGE_ID = 0;
 
-// TODO: MESSAGE STILL NEEDS TO BE REFACTORED
-
 enum class MsgKind { Ack, Put, Get, WaitAndGet, Value, Kill, Register, Directory, Complete };
-// TODO: A lot of repeated code, make sure to refactor this in the future
 class Message : public Object {
     public:
 
     MsgKind kind_;  // the message kind
     String* sender_; // the index of the sender node
-    // TODO: We don't need target ip anymore because we are connecting directly to Nodes,
     // BUT when you do refactor, be very careful and test because of serializing
     String* target_; // the index of the receiver node
 

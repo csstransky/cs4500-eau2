@@ -55,7 +55,6 @@ class Column : public Object {
     cache_string_ = nullptr;
   }
 
-  // TODO: I think I'm gonna have to valgrind this and fix it later
   Column(char type, KV_Store* kv, String* name, size_t index) 
     : Column(type, kv, name, index, 0, nullptr, nullptr) { 
       keys_ = new KeyArray(1);
@@ -82,8 +81,6 @@ class Column : public Object {
     kv_ = kv_store;
     type_ = deserializer.deserialize_char();
     size_ = deserializer.deserialize_size_t(); 
-    dataframe_name_ = new String(deserializer);
-    column_index_ = deserializer.deserialize_size_t();
     keys_ = new KeyArray(deserializer);
     switch(type_) {
       case 'I': buffered_elements_ = new IntArray(deserializer); break;
@@ -92,6 +89,8 @@ class Column : public Object {
       case 'S': buffered_elements_ = new StringArray(deserializer); break;
     }
     cache_string_ = nullptr;
+    dataframe_name_ = nullptr;
+    column_index_ = 0;
   }
 
   ~Column() {
@@ -222,8 +221,6 @@ class Column : public Object {
   size_t serial_len() {
     return sizeof(char) // type_
       + sizeof(size_t) // size_
-      + dataframe_name_->serial_len()
-      + sizeof(column_index_) // column_index_
       + keys_->serial_len()
       + buffered_elements_->serial_len();
   }
@@ -233,8 +230,6 @@ class Column : public Object {
     Serializer serializer(serial_size);
     serializer.serialize_char(type_);
     serializer.serialize_size_t(size_);
-    serializer.serialize_object(dataframe_name_);
-    serializer.serialize_size_t(column_index_);
     serializer.serialize_object(keys_);
     serializer.serialize_object(buffered_elements_);
     return serializer.get_serial();

@@ -570,7 +570,6 @@ void test_int_column() {
     }
     assert(deserial_int_col->keys_->length() + 1 == number_of_kv_chunks + 1);
     assert(deserial_int_col->size_ == int_column_count);
-    assert(deserial_int_col->dataframe_name_->equals(&df_name));
     assert(deserial_int_col->type_ == 'I');
     
     // Test that each kv chunk is still correct
@@ -628,7 +627,6 @@ void test_double_column() {
     }
     assert(deserial_double_col->keys_->length() + 1 == number_of_kv_chunks + 1);
     assert(deserial_double_col->size_ == double_column_count);
-    assert(deserial_double_col->dataframe_name_->equals(&df_name));
     assert(deserial_double_col->type_ == 'D');
     
     // Test that each kv chunk is still correct
@@ -687,7 +685,6 @@ void test_bool_column() {
     }
     assert(deserial_bool_col->keys_->length() + 1 == number_of_kv_chunks + 1);
     assert(deserial_bool_col->size_ == bool_column_count);
-    assert(deserial_bool_col->dataframe_name_->equals(&df_name));
     assert(deserial_bool_col->type_ == 'B');
     
     // Test that each kv chunk is still correct
@@ -754,7 +751,6 @@ void test_string_column() {
     }
     assert(deserial_string_col->keys_->length() + 1 == number_of_kv_chunks + 1);
     assert(deserial_string_col->size_ == string_column_count);
-    assert(deserial_string_col->dataframe_name_->equals(&df_name));
     assert(deserial_string_col->type_ == 'S');
     
     // Test that each kv chunk is still correct
