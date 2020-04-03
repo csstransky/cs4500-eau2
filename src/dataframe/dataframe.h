@@ -63,7 +63,7 @@ class DataFrame : public Object {
 
   DataFrame(Deserializer& deserializer, KV_Store* kv_store) : schema_(deserializer) {
     cols_ = new ColumnArray(deserializer, kv_store);
-    name_ = new String(deserializer);
+    name_ = nullptr;
   }
   
   ~DataFrame() {
@@ -87,8 +87,7 @@ class DataFrame : public Object {
 
   size_t serial_len() {
     return schema_.serial_len()
-      + cols_->serial_len()
-      + name_->serial_len();
+      + cols_->serial_len();
   }
 
   char* serialize() {
@@ -96,7 +95,6 @@ class DataFrame : public Object {
       Serializer serializer(serial_size);
       serializer.serialize_object(&schema_);
       serializer.serialize_object(cols_);
-      serializer.serialize_object(name_);
       return serializer.get_serial();
   }
 

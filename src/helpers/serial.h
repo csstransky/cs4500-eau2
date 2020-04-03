@@ -5,7 +5,6 @@
 #include <string.h> 
 #include "object.h"
 
-// TODO: This file could actually use some refactoring to bring down the code base
 class Serializer : public Object {
     public:
 
