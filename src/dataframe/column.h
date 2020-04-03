@@ -55,7 +55,6 @@ class Column : public Object {
     cache_string_ = nullptr;
   }
 
-  // TODO: I think I'm gonna have to valgrind this and fix it later
   Column(char type, KV_Store* kv, String* name, size_t index) 
     : Column(type, kv, name, index, 0, nullptr, nullptr) { 
       keys_ = new KeyArray(1);

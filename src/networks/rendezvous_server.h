@@ -83,9 +83,9 @@ class RServer : public Server {
     }
 
     bool decode_message_(Message* message, int client) {
-        // TODO: I get the idea here, but it might be easier to simply include all the code together in one switch case,
-        // and then any messages with shared attributes (like Ack) are abstracted in server that wasy (handle_ack_() can
-        // be a function in Server, but both dudes use it, something like that)
+        // TODO: This design philosophy is fine, BUT the child class should have priority over the parent class,
+        // instead of the current parent class having priority.
+        // TODO: Also, maybe the exit code should be 0? Just a thought, fine with either
         if (Server::decode_message_(message, client)) {
             return 1;
         }
