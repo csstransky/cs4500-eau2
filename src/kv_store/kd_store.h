@@ -25,19 +25,16 @@ class KD_Store : public Object {
         kv_->wait_for_shutdown();
     }
 
-    DataFrame* get(Key* key) {
-        char* kv_serial = kv_->get_value_serial(key);
-        DataFrame* df = new DataFrame(kv_serial, kv_);
-        delete[] kv_serial;
-        return df; 
+    DataFrame* deserialize_df_(char* serial) {
+        Deserializer deserializer(serial);
+        DataFrame* df = new DataFrame(deserializer, kv_);
+        delete[] serial;
+        return df;
     }
 
-    DataFrame* wait_and_get(Key* key) {
-       char* serial = kv_->wait_get_value_serial(key);
-       DataFrame* df = new DataFrame(serial, kv_);
-       delete[] serial;
-       return df;
-    }
+    DataFrame* get(Key* key) { return deserialize_df_(kv_->get_value_serial(key)); }
+
+    DataFrame* wait_and_get(Key* key) { return deserialize_df_(kv_->wait_get_value_serial(key)); }
 
     void put(Key* key, DataFrame* df) {
         kv_->put(key, df);
