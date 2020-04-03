@@ -348,18 +348,6 @@ void schema_add_row_tests() {
     printf("Schema add row test passed!\n");
 }
 
-void test_row_idx() {
-  Schema* s = new Schema("II");
-  Row* row = new Row(*s);
-  GT_EQUALS(row->get_idx(), SIZE_MAX);
-  row->set_idx(2);
-  GT_EQUALS(row->get_idx(), 2);
-
-  delete row;
-  delete s;
-
-  printf("Row idx test passed!\n");
-}
 
 void test_row_width() {
   Schema* s = new Schema("II");
@@ -1198,7 +1186,6 @@ int main(int argc, char **argv) {
   schema_add_row_tests();
 
   // Row tests
-  test_row_idx();
   test_row_width();
   test_col_type();
   test_set_get();

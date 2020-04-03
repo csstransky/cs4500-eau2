@@ -253,7 +253,6 @@ class DataFrame : public Object {
     Row* row = new Row(this->schema_);
     for (size_t ii = 0; ii < num_rows; ii++) {
       this->fill_row(ii, *row);
-      row->set_idx(ii);
       r.accept(*row);
     }
     delete row;
@@ -264,7 +263,6 @@ class DataFrame : public Object {
     Row* row = new Row(this->schema_);
     for (size_t i = start; i < end; i++) {
       this->fill_row(i, *row);
-      row->set_idx(i);
       r.accept(*row);
     }
     delete row;

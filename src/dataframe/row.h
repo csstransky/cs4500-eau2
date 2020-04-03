@@ -17,7 +17,6 @@ class Row : public Object {
   // list of columns with only one element each
   Array* cells_;
   Schema schema_;
-  size_t idx_;
  
   /** Build a row following a schema. */
   Row(Schema& scm) : schema_(scm) {
@@ -31,9 +30,6 @@ class Row : public Object {
         case 'B': cells_->push(bool_to_payload(DEFAULT_BOOL_VALUE)); break;
         case 'S': cells_->push(object_to_payload(DEFAULT_STRING_VALUE.clone())); break;
       }
-    // TODO: Didn't Jan say we can delete this? Do we really need index?
-    // Default value of idx
-    idx_ = SIZE_MAX;
   }
 
   ~Row() {
@@ -67,13 +63,6 @@ class Row : public Object {
     Payload p = cells_->replace(col, object_to_payload(val));
     delete p.o;
   }
- 
-  /** Set/get the index of this row (ie. its position in the dataframe. This is
-   *  only used for informational purposes, unused otherwise */
-  void set_idx(size_t idx) { idx_ = idx; }
-
-  /** If never set, returns SIZE_MAX */
-  size_t get_idx() { return idx_; }
  
   /** Getters: get the value at the given column. If the column is not
     * of the requested type, the result is undefined. */
