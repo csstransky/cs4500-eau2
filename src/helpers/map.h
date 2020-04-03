@@ -226,3 +226,30 @@ class Map: public Object {
             return nullptr;
         }
 };
+
+class Num : public Object {
+    public:
+    size_t num_;
+    Num() {}
+    Num(size_t n) { num_ = n; };
+    Num* clone() { return new Num(num_); }
+};
+
+class SIMap : public Map {
+    public:
+    SIMap() : Map() { }
+    size_t get(String* s) { return dynamic_cast<Num*>(Map::get(s))->num_; }
+    
+    size_t put(String* s, size_t val) { 
+        Num n(val);
+        Num* num = dynamic_cast<Num*>(Map::put(s, &n));
+        return num ? num->num_ : -1; 
+    }
+
+    size_t remove(String* s) { 
+        Num* n = dynamic_cast<Num*>(Map::remove(s)); 
+        size_t num = n ? n->num_ : -1;
+        delete n;
+        return num;
+    }
+};

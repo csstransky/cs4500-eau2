@@ -111,6 +111,7 @@ void testIncreaseMap() {
 
     delete map;
 } 
+
 void testSIAMap() {
     Map map;
     assert(map.size() == 0);
@@ -146,9 +147,40 @@ void testSIAMap() {
     assert(map.size() == 0);
 }
 
+void testSIMap() {
+    SIMap map;
+    assert(map.size() == 0);
+    size_t size = 1000;
+
+    char buf[20];
+    
+    for (size_t i = 0; i < size; i++) {
+        snprintf(buf, 20, "k_%zu", i);
+        String s(buf);
+        map.put(&s, i);
+    }
+
+    assert(map.size() == size);
+
+    for (size_t i = 0; i < size; i++) {
+        snprintf(buf, 20, "k_%zu", i);
+        String s(buf);
+        assert(map.get(&s) == i);
+    }
+
+    for (size_t i = 0; i < size; i++) {
+        snprintf(buf, 20, "k_%zu", i);
+        String s(buf);
+        assert(map.remove(&s) == i);
+    }
+
+    assert(map.size() == 0);
+}
+
 int main() {
     testPair();
     testBasicSOMap();
     testIncreaseMap();
     testSIAMap();
+    testSIMap();
 }
