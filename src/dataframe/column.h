@@ -71,6 +71,10 @@ class Column : public Object {
   Column(Column& other) 
     : Column(other.type_, other.kv_, other.dataframe_name_, other.column_index_, other.size_, 
       other.keys_, other.buffered_elements_) { }
+  
+  Column(Column& other, String* df_name, KV_Store* kv, size_t index) 
+    : Column(other.type_, kv, df_name, index, other.size_, 
+      other.keys_, other.buffered_elements_) { }
 
   Column(char type) : Column(type, nullptr, nullptr, 0) {  }
 

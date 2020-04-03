@@ -23,7 +23,7 @@ test: build
 	build/tests/test_sorer
 	build/tests/test-array
 	build/tests/test-map
-	build/tests/dataframe/parallel_map_personal_test_suite
+	build/tests/test_dataframe
 	build/tests/test_kv_store
 	build/tests/test_kd_store
 	build/tests/test_application
@@ -37,6 +37,7 @@ valgrind: build
 	valgrind build/tests/test_kv_store
 	valgrind build/tests/test_kd_store
 	valgrind build/tests/test_application
+	valgrind build/tests/test_dataframe
 	valgrind build/tests/test_networking
 
 clean:

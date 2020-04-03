@@ -5,7 +5,7 @@
 #include <arpa/inet.h> 
 #include <unistd.h> 
 #include <string.h> 
-//#include "../src/dataframe/dataframe.h"
+#include "../src/dataframe/dataframe.h"
 #include "../src/networks/message.h"
 #include "../src/helpers/array.h"
 #include "../src/kv_store/key.h"
@@ -520,538 +520,545 @@ void test_key() {
     printf("Key serialization passed!\n");
 }
 
-// void test_schema() {
-//     char* schema_type = const_cast<char*>("IDSBDISIBDSIBDDSSIBD");
-//     size_t num_cols = 20;
-//     size_t num_rows = 34;
-//     Schema schema(schema_type);
-//     for (size_t ii = 0; ii < num_rows; ii++) {
-//         schema.add_row();
-//     }
-//     assert(schema.num_cols_ == num_cols);
-//     assert(schema.num_rows_ == num_rows);
-//     assert(strcmp(schema.types_, schema_type) == 0);
+void test_schema() {
+    char* schema_type = const_cast<char*>("IDSBDISIBDSIBDDSSIBD");
+    size_t num_cols = 20;
+    size_t num_rows = 34;
+    Schema schema(schema_type);
+    for (size_t ii = 0; ii < num_rows; ii++) {
+        schema.add_row();
+    }
+    assert(schema.num_cols_ == num_cols);
+    assert(schema.num_rows_ == num_rows);
+    assert(strcmp(schema.types_->c_str(), schema_type) == 0);
 
-//     char* schema_serial = schema.serialize();
-//     Deserializer deserializer(schema_serial);
-//     Schema* deserial_schema = new Schema(deserializer);
-//     assert(deserial_schema->num_cols_ == num_cols);
-//     assert(deserial_schema->num_rows_ == num_rows);
-//     assert(strcmp(deserial_schema->types_, schema_type) == 0);
-//     assert(deserial_schema->types_size_ == schema.types_size_);
-//     assert(schema.equals(deserial_schema));
+    char* schema_serial = schema.serialize();
+    Deserializer deserializer(schema_serial);
+    Schema* deserial_schema = new Schema(deserializer);
+    assert(deserial_schema->num_cols_ == num_cols);
+    assert(deserial_schema->num_rows_ == num_rows);
+    assert(strcmp(deserial_schema->types_->c_str(), schema_type) == 0);
+    assert(deserial_schema->types_->size() == schema.types_->size());
+    assert(schema.equals(deserial_schema));
 
-//     delete[] schema_serial;
-//     delete deserial_schema;
-//     printf("Schema serialization passed!\n");
-// }
+    delete[] schema_serial;
+    delete deserial_schema;
+    printf("Schema serialization passed!\n");
+}
 
-// void test_int_column() {
-//     String df_name("mainframe");
-//     size_t local_node_index = 4;
-//     Key df_key(&df_name, local_node_index);
-//     KV_Store kv(local_node_index);
-//     IntColumn int_column(&kv, df_key.get_key(), df_key.get_node_index());
+void test_int_column() {
+    String df_name("mainframe");
+    size_t local_node_index = 4;
+    Key df_key(&df_name, local_node_index);
+    KV_Store kv(local_node_index);
+    Column int_column('I', &kv, df_key.get_key(), df_key.get_node_index());
 
-//     size_t buffered_elements_size = 10;
-//     size_t number_of_kv_chunks = 4;
-//     size_t int_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
-//     for (size_t ii = 0; ii < int_column_count; ii++) {
-//         int_column.push_back(ii);
-//     }
-//     assert(int_column.get_num_arrays() == number_of_kv_chunks + 1);
+    size_t buffered_elements_size = 10;
+    size_t number_of_kv_chunks = 4;
+    size_t int_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
+    for (size_t ii = 0; ii < int_column_count; ii++) {
+        int_column.push_back((int)ii);
+    }
+    assert(int_column.keys_->length() + 1 == number_of_kv_chunks + 1);
 
-//     // Test that the Column serializes and deserializes correctly
-//     char* int_col_serial = int_column.serialize();
-//     IntColumn* deserial_int_col = IntColumn::deserialize(int_col_serial, &kv);
-//     for (size_t ii = 0; ii < deserial_int_col->size(); ii++) {
-//         assert(deserial_int_col->get(ii) == ii);
-//     }
-//     assert(deserial_int_col->get_num_arrays() == number_of_kv_chunks + 1);
-//     assert(deserial_int_col->size_ == int_column_count);
-//     assert(deserial_int_col->dataframe_name_->equals(&df_name));
-//     assert(deserial_int_col->type_ == 'I');
+    // Test that the Column serializes and deserializes correctly
+    char* int_col_serial = int_column.serialize();
+    Deserializer deserializer(int_col_serial);
+    Column* deserial_int_col = new Column(deserializer, &kv);
+    for (size_t ii = 0; ii < deserial_int_col->size(); ii++) {
+        assert(deserial_int_col->get_int(ii) == ii);
+    }
+    assert(deserial_int_col->keys_->length() + 1 == number_of_kv_chunks + 1);
+    assert(deserial_int_col->size_ == int_column_count);
+    assert(deserial_int_col->dataframe_name_->equals(&df_name));
+    assert(deserial_int_col->type_ == 'I');
     
-//     // Test that each kv chunk is still correct
-//     for (size_t ii = 0; ii < number_of_kv_chunks; ii++) {
-//         String stored_string(df_name);
-//         stored_string.concat("_");
-//         stored_string.concat(local_node_index);
-//         stored_string.concat("_");
-//         stored_string.concat(ii);
-//         Key stored_element_key(&stored_string, local_node_index);
-//         IntArray* stored_ints = deserial_int_col->kv_->get_int_array(&stored_element_key);
-//         size_t starting_index = ELEMENT_ARRAY_SIZE * ii;
-//         for (size_t jj = 0; jj < ELEMENT_ARRAY_SIZE; jj++) {
-//             assert(stored_ints->get(jj) == starting_index + jj);
-//             assert(stored_ints->get(jj) == deserial_int_col->get(starting_index + jj));
-//         }
-//         delete stored_ints;
-//     }
+    // Test that each kv chunk is still correct
+    for (size_t ii = 0; ii < number_of_kv_chunks; ii++) {
+        String stored_string(df_name);
+        stored_string.concat("_");
+        stored_string.concat(local_node_index);
+        stored_string.concat("_");
+        stored_string.concat(ii);
+        Key stored_element_key(&stored_string, local_node_index);
+        Array* stored_ints = deserial_int_col->kv_->get_array(&stored_element_key, 'I');
+        size_t starting_index = ELEMENT_ARRAY_SIZE * ii;
+        for (size_t jj = 0; jj < ELEMENT_ARRAY_SIZE; jj++) {
+            assert(stored_ints->get(jj).i == starting_index + jj);
+            assert(stored_ints->get(jj).i == deserial_int_col->get_int(starting_index + jj));
+        }
+        delete stored_ints;
+    }
 
-//     // Test that the buffered elements are still the same
-//     IntArray* buffered_ints = deserial_int_col->buffered_elements_;
-//     size_t starting_buffer_index = ELEMENT_ARRAY_SIZE * number_of_kv_chunks;
-//     for (size_t ii = 0; ii < buffered_elements_size; ii++) {
-//         assert(buffered_ints->get(ii) == starting_buffer_index + ii);
-//         assert(buffered_ints->get(ii) == deserial_int_col->get(starting_buffer_index + ii));
-//     }
+    // Test that the buffered elements are still the same
+    Array* buffered_ints = deserial_int_col->buffered_elements_;
+    size_t starting_buffer_index = ELEMENT_ARRAY_SIZE * number_of_kv_chunks;
+    for (size_t ii = 0; ii < buffered_elements_size; ii++) {
+        assert(buffered_ints->get(ii).i == starting_buffer_index + ii);
+        assert(buffered_ints->get(ii).i == deserial_int_col->get_int(starting_buffer_index + ii));
+    }
 
-//     delete[] int_col_serial;
-//     delete deserial_int_col;
-//     printf("IntColumn serialization passed!\n");
-// }
+    delete[] int_col_serial;
+    delete deserial_int_col;
+    printf("IntColumn serialization passed!\n");
+}
 
-// void test_double_column() {
-//     String df_name("doubleies");
-//     size_t local_node_index = 4;
-//     Key df_key(&df_name, local_node_index);
-//     KV_Store kv(local_node_index);
-//     DoubleColumn double_column(&kv, df_key.get_key(), df_key.get_node_index());
+void test_double_column() {
+    String df_name("doubleies");
+    size_t local_node_index = 4;
+    Key df_key(&df_name, local_node_index);
+    KV_Store kv(local_node_index);
+    Column double_column('D', &kv, df_key.get_key(), df_key.get_node_index());
 
-//     size_t buffered_elements_size = 18;
-//     size_t number_of_kv_chunks = 3;
-//     double double_decimal = 0.002;
-//     size_t double_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
-//     for (size_t ii = 0; ii < double_column_count; ii++) {
-//         double_column.push_back(ii + double_decimal);
-//     }
-//     assert(double_column.get_num_arrays() == number_of_kv_chunks + 1);
+    size_t buffered_elements_size = 18;
+    size_t number_of_kv_chunks = 3;
+    double double_decimal = 0.002;
+    size_t double_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
+    for (size_t ii = 0; ii < double_column_count; ii++) {
+        double_column.push_back(ii + double_decimal);
+    }
+    assert(double_column.keys_->length() + 1 == number_of_kv_chunks + 1);
 
-//     // Test that the Column serializes and deserializes correctly
-//     char* double_col_serial = double_column.serialize();
-//     DoubleColumn* deserial_double_col = DoubleColumn::deserialize(double_col_serial, &kv);
-//     for (size_t ii = 0; ii < deserial_double_col->size(); ii++) {
-//         assert(deserial_double_col->get(ii) == ii + double_decimal);
-//     }
-//     assert(deserial_double_col->get_num_arrays() == number_of_kv_chunks + 1);
-//     assert(deserial_double_col->size_ == double_column_count);
-//     assert(deserial_double_col->dataframe_name_->equals(&df_name));
-//     assert(deserial_double_col->type_ == 'D');
+    // Test that the Column serializes and deserializes correctly
+    char* double_col_serial = double_column.serialize();
+    Deserializer deserializer(double_col_serial);
+    Column* deserial_double_col = new Column(deserializer, &kv);
+    for (size_t ii = 0; ii < deserial_double_col->size(); ii++) {
+        assert(deserial_double_col->get_double(ii) == ii + double_decimal);
+    }
+    assert(deserial_double_col->keys_->length() + 1 == number_of_kv_chunks + 1);
+    assert(deserial_double_col->size_ == double_column_count);
+    assert(deserial_double_col->dataframe_name_->equals(&df_name));
+    assert(deserial_double_col->type_ == 'D');
     
-//     // Test that each kv chunk is still correct
-//     for (size_t ii = 0; ii < number_of_kv_chunks; ii++) {
-//         String stored_string(df_name);
-//         stored_string.concat("_");
-//         stored_string.concat(local_node_index);
-//         stored_string.concat("_");
-//         stored_string.concat(ii);
-//         Key stored_element_key(&stored_string, local_node_index);
-//         DoubleArray* stored_doubles = deserial_double_col->kv_->get_double_array(&stored_element_key);
-//         size_t starting_index = ELEMENT_ARRAY_SIZE * ii;
-//         for (size_t jj = 0; jj < ELEMENT_ARRAY_SIZE; jj++) {
-//             assert(stored_doubles->get(jj) == starting_index + jj + double_decimal);
-//             assert(stored_doubles->get(jj) == deserial_double_col->get(starting_index + jj));
-//         }
-//         delete stored_doubles;
-//     }
+    // Test that each kv chunk is still correct
+    for (size_t ii = 0; ii < number_of_kv_chunks; ii++) {
+        String stored_string(df_name);
+        stored_string.concat("_");
+        stored_string.concat(local_node_index);
+        stored_string.concat("_");
+        stored_string.concat(ii);
+        Key stored_element_key(&stored_string, local_node_index);
+        Array* stored_doubles = deserial_double_col->kv_->get_array(&stored_element_key, 'D');
+        size_t starting_index = ELEMENT_ARRAY_SIZE * ii;
+        for (size_t jj = 0; jj < ELEMENT_ARRAY_SIZE; jj++) {
+            assert(stored_doubles->get(jj).d == starting_index + jj + double_decimal);
+            assert(stored_doubles->get(jj).d == deserial_double_col->get_double(starting_index + jj));
+        }
+        delete stored_doubles;
+    }
 
-//     // Test that the buffered elements are still the same
-//     DoubleArray* buffered_doubles = deserial_double_col->buffered_elements_;
-//     size_t starting_buffer_index = ELEMENT_ARRAY_SIZE * number_of_kv_chunks;
-//     for (size_t ii = 0; ii < buffered_elements_size; ii++) {
-//         assert(buffered_doubles->get(ii) == starting_buffer_index + ii + double_decimal);
-//         assert(buffered_doubles->get(ii) == deserial_double_col->get(starting_buffer_index + ii));
-//     }
+    // Test that the buffered elements are still the same
+    Array* buffered_doubles = deserial_double_col->buffered_elements_;
+    size_t starting_buffer_index = ELEMENT_ARRAY_SIZE * number_of_kv_chunks;
+    for (size_t ii = 0; ii < buffered_elements_size; ii++) {
+        assert(buffered_doubles->get(ii).d == starting_buffer_index + ii + double_decimal);
+        assert(buffered_doubles->get(ii).d == deserial_double_col->get_double(starting_buffer_index + ii));
+    }
 
-//     delete[] double_col_serial;
-//     delete deserial_double_col;
-//     printf("DoubleColumn serialization passed!\n");
-// }
+    delete[] double_col_serial;
+    delete deserial_double_col;
+    printf("DoubleColumn serialization passed!\n");
+}
 
-// void test_bool_column() {
-//     String df_name("switches");
-//     size_t local_node_index = 6;
-//     Key df_key(&df_name, local_node_index);
-//     KV_Store kv(local_node_index);
-//     BoolColumn bool_column(&kv, df_key.get_key(), df_key.get_node_index());
+void test_bool_column() {
+    String df_name("switches");
+    size_t local_node_index = 6;
+    Key df_key(&df_name, local_node_index);
+    KV_Store kv(local_node_index);
+    Column bool_column('B', &kv, df_key.get_key(), df_key.get_node_index());
 
-//     size_t buffered_elements_size = 98;
-//     size_t number_of_kv_chunks = 5;
-//     size_t bool_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
-//     for (size_t ii = 0; ii < bool_column_count; ii += 2) {
-//         bool_column.push_back(true);
-//         bool_column.push_back(false);
-//     }
-//     assert(bool_column.get_num_arrays() == number_of_kv_chunks + 1);
+    size_t buffered_elements_size = 98;
+    size_t number_of_kv_chunks = 5;
+    size_t bool_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
+    for (size_t ii = 0; ii < bool_column_count; ii += 2) {
+        bool_column.push_back(true);
+        bool_column.push_back(false);
+    }
+    assert(bool_column.keys_->length() + 1 == number_of_kv_chunks + 1);
 
-//     // Test that the Column serializes and deserializes correctly
-//     char* bool_col_serial = bool_column.serialize();
-//     BoolColumn* deserial_bool_col = BoolColumn::deserialize(bool_col_serial, &kv);
-//     for (size_t ii = 0; ii < deserial_bool_col->size(); ii += 2) {
-//         assert(deserial_bool_col->get(ii));
-//         assert(!deserial_bool_col->get(ii + 1));
-//     }
-//     assert(deserial_bool_col->get_num_arrays() == number_of_kv_chunks + 1);
-//     assert(deserial_bool_col->size_ == bool_column_count);
-//     assert(deserial_bool_col->dataframe_name_->equals(&df_name));
-//     assert(deserial_bool_col->type_ == 'B');
+    // Test that the Column serializes and deserializes correctly
+    char* bool_col_serial = bool_column.serialize();
+    Deserializer deserializer(bool_col_serial);
+    Column* deserial_bool_col = new Column(deserializer, &kv);
+    for (size_t ii = 0; ii < deserial_bool_col->size(); ii += 2) {
+        assert(deserial_bool_col->get_bool(ii));
+        assert(!deserial_bool_col->get_bool(ii + 1));
+    }
+    assert(deserial_bool_col->keys_->length() + 1 == number_of_kv_chunks + 1);
+    assert(deserial_bool_col->size_ == bool_column_count);
+    assert(deserial_bool_col->dataframe_name_->equals(&df_name));
+    assert(deserial_bool_col->type_ == 'B');
     
-//     // Test that each kv chunk is still correct
-//     for (size_t ii = 0; ii < number_of_kv_chunks; ii++) {
-//         String stored_string(df_name);
-//         stored_string.concat("_");
-//         stored_string.concat(local_node_index);
-//         stored_string.concat("_");
-//         stored_string.concat(ii);
-//         Key stored_element_key(&stored_string, local_node_index);
-//         BoolArray* stored_bools = deserial_bool_col->kv_->get_bool_array(&stored_element_key);
-//         size_t starting_index = ELEMENT_ARRAY_SIZE * ii;
-//         for (size_t jj = 0; jj < ELEMENT_ARRAY_SIZE; jj += 2) {
-//             assert(stored_bools->get(jj));
-//             assert(stored_bools->get(jj) == deserial_bool_col->get(starting_index + jj));
-//             assert(!stored_bools->get(jj + 1));
-//             assert(stored_bools->get(jj + 1) == deserial_bool_col->get(starting_index + jj + 1));
-//         }
-//         delete stored_bools;
-//     }
+    // Test that each kv chunk is still correct
+    for (size_t ii = 0; ii < number_of_kv_chunks; ii++) {
+        String stored_string(df_name);
+        stored_string.concat("_");
+        stored_string.concat(local_node_index);
+        stored_string.concat("_");
+        stored_string.concat(ii);
+        Key stored_element_key(&stored_string, local_node_index);
+        Array* stored_bools = deserial_bool_col->kv_->get_array(&stored_element_key, 'B');
+        size_t starting_index = ELEMENT_ARRAY_SIZE * ii;
+        for (size_t jj = 0; jj < ELEMENT_ARRAY_SIZE; jj += 2) {
+            assert(stored_bools->get(jj).b);
+            assert(stored_bools->get(jj).b == deserial_bool_col->get_bool(starting_index + jj));
+            assert(!stored_bools->get(jj + 1).b);
+            assert(stored_bools->get(jj + 1).b == deserial_bool_col->get_bool(starting_index + jj + 1));
+        }
+        delete stored_bools;
+    }
 
-//     // Test that the buffered elements are still the same
-//     BoolArray* buffered_bools = deserial_bool_col->buffered_elements_;
-//     size_t starting_buffer_index = ELEMENT_ARRAY_SIZE * number_of_kv_chunks;
-//     for (size_t ii = 0; ii < buffered_elements_size; ii += 2) {
-//         assert(buffered_bools->get(ii));
-//         assert(buffered_bools->get(ii) == deserial_bool_col->get(starting_buffer_index + ii));
-//         assert(!buffered_bools->get(ii + 1));
-//         assert(buffered_bools->get(ii + 1) == deserial_bool_col->get(starting_buffer_index + ii + 1));
-//     }
+    // Test that the buffered elements are still the same
+    Array* buffered_bools = deserial_bool_col->buffered_elements_;
+    size_t starting_buffer_index = ELEMENT_ARRAY_SIZE * number_of_kv_chunks;
+    for (size_t ii = 0; ii < buffered_elements_size; ii += 2) {
+        assert(buffered_bools->get(ii).b);
+        assert(buffered_bools->get(ii).b == deserial_bool_col->get_bool(starting_buffer_index + ii));
+        assert(!buffered_bools->get(ii + 1).b);
+        assert(buffered_bools->get(ii + 1).b == deserial_bool_col->get_bool(starting_buffer_index + ii + 1));
+    }
 
-//     delete[] bool_col_serial;
-//     delete deserial_bool_col;
-//     printf("BoolColumn serialization passed!\n");
-// }
+    delete[] bool_col_serial;
+    delete deserial_bool_col;
+    printf("BoolColumn serialization passed!\n");
+}
 
-// void test_string_column() {
-//     String df_name("mainframe");
-//     String base_string("col_string_");
-//     size_t local_node_index = 4;
-//     Key df_key(&df_name, local_node_index);
-//     KV_Store kv(local_node_index);
-//     StringColumn string_column(&kv, df_key.get_key(), df_key.get_node_index());
+void test_string_column() {
+    String df_name("mainframe");
+    String base_string("col_string_");
+    size_t local_node_index = 4;
+    Key df_key(&df_name, local_node_index);
+    KV_Store kv(local_node_index);
+    Column string_column('S', &kv, df_key.get_key(), df_key.get_node_index());
 
-//     size_t buffered_elements_size = 10;
-//     size_t number_of_kv_chunks = 4;
-//     size_t string_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
-//     for (size_t ii = 0; ii < string_column_count; ii++) {
-//         String temp_string(base_string);
-//         temp_string.concat(ii);
-//         string_column.push_back(&temp_string);
-//     }
-//     assert(string_column.get_num_arrays() == number_of_kv_chunks + 1);
+    size_t buffered_elements_size = 10;
+    size_t number_of_kv_chunks = 4;
+    size_t string_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
+    for (size_t ii = 0; ii < string_column_count; ii++) {
+        String temp_string(base_string);
+        temp_string.concat(ii);
+        string_column.push_back(&temp_string);
+    }
+    assert(string_column.keys_->length() + 1 == number_of_kv_chunks + 1);
 
-//     // Test that the Column serializes and deserializes correctly
-//     char* string_col_serial = string_column.serialize();
-//     StringColumn* deserial_string_col = StringColumn::deserialize(string_col_serial, &kv);
-//     for (size_t ii = 0; ii < deserial_string_col->size(); ii++) {
-//         String temp_string(base_string);
-//         temp_string.concat(ii);
-//         String* kv_string = deserial_string_col->get(ii);
-//         assert(kv_string->equals(&temp_string));
-//     }
-//     assert(deserial_string_col->get_num_arrays() == number_of_kv_chunks + 1);
-//     assert(deserial_string_col->size_ == string_column_count);
-//     assert(deserial_string_col->dataframe_name_->equals(&df_name));
-//     assert(deserial_string_col->type_ == 'S');
+    // Test that the Column serializes and deserializes correctly
+    char* string_col_serial = string_column.serialize();
+    Deserializer deserializer(string_col_serial);
+    Column* deserial_string_col = new Column(deserializer, &kv);
+    for (size_t ii = 0; ii < deserial_string_col->size(); ii++) {
+        String temp_string(base_string);
+        temp_string.concat(ii);
+        String* kv_string = deserial_string_col->get_string(ii);
+        assert(kv_string->equals(&temp_string));
+    }
+    assert(deserial_string_col->keys_->length() + 1 == number_of_kv_chunks + 1);
+    assert(deserial_string_col->size_ == string_column_count);
+    assert(deserial_string_col->dataframe_name_->equals(&df_name));
+    assert(deserial_string_col->type_ == 'S');
     
-//     // Test that each kv chunk is still correct
-//     for (size_t ii = 0; ii < number_of_kv_chunks; ii++) {
-//         String stored_string(df_name);
-//         stored_string.concat("_");
-//         stored_string.concat(local_node_index);
-//         stored_string.concat("_");
-//         stored_string.concat(ii);
-//         Key stored_element_key(&stored_string, local_node_index);
-//         StringArray* stored_strings = deserial_string_col->kv_->get_string_array(&stored_element_key);
-//         size_t starting_index = ELEMENT_ARRAY_SIZE * ii;
-//         for (size_t jj = 0; jj < ELEMENT_ARRAY_SIZE; jj++) {
-//             String temp_string(base_string);
-//             temp_string.concat(starting_index + jj);
-//             assert(stored_strings->get(jj)->equals(&temp_string));
-//             String* kv_string = deserial_string_col->get(starting_index + jj);
-//             assert(stored_strings->get(jj)->equals(kv_string));
-//         }
-//         delete stored_strings;
-//     }
+    // Test that each kv chunk is still correct
+    for (size_t ii = 0; ii < number_of_kv_chunks; ii++) {
+        String stored_string(df_name);
+        stored_string.concat("_");
+        stored_string.concat(local_node_index);
+        stored_string.concat("_");
+        stored_string.concat(ii);
+        Key stored_element_key(&stored_string, local_node_index);
+        Array* stored_strings = deserial_string_col->kv_->get_array(&stored_element_key, 'S');
+        size_t starting_index = ELEMENT_ARRAY_SIZE * ii;
+        for (size_t jj = 0; jj < ELEMENT_ARRAY_SIZE; jj++) {
+            String temp_string(base_string);
+            temp_string.concat(starting_index + jj);
+            assert(stored_strings->get(jj).o->equals(&temp_string));
+            String* kv_string = deserial_string_col->get_string(starting_index + jj);
+            assert(stored_strings->get(jj).o->equals(kv_string));
+        }
+        delete stored_strings;
+    }
 
-//     // Test that the buffered elements are still the same
-//     StringArray* buffered_strings = deserial_string_col->buffered_elements_;
-//     size_t starting_buffer_index = ELEMENT_ARRAY_SIZE * number_of_kv_chunks;
-//     for (size_t ii = 0; ii < buffered_elements_size; ii++) {
-//         String temp_string(base_string);
-//         temp_string.concat(starting_buffer_index + ii);
-//         assert(buffered_strings->get(ii)->equals(&temp_string));
-//         String* local_string = deserial_string_col->get(starting_buffer_index + ii);
-//         assert(buffered_strings->get(ii)->equals(local_string));
-//     }
+    // Test that the buffered elements are still the same
+    Array* buffered_strings = deserial_string_col->buffered_elements_;
+    size_t starting_buffer_index = ELEMENT_ARRAY_SIZE * number_of_kv_chunks;
+    for (size_t ii = 0; ii < buffered_elements_size; ii++) {
+        String temp_string(base_string);
+        temp_string.concat(starting_buffer_index + ii);
+        assert(buffered_strings->get(ii).o->equals(&temp_string));
+        String* local_string = deserial_string_col->get_string(starting_buffer_index + ii);
+        assert(buffered_strings->get(ii).o->equals(local_string));
+    }
 
-//     delete[] string_col_serial;
-//     delete deserial_string_col;
-//     printf("StringColumn serialization passed!\n");
-// }
+    delete[] string_col_serial;
+    delete deserial_string_col;
+    printf("StringColumn serialization passed!\n");
+}
 
-// void test_column_array() {
-//     size_t local_node_index = 3;
-//     Key string_key("string_col", local_node_index);
-//     Key double_key("double_col", local_node_index);
-//     Key int_key("int_col", local_node_index);
-//     Key bool_key("bool_col", local_node_index);
+void test_column_array() {
+    size_t local_node_index = 3;
+    Key string_key("string_col", local_node_index);
+    Key double_key("double_col", local_node_index);
+    Key int_key("int_col", local_node_index);
+    Key bool_key("bool_col", local_node_index);
 
-//     KV_Store kv(local_node_index);
-//     StringColumn string_column(&kv, string_key.get_key(), string_key.get_node_index());
-//     DoubleColumn double_column(&kv, double_key.get_key(), double_key.get_node_index());
-//     BoolColumn bool_column(&kv, bool_key.get_key(), bool_key.get_node_index());
-//     IntColumn int_column(&kv, int_key.get_key(), int_key.get_node_index());
+    KV_Store kv(local_node_index);
+    Column string_column('S', &kv, string_key.get_key(), string_key.get_node_index());
+    Column double_column('D', &kv, double_key.get_key(), double_key.get_node_index());
+    Column bool_column('B', &kv, bool_key.get_key(), bool_key.get_node_index());
+    Column int_column('I', &kv, int_key.get_key(), int_key.get_node_index());
 
-//     size_t buffered_elements_size = 10;
-//     size_t number_of_kv_chunks = 5;
-//     size_t string_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
-//     String base_string("col_string_");
-//     double double_decimal = 0.002;
-//     for (size_t ii = 0; ii < string_column_count; ii++) {
-//         String temp_string(base_string);
-//         temp_string.concat(ii);
-//         string_column.push_back(&temp_string);
-//         double_column.push_back(ii + double_decimal);
-//         int_column.push_back(ii);
-//         bool_column.push_back(true);
-//     }
-//     assert(string_column.get_num_arrays() == number_of_kv_chunks + 1);
-//     assert(double_column.get_num_arrays() == number_of_kv_chunks + 1);
-//     assert(int_column.get_num_arrays() == number_of_kv_chunks + 1);
-//     assert(bool_column.get_num_arrays() == number_of_kv_chunks + 1);
+    size_t buffered_elements_size = 10;
+    size_t number_of_kv_chunks = 5;
+    size_t string_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
+    String base_string("col_string_");
+    double double_decimal = 0.002;
+    for (size_t ii = 0; ii < string_column_count; ii++) {
+        String temp_string(base_string);
+        temp_string.concat(ii);
+        string_column.push_back(&temp_string);
+        double_column.push_back(ii + double_decimal);
+        int_column.push_back((int)ii);
+        bool_column.push_back(true);
+    }
+    assert(string_column.keys_->length() + 1 == number_of_kv_chunks + 1);
+    assert(double_column.keys_->length() + 1 == number_of_kv_chunks + 1);
+    assert(int_column.keys_->length() + 1 == number_of_kv_chunks + 1);
+    assert(bool_column.keys_->length() + 1 == number_of_kv_chunks + 1);
 
-//     size_t col_array_size = 10;
-//     size_t col_count = 4;
-//     ColumnArray col_array(col_array_size);
-//     col_array.push(&string_column);
-//     col_array.push(&double_column);
-//     col_array.push(&int_column);
-//     col_array.push(&bool_column);
+    size_t col_array_size = 10;
+    size_t col_count = 4;
+    ColumnArray col_array(col_array_size);
+    col_array.push(&string_column);
+    col_array.push(&double_column);
+    col_array.push(&int_column);
+    col_array.push(&bool_column);
 
-//     assert(col_array.size_ == col_array_size);
-//     assert(col_array.length() == col_count);
-//     for (size_t ii = 0; ii < col_count; ii++) {
-//         char col_type = col_array.get(ii)->get_type();
-//         switch (col_type) {
-//             case 'I': {
-//                 for (size_t jj = 0; jj < string_column_count; jj++) {
-//                     assert(col_array.get(ii)->as_int()->get(jj) == jj);
-//                 }
-//                 break;
-//             }
-//             case 'S': {
-//                 for (size_t jj = 0; jj < string_column_count; jj++) {
-//                     String temp_string(base_string);
-//                     temp_string.concat(jj);
-//                     String* column_string = col_array.get(ii)->as_string()->get(jj);
-//                     assert(column_string->equals(&temp_string));
-//                 }
-//                 break;
-//             }
-//             case 'D': {
-//                 for (size_t jj = 0; jj < string_column_count; jj++) {
-//                     assert(col_array.get(ii)->as_double()->get(jj) == jj + double_decimal);
-//                 }
-//                 break;
-//             }
-//             case 'B': {
-//                 for (size_t jj = 0; jj < string_column_count; jj++) {
-//                     assert(col_array.get(ii)->as_bool()->get(jj));
-//                 }
-//                 break;
-//             }
-//         }
-//     }
+    assert(col_array.size_ == col_array_size);
+    assert(col_array.length() == col_count);
+    for (size_t ii = 0; ii < col_count; ii++) {
+        char col_type = col_array.get(ii)->get_type();
+        switch (col_type) {
+            case 'I': {
+                for (size_t jj = 0; jj < string_column_count; jj++) {
+                    assert(col_array.get(ii)->get_int(jj) == jj);
+                }
+                break;
+            }
+            case 'S': {
+                for (size_t jj = 0; jj < string_column_count; jj++) {
+                    String temp_string(base_string);
+                    temp_string.concat(jj);
+                    String* column_string = col_array.get(ii)->get_string(jj);
+                    assert(column_string->equals(&temp_string));
+                }
+                break;
+            }
+            case 'D': {
+                for (size_t jj = 0; jj < string_column_count; jj++) {
+                    assert(col_array.get(ii)->get_double(jj) == jj + double_decimal);
+                }
+                break;
+            }
+            case 'B': {
+                for (size_t jj = 0; jj < string_column_count; jj++) {
+                    assert(col_array.get(ii)->get_bool(jj));
+                }
+                break;
+            }
+        }
+    }
 
-//     char* serial = col_array.serialize();
-//     ColumnArray* deserial_col_array = ColumnArray::deserialize(serial, &kv);
+    char* serial = col_array.serialize();
+    Deserializer deserializer(serial);
+    ColumnArray* deserial_col_array = new ColumnArray(deserializer, &kv);
 
-//     assert(deserial_col_array->size_ == col_array_size);
-//     assert(deserial_col_array->length() == col_count);
-//     for (size_t ii = 0; ii < col_count; ii++) {
-//         char col_type = deserial_col_array->get(ii)->get_type();
-//         switch (col_type) {
-//             case 'I': {
-//                 for (size_t jj = 0; jj < string_column_count; jj++) {
-//                     assert(deserial_col_array->get(ii)->as_int()->get(jj) == jj);
-//                     assert(deserial_col_array->get(ii)->as_int()->get(jj) 
-//                         == col_array.get(ii)->as_int()->get(jj));
-//                 }
-//                 break;
-//             }
-//             case 'S': {
-//                 for (size_t jj = 0; jj < string_column_count; jj++) {
-//                     String temp_string(base_string);
-//                     temp_string.concat(jj);
-//                     String* column_string = col_array.get(ii)->as_string()->get(jj);
-//                     String* deserial_string = deserial_col_array->get(ii)->as_string()->get(jj);
-//                     assert(deserial_string->equals(&temp_string));
-//                     assert(deserial_string->equals(column_string));
-//                 }
-//                 break;
-//             }
-//             case 'D': {
-//                 for (size_t jj = 0; jj < string_column_count; jj++) {
-//                     assert(deserial_col_array->get(ii)->as_double()->get(jj) == jj + double_decimal);
-//                     assert(deserial_col_array->get(ii)->as_double()->get(jj) 
-//                         == col_array.get(ii)->as_double()->get(jj));
-//                 }
-//                 break;
-//             }
-//             case 'B': {
-//                 for (size_t jj = 0; jj < string_column_count; jj++) {
-//                     assert(deserial_col_array->get(ii)->as_bool()->get(jj));
-//                     assert(deserial_col_array->get(ii)->as_bool()->get(jj) 
-//                         == col_array.get(ii)->as_bool()->get(jj));
+    assert(deserial_col_array->size_ == col_array_size);
+    assert(deserial_col_array->length() == col_count);
+    for (size_t ii = 0; ii < col_count; ii++) {
+        char col_type = deserial_col_array->get(ii)->get_type();
+        switch (col_type) {
+            case 'I': {
+                for (size_t jj = 0; jj < string_column_count; jj++) {
+                    assert(deserial_col_array->get(ii)->get_int(jj) == jj);
+                    assert(deserial_col_array->get(ii)->get_int(jj) 
+                        == col_array.get(ii)->get_int(jj));
+                }
+                break;
+            }
+            case 'S': {
+                for (size_t jj = 0; jj < string_column_count; jj++) {
+                    String temp_string(base_string);
+                    temp_string.concat(jj);
+                    String* column_string = col_array.get(ii)->get_string(jj);
+                    String* deserial_string = deserial_col_array->get(ii)->get_string(jj);
+                    assert(deserial_string->equals(&temp_string));
+                    assert(deserial_string->equals(column_string));
+                }
+                break;
+            }
+            case 'D': {
+                for (size_t jj = 0; jj < string_column_count; jj++) {
+                    assert(deserial_col_array->get(ii)->get_double(jj) == jj + double_decimal);
+                    assert(deserial_col_array->get(ii)->get_double(jj) 
+                        == col_array.get(ii)->get_double(jj));
+                }
+                break;
+            }
+            case 'B': {
+                for (size_t jj = 0; jj < string_column_count; jj++) {
+                    assert(deserial_col_array->get(ii)->get_bool(jj));
+                    assert(deserial_col_array->get(ii)->get_bool(jj) 
+                        == col_array.get(ii)->get_bool(jj));
 
-//                 }
-//                 break;
-//             }
-//         }
-//     }
+                }
+                break;
+            }
+        }
+    }
 
-//     delete[] serial;
-//     delete deserial_col_array;
-//     printf("ColumnArray serialization passed!\n");
-// }
+    delete[] serial;
+    delete deserial_col_array;
+    printf("ColumnArray serialization passed!\n");
+}
 
-// void test_basic_dataframe() {
-//     KV_Store kv(0);
-//     String c("main");
-//     Schema s1("");
-//     DataFrame df(s1, &c, &kv);
+void test_basic_dataframe() {
+    KV_Store kv(0);
+    String c("main");
+    Schema s1("");
+    DataFrame df(s1, &c, &kv);
 
-//     IntColumn c_int;
-//     c_int.push_back(1);
-//     c_int.push_back(3);
-//     c_int.push_back(4);
-//     c_int.push_back(2);
-//     DoubleColumn c_double;
-//     c_double.push_back((double)1.2);
-//     c_double.push_back((double)3.2);
-//     c_double.push_back((double)2);
-//     c_double.push_back((double)1);
-//     String hi("hi");
-//     String hello("hello");
-//     String h("h");
-//     StringColumn c_string;
-//     c_string.push_back(&hi);
-//     c_string.push_back(&hello);
-//     c_string.push_back(nullptr);
-//     c_string.push_back(&hi);
-//     c_string.push_back(&h);
-//     BoolColumn c_bool;
-//     c_bool.push_back((bool)0);
-//     c_bool.push_back((bool)1);
-//     c_bool.push_back((bool)1);
+    Column c_int('I');
+    c_int.push_back(1);
+    c_int.push_back(3);
+    c_int.push_back(4);
+    c_int.push_back(2);
+    Column c_double('D');
+    c_double.push_back((double)1.2);
+    c_double.push_back((double)3.2);
+    c_double.push_back((double)2);
+    c_double.push_back((double)1);
+    String hi("hi");
+    String hello("hello");
+    String h("h");
+    Column c_string('S');
+    c_string.push_back(&hi);
+    c_string.push_back(&hello);
+    c_string.push_back(nullptr);
+    c_string.push_back(&hi);
+    c_string.push_back(&h);
+    Column c_bool('B');
+    c_bool.push_back((bool)0);
+    c_bool.push_back((bool)1);
+    c_bool.push_back((bool)1);
 
-//     df.add_column(&c_int);
-//     df.add_column(&c_double);
-//     df.add_column(&c_string);
-//     df.add_column(&c_bool);
+    df.add_column(&c_int);
+    df.add_column(&c_double);
+    df.add_column(&c_string);
+    df.add_column(&c_bool);
 
-//     assert(df.get_schema().width() == 4);
-//     assert(df.get_schema().length() == 5);
+    assert(df.get_schema().width() == 4);
+    assert(df.get_schema().length() == 5);
 
-//     char* serial = df.serialize();
-//     DataFrame* deserial_df = DataFrame::deserialize(serial, &kv);
+    char* serial = df.serialize();
+    Deserializer deserializer(serial);
+    DataFrame* deserial_df = new DataFrame(deserializer, &kv);
 
-//     assert(deserial_df->get_schema().width() == 4);
-//     assert(deserial_df->get_schema().length() == 5);
+    assert(deserial_df->get_schema().width() == 4);
+    assert(deserial_df->get_schema().length() == 5);
 
-//     assert(deserial_df->get_int(0, 0) == 1);
-//     assert(deserial_df->get_int(0, 1) ==3);
-//     assert(deserial_df->get_int(0, 2) == 4);
-//     assert(deserial_df->get_int(0, 3) == 2);
+    assert(deserial_df->get_int(0, 0) == 1);
+    assert(deserial_df->get_int(0, 1) ==3);
+    assert(deserial_df->get_int(0, 2) == 4);
+    assert(deserial_df->get_int(0, 3) == 2);
 
-//     assert(deserial_df->get_double(1, 0) == (double)1.2);
-//     assert(deserial_df->get_double(1, 1) == (double)3.2);
-//     assert(deserial_df->get_double(1, 2) == (double)2);
-//     assert(deserial_df->get_double(1, 3) == (double)1);
+    assert(deserial_df->get_double(1, 0) == (double)1.2);
+    assert(deserial_df->get_double(1, 1) == (double)3.2);
+    assert(deserial_df->get_double(1, 2) == (double)2);
+    assert(deserial_df->get_double(1, 3) == (double)1);
 
-//     assert(deserial_df->get_string(2, 0)->equals(&hi));
-//     assert(deserial_df->get_string(2, 1)->equals(&hello));
-//     assert(deserial_df->get_string(2, 2)->equals(&DEFAULT_STRING_VALUE));
-//     assert(deserial_df->get_string(2, 3)->equals(&hi));
-//     assert(deserial_df->get_string(2, 4)->equals(&h));
+    assert(deserial_df->get_string(2, 0)->equals(&hi));
+    assert(deserial_df->get_string(2, 1)->equals(&hello));
+    assert(deserial_df->get_string(2, 2)->equals(&DEFAULT_STRING_VALUE));
+    assert(deserial_df->get_string(2, 3)->equals(&hi));
+    assert(deserial_df->get_string(2, 4)->equals(&h));
 
-//     assert(deserial_df->get_bool(3, 0) == false);
-//     assert(deserial_df->get_bool(3, 1) == 1);
-//     assert(deserial_df->get_bool(3, 2) == true);
+    assert(deserial_df->get_bool(3, 0) == false);
+    assert(deserial_df->get_bool(3, 1) == 1);
+    assert(deserial_df->get_bool(3, 2) == true);
 
-//     // Test that this array grew to fit the row size
-//     assert(deserial_df->get_bool(3, 3) == DEFAULT_BOOL_VALUE);
+    // Test that this array grew to fit the row size
+    assert(deserial_df->get_bool(3, 3) == DEFAULT_BOOL_VALUE);
 
-//     // Test that the rest of the arrays grew from the extra string array rows
-//     assert(deserial_df->get_int(0, 4) == DEFAULT_INT_VALUE);
-//     assert(deserial_df->get_double(1, 4) == DEFAULT_DOUBLE_VALUE);
-//     assert(deserial_df->get_bool(3, 4) == DEFAULT_BOOL_VALUE);
+    // Test that the rest of the arrays grew from the extra string array rows
+    assert(deserial_df->get_int(0, 4) == DEFAULT_INT_VALUE);
+    assert(deserial_df->get_double(1, 4) == DEFAULT_DOUBLE_VALUE);
+    assert(deserial_df->get_bool(3, 4) == DEFAULT_BOOL_VALUE);
 
-//     delete[] serial;
-//     delete deserial_df;
-//     printf("DataFrame basic serialization complete!\n");
-// }
+    delete[] serial;
+    delete deserial_df;
+    printf("DataFrame basic serialization complete!\n");
+}
 
-// void test_complex_dataframe() {
-//     size_t local_node_index = 18;
-//     // This test only works with a completely local kv, no distribution
-//     Key dataframe_key("mainframe", local_node_index);
+void test_complex_dataframe() {
+    size_t local_node_index = 18;
+    // This test only works with a completely local kv, no distribution
+    Key dataframe_key("mainframe", local_node_index);
 
-//     KV_Store kv(local_node_index);
-//     size_t column_index = 0;
-//     StringColumn string_column(&kv, dataframe_key.get_key(), column_index++);
-//     DoubleColumn double_column(&kv, dataframe_key.get_key(), column_index++);
-//     BoolColumn bool_column(&kv, dataframe_key.get_key(), column_index++);
-//     IntColumn int_column(&kv, dataframe_key.get_key(), column_index++);
+    KV_Store kv(local_node_index);
+    size_t column_index = 0;
+    Column string_column('S', &kv, dataframe_key.get_key(), column_index++);
+    Column double_column('D', &kv, dataframe_key.get_key(), column_index++);
+    Column bool_column('B', &kv, dataframe_key.get_key(), column_index++);
+    Column int_column('I', &kv, dataframe_key.get_key(), column_index++);
 
-//     size_t buffered_elements_size = 83;
-//     size_t number_of_kv_chunks = 4;
-//     size_t string_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
-//     String base_string("col_s7r1ng_");
-//     double double_decimal = 0.012;
-//     for (size_t ii = 0; ii < string_column_count; ii++) {
-//         String temp_string(base_string);
-//         temp_string.concat(ii);
-//         string_column.push_back(&temp_string);
-//         double_column.push_back(ii + double_decimal);
-//         int_column.push_back(ii);
-//         bool_column.push_back(true);
-//     }
-//     assert(string_column.get_num_arrays() == number_of_kv_chunks + 1);
-//     assert(double_column.get_num_arrays() == number_of_kv_chunks + 1);
-//     assert(int_column.get_num_arrays() == number_of_kv_chunks + 1);
-//     assert(bool_column.get_num_arrays() == number_of_kv_chunks + 1);
+    size_t buffered_elements_size = 83;
+    size_t number_of_kv_chunks = 4;
+    size_t string_column_count = ELEMENT_ARRAY_SIZE * number_of_kv_chunks + buffered_elements_size;
+    String base_string("col_s7r1ng_");
+    double double_decimal = 0.012;
+    for (size_t ii = 0; ii < string_column_count; ii++) {
+        String temp_string(base_string);
+        temp_string.concat(ii);
+        string_column.push_back(&temp_string);
+        double_column.push_back(ii + double_decimal);
+        int_column.push_back((int)ii);
+        bool_column.push_back(true);
+    }
+    assert(string_column.keys_->length() + 1 == number_of_kv_chunks + 1);
+    assert(double_column.keys_->length() + 1 == number_of_kv_chunks + 1);
+    assert(int_column.keys_->length() + 1 == number_of_kv_chunks + 1);
+    assert(bool_column.keys_->length() + 1 == number_of_kv_chunks + 1);
 
-//     String c("main");
-//     Schema s1("");
-//     DataFrame df(s1, &c, &kv);
-//     df.add_column(&int_column);
-//     df.add_column(&double_column);
-//     df.add_column(&string_column);
-//     df.add_column(&bool_column);
+    String c("main");
+    Schema s1("");
+    DataFrame df(s1, &c, &kv);
+    df.add_column(&int_column);
+    df.add_column(&double_column);
+    df.add_column(&string_column);
+    df.add_column(&bool_column);
     
-//     assert(df.get_schema().width() == 4);
-//     assert(df.get_schema().length() == string_column_count);
+    assert(df.get_schema().width() == 4);
+    assert(df.get_schema().length() == string_column_count);
 
-//     char* serial = df.serialize();
-//     DataFrame* deserial_df = DataFrame::deserialize(serial, &kv);
+    char* serial = df.serialize();
+    Deserializer deserializer(serial);
+    DataFrame* deserial_df = new DataFrame(deserializer, &kv);
 
-//     assert(deserial_df->get_schema().width() == 4);
-//     assert(deserial_df->get_schema().length() == string_column_count);
+    assert(deserial_df->get_schema().width() == 4);
+    assert(deserial_df->get_schema().length() == string_column_count);
 
-//     for (size_t ii = 0; ii < string_column_count; ii++) {
-//         assert(deserial_df->get_int(0, ii) == ii);
-//         assert(deserial_df->get_double(1, ii) == ii + double_decimal);
-//         String temp_string(base_string);
-//         temp_string.concat(ii);
-//         assert(deserial_df->get_string(2, ii)->equals(&temp_string));
-//         assert(deserial_df->get_bool(3, ii));
-//     }
+    for (size_t ii = 0; ii < string_column_count; ii++) {
+        assert(deserial_df->get_int(0, ii) == ii);
+        assert(deserial_df->get_double(1, ii) == ii + double_decimal);
+        String temp_string(base_string);
+        temp_string.concat(ii);
+        assert(deserial_df->get_string(2, ii)->equals(&temp_string));
+        assert(deserial_df->get_bool(3, ii));
+    }
 
-//     delete[] serial;
-//     delete deserial_df;
-//     printf("DataFrame complex serialization complete!\n");
-// }
+    delete[] serial;
+    delete deserial_df;
+    printf("DataFrame complex serialization complete!\n");
+}
 
 void serializing_test() {
     size_t size_t_value = 55;
@@ -1154,14 +1161,14 @@ int main(int argc, char const *argv[])
     test_directory();
     test_kill();
     test_register();
-    // test_schema();
-    // test_int_column();
-    // test_double_column();
-    // test_bool_column();
-    // test_string_column();
-    // test_column_array();
-    // test_basic_dataframe(); 
-    // test_complex_dataframe();
+    test_schema();
+    test_int_column();
+    test_double_column();
+    test_bool_column();
+    test_string_column();
+    test_column_array();
+    test_basic_dataframe(); 
+    test_complex_dataframe();
     serialize_equals_test();
     serialize_clone_test();
     printf("All tests passed!\n");

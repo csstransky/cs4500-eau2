@@ -1,5 +1,5 @@
-#include "../../src/dataframe/dataframe.h" 
-#include "../../src/kv_store/kd_store.h"
+#include "../src/dataframe/dataframe.h" 
+#include "../src/kv_store/kd_store.h"
 
 #define GT_TRUE(a)   assert(a)
 #define GT_FALSE(a)  assert(!a)
@@ -23,12 +23,12 @@ class AddRower : public Rower {
 
     /** Return a copy of the object; nullptr is considered an error */
   Rower* clone() {
-    return new AddRower(sum_);
+    int* sum = new int();
+    return new AddRower(*sum);
   }
 
   /** Always returns true. Adds the num to each integer. */
   bool accept(Row& r) {
-    int sum_ = 0;
     for (size_t i = 0; i < r.width() - 1; i++) {
       switch (r.col_type(i))
       {
@@ -50,7 +50,9 @@ class AddRower : public Rower {
       original object will be the last to be called join on. The join method
       is reponsible for cleaning up memory. */
   void join_delete(Rower* other) {
-    sum_ = dynamic_cast<AddRower*>(other)->sum_;
+    int* other_sum = &dynamic_cast<AddRower*>(other)->sum_;
+    sum_ += *other_sum;
+    delete other_sum;
     delete other;
   }
  
@@ -150,9 +152,9 @@ void size_tests() {
     String c("c");
   
     Column* int_column = new Column('I', &kv, &c, 0);
-    Column* double_column = new Column('D', &kv, &c, 0);
-    Column* bool_column = new Column('B', &kv, &c, 0);
-    Column* string_column = new Column('S', &kv, &c, 0);
+    Column* double_column = new Column('D', &kv, &c, 1);
+    Column* bool_column = new Column('B', &kv, &c, 2);
+    Column* string_column = new Column('S', &kv, &c, 3);
 
     int int_value = 2;
     double double_value = 2.2;
@@ -413,7 +415,7 @@ void test_map_add() {
   int actual = 0;
   AddRower* rower = new AddRower(actual);
 
-  for (size_t i = 0; i <  10; i++) {
+  for (size_t i = 0; i <  NUM_ROWS; i++) {
     r->set(0,(int)i);
     r->set(1,(int)i+1);
     r->set(2, (double)i);
@@ -424,13 +426,13 @@ void test_map_add() {
 
   int expected = 0;
 
-  for (size_t i = 0; i < 10; i++) {
+  for (size_t i = 0; i < NUM_ROWS; i++) {
     expected += i+i+1;
   }
 
   GT_TRUE(actual == expected);
 
-  for (size_t i = 0; i < 10; i++) {
+  for (size_t i = 0; i < NUM_ROWS; i++) {
     GT_EQUALS(df->get_int((size_t)0,i), i);
     GT_EQUALS(df->get_int((size_t)1,i), i+1);
     GT_EQUALS(df->get_double((size_t)2,i), (double)i);
@@ -863,7 +865,7 @@ void test_pmap_add() {
 
   int expected = 0;
 
-  for (size_t i = 0; i < 10; i++) {
+  for (size_t i = 0; i < NUM_ROWS; i++) {
     expected += i+i+1;
   }
 
@@ -1214,6 +1216,7 @@ int main(int argc, char **argv) {
   test_pmap_add();
   test_map_add();
 
+  // From Constructors
   test_from_array_int();
   test_from_array_double();
   test_from_array_bool();

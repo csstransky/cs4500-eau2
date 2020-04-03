@@ -38,7 +38,7 @@ class Row : public Object {
 
   ~Row() {
     for (size_t ii = 0; ii < schema_.width(); ii++)
-      if (schema_.col_type(ii) == 'O')
+      if (schema_.col_type(ii) == 'S')
         delete cells_->get(ii).o;
     delete cells_;
   }
@@ -63,6 +63,7 @@ class Row : public Object {
   /** Acquire ownership of the string. */
   void set(size_t col, String* val) {
     assert(schema_.col_type(col) == 'S');
+    val = val ? val->clone() : DEFAULT_STRING_VALUE.clone();
     Payload p = cells_->replace(col, object_to_payload(val));
     delete p.o;
   }

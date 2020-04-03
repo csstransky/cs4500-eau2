@@ -61,18 +61,7 @@ class DataFrame : public Object {
   /** Create a data frame with the same columns as the given df but with no rows or rownmaes */
   DataFrame(DataFrame& df, String* name) : DataFrame(df.get_schema(), name, df.kv_) { }
 
-  DataFrame(char* serial, KV_Store* kv_store) {
-    Deserializer deserializer(serial);
-    deserialize_dataframe_(deserializer, kv_store);
-  }
-
-  DataFrame(Deserializer& deserializer, KV_Store* kv_store) {
-    deserialize_dataframe_(deserializer, kv_store);
-  }
-
-  void deserialize_dataframe_(Deserializer& deserializer, KV_Store* kv_store) {
-    deserializer.deserialize_size_t(); // skip serial_length
-    schema_ = Schema(deserializer);
+  DataFrame(Deserializer& deserializer, KV_Store* kv_store) : schema_(deserializer) {
     cols_ = new ColumnArray(deserializer, kv_store);
     name_ = new String(deserializer);
   }
@@ -97,8 +86,7 @@ class DataFrame : public Object {
   }
 
   size_t serial_len() {
-    return sizeof(size_t) // serial_length
-      + schema_.serial_len()
+    return schema_.serial_len()
       + cols_->serial_len()
       + name_->serial_len();
   }
@@ -106,7 +94,6 @@ class DataFrame : public Object {
   char* serialize() {
       size_t serial_size = serial_len();
       Serializer serializer(serial_size);
-      serializer.serialize_size_t(serial_size);
       serializer.serialize_object(&schema_);
       serializer.serialize_object(cols_);
       serializer.serialize_object(name_);
@@ -115,21 +102,13 @@ class DataFrame : public Object {
 
   // Implemented in kd_store.h to remove circular dependency. See piazza post @963
   static DataFrame* from_scalar(Key* key, KD_Store* kd, int val);
-
   static DataFrame* from_scalar(Key* key, KD_Store* kd, double val);
-
   static DataFrame* from_scalar(Key* key, KD_Store* kd, bool val);
-
   static DataFrame* from_scalar(Key* key, KD_Store* kd, String* val);
-
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, int* array);
-
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, double* array);
-
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, bool* array);
-
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, String** array);
-
   static DataFrame* from_file(Key* key, KD_Store* kd, char* file_name);
  
   /** Returns the dataframe's schema. Modifying the schema after a dataframe
@@ -187,7 +166,7 @@ class DataFrame : public Object {
     size_t num_cols = this->schema_.width();
     size_t col_size = col->size();
 
-    Column copy_column(*col);
+    Column copy_column(*col, name_, kv_, num_cols);
 
     // We want to make sure that every single Column has the SAME amount of rows
     if (col_size < num_rows) {
