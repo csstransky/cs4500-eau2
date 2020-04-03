@@ -58,7 +58,8 @@ class KV_Store : public Node {
     // waiting in the queue
     void put_map_(String* key_name, Serializer* value) {
         std::unique_lock<std::mutex> kv_lock(kv_map_mutex_);
-        kv_map_->put(key_name, value);
+        Object* old = kv_map_->put(key_name, value);
+        delete old;
         kv_lock.unlock();
 
         std::unique_lock<std::mutex> get_lock(get_queue_mutex_);

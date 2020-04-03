@@ -229,16 +229,13 @@ void test_put_other_node() {
         Key* key = new Key("key", 0);
         IntArray* array = new IntArray(1);
         array->push(1);
-        Serializer* serial = new Serializer(array->serial_len());
-        serial->serialize_object(array);
-        kv->put(key, serial);
+        kv->put(key, array);
 
         kv->wait_for_shutdown();
 
         delete kv;
         delete key;
         delete array;
-        delete serial;
         delete server_ip;
         delete client_ip1;
         delete client_ip2;
@@ -327,16 +324,13 @@ void test_get_other_node() {
         Key* key = new Key("key", 1);
         IntArray* array = new IntArray(1);
         array->push(1);
-        Serializer* serial = new Serializer(array->serial_len());
-        serial->serialize_object(array);
-        kv->put(key, serial);
+        kv->put(key, array);
 
         kv->wait_for_shutdown();
 
         delete kv;
         delete key;
         delete array;
-        delete serial;
         delete server_ip;
         delete client_ip1;
         delete client_ip2;
@@ -424,13 +418,11 @@ void test_wait_get() {
         Key* key = new Key("key", 1);
         IntArray* array = new IntArray(1);
         array->push(1);
-        Serializer* serial = new Serializer(array->serial_len());
-        serial->serialize_object(array);
 
         assert(kv->get_queue_->size() == 1);
         assert(kv->get_queue_->get(key->get_key()) > 0);
 
-        kv->put(key, serial);
+        kv->put(key, array);
 
         assert(kv->get_queue_->size() == 0);
 
@@ -439,7 +431,6 @@ void test_wait_get() {
         delete kv;
         delete key;
         delete array;
-        delete serial;
         delete server_ip;
         delete client_ip1;
         delete client_ip2;
@@ -467,12 +458,14 @@ void test_wait_get() {
         Key* key = new Key("key", 1);
 
         char* serial = kv->wait_get_value_serial(key);
-        Array* array = kv->get_array(key, 'I');
+        Deserializer* deserializer = new Deserializer(serial);
+        Array* array = new IntArray(*deserializer);
         assert(array);
         assert(array->get(0).i == 1);
 
         kv->wait_for_shutdown();
 
+        delete deserializer;
         delete kv;
         delete key;
         delete array;
@@ -529,10 +522,8 @@ void test_wait_local_get() {
         Key* key = new Key("key", 0);
         IntArray* array = new IntArray(1);
         array->push(1);
-        Serializer* serial = new Serializer(array->serial_len());
-        serial->serialize_object(array);
 
-        kv->put(key, serial);
+        kv->put(key, array);
 
         assert(kv->get_queue_->size() == 0);
 
@@ -541,7 +532,6 @@ void test_wait_local_get() {
         delete kv;
         delete key;
         delete array;
-        delete serial;
         delete server_ip;
         delete client_ip1;
         delete client_ip2;
@@ -569,13 +559,14 @@ void test_wait_local_get() {
         Key* key = new Key("key", 0);
 
         char* serial = kv->wait_get_value_serial(key);
-        Deserializer deserializer(serial);
-        IntArray* array = new IntArray(deserializer);
+        Deserializer* deserializer = new Deserializer(serial);
+        IntArray* array = new IntArray(*deserializer);
         assert(array);
         assert(array->get(0) == 1);
 
         kv->wait_for_shutdown();
 
+        delete deserializer;
         delete kv;
         delete key;
         delete array;
