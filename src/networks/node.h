@@ -184,7 +184,6 @@ class Node : public Server {
                 delete m;
             } else {
                 printf("Server disconnected\n");
-                // TODO: In the future, add a client reconnect attempt method
                 assert(0);
             }
             

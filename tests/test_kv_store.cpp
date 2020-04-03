@@ -12,7 +12,8 @@ void test_put_get() {
 
     kv.put(&key, &k);
     char* serial = kv.get_value_serial(&key);
-    String* kk = String::deserialize(serial);
+    Deserializer deserializer(serial);
+    String* kk = new String(deserializer);
     delete[] serial;
     assert(k.equals(kk));
     delete kk;
@@ -31,7 +32,7 @@ void test_int_array() {
     KV_Store kv(0);
 
     kv.put(&key, array);
-    IntArray* result = kv.get_int_array(&key);
+    IntArray* result = dynamic_cast<IntArray*>(kv.get_array(&key, 'I'));
 
     for (int i = 0; i < 500; i++) {
         assert(result->get(i) == i);
@@ -45,10 +46,10 @@ void test_int_array() {
     printf("KV Store int array test passed!\n");
 }
 
-void test_float_array() {
-    FloatArray* array = new FloatArray(500);
+void test_double_array() {
+    DoubleArray* array = new DoubleArray(500);
     for (int i = 0; i < 500; i++) {
-        array->push((float)i);
+        array->push((double)i);
     }
 
     String k("k");
@@ -56,10 +57,10 @@ void test_float_array() {
     KV_Store kv(0);
 
     kv.put(&key, array);
-    FloatArray* result = kv.get_float_array(&key);
+    DoubleArray* result = dynamic_cast<DoubleArray*>(kv.get_array(&key, 'D'));
 
     for (int i = 0; i < 500; i++) {
-        assert(result->get(i) == (float)i);
+        assert(result->get(i) == (double)i);
     }
 
     assert(array->equals(result));
@@ -67,7 +68,7 @@ void test_float_array() {
     delete array;
     delete result;
 
-    printf("KV Store float array test passed!\n");
+    printf("KV Store double array test passed!\n");
 }
 
 void test_bool_array() {
@@ -81,7 +82,7 @@ void test_bool_array() {
     KV_Store kv(0);
 
     kv.put(&key, array);
-    BoolArray* result = kv.get_bool_array(&key);
+    BoolArray* result = dynamic_cast<BoolArray*>(kv.get_array(&key, 'B'));
 
     for (int i = 0; i < 500; i++) {
         assert(result->get(i) == (bool)i%2);
@@ -107,7 +108,7 @@ void test_string_array() {
     KV_Store kv(0);
 
     kv.put(&key, array);
-    StringArray* result = kv.get_string_array(&key);
+    StringArray* result = dynamic_cast<StringArray*>(kv.get_array(&key, 'S'));
 
     for (int i = 0; i < 500; i++) {
         assert(result->get(i)->equals(&s));
@@ -126,9 +127,9 @@ void test_multiple() {
     for (int i = 0; i < 500; i++) {
         int_array->push(i);
     } 
-    FloatArray* float_array = new FloatArray(500);
+    DoubleArray* double_array = new DoubleArray(500);
     for (int i = 0; i < 500; i++) {
-        float_array->push((float)i);
+        double_array->push((double)i);
     } 
     BoolArray* bool_array = new BoolArray(500);
     for (int i = 0; i < 500; i++) {
@@ -152,7 +153,7 @@ void test_multiple() {
         snprintf(buf, 6, "kf_%d", i);
         String sf(buf);
         Key kf(&sf, 0);
-        kv.put(&kf, float_array); 
+        kv.put(&kf, double_array); 
 
         snprintf(buf, 6, "kb_%d", i);
         String sb(buf);
@@ -169,34 +170,34 @@ void test_multiple() {
         snprintf(buf, 6, "ki_%d", i);
         String si(buf);
         Key ki(&si, 0);
-        IntArray* int_result = kv.get_int_array(&ki); 
+        Array* int_result = kv.get_array(&ki, 'I'); 
         assert(int_result->equals(int_array));
         delete int_result;
 
         snprintf(buf, 6, "kf_%d", i);
         String sf(buf);
         Key kf(&sf, 0);
-        FloatArray* float_result = kv.get_float_array(&kf); 
-        assert(float_result->equals(float_array));
-        delete float_result; 
+        Array* double_result = kv.get_array(&kf, 'D'); 
+        assert(double_result->equals(double_array));
+        delete double_result; 
 
         snprintf(buf, 6, "kb_%d", i);
         String sb(buf);
         Key kb(&sb, 0);
-        BoolArray* bool_result = kv.get_bool_array(&kb); 
+        Array* bool_result = kv.get_array(&kb, 'B'); 
         assert(bool_result->equals(bool_array));
         delete bool_result;
 
         snprintf(buf, 6, "ks_%d", i);
         String ss(buf);
         Key ks(&ss, 0);
-        StringArray* string_result = kv.get_string_array(&ks); 
+        Array* string_result = kv.get_array(&ks, 'S'); 
         assert(string_result->equals(string_array));
         delete string_result;
     }
 
     delete int_array;
-    delete float_array;
+    delete double_array;
     delete bool_array;
     delete string_array;
 
@@ -228,16 +229,13 @@ void test_put_other_node() {
         Key* key = new Key("key", 0);
         IntArray* array = new IntArray(1);
         array->push(1);
-        Serializer* serial = new Serializer(array->serial_len());
-        serial->serialize_object(array);
-        kv->put(key, serial);
+        kv->put(key, array);
 
         kv->wait_for_shutdown();
 
         delete kv;
         delete key;
         delete array;
-        delete serial;
         delete server_ip;
         delete client_ip1;
         delete client_ip2;
@@ -265,9 +263,9 @@ void test_put_other_node() {
         Key* key = new Key("key", 0);
 
         assert(kv->kv_map_->size() == 1);
-        IntArray* array = kv->get_int_array(key);
+        Array* array = kv->get_array(key, 'I');
         assert(array);
-        assert(array->get(0) == 1);
+        assert(array->get(0).i == 1);
 
         kv->wait_for_shutdown();
 
@@ -326,16 +324,13 @@ void test_get_other_node() {
         Key* key = new Key("key", 1);
         IntArray* array = new IntArray(1);
         array->push(1);
-        Serializer* serial = new Serializer(array->serial_len());
-        serial->serialize_object(array);
-        kv->put(key, serial);
+        kv->put(key, array);
 
         kv->wait_for_shutdown();
 
         delete kv;
         delete key;
         delete array;
-        delete serial;
         delete server_ip;
         delete client_ip1;
         delete client_ip2;
@@ -362,9 +357,9 @@ void test_get_other_node() {
 
         Key* key = new Key("key", 1);
 
-        IntArray* array = kv->get_int_array(key);
+        Array* array = kv->get_array(key, 'I');
         assert(array);
-        assert(array->get(0) == 1);
+        assert(array->get(0).i == 1);
 
         kv->wait_for_shutdown();
 
@@ -423,13 +418,11 @@ void test_wait_get() {
         Key* key = new Key("key", 1);
         IntArray* array = new IntArray(1);
         array->push(1);
-        Serializer* serial = new Serializer(array->serial_len());
-        serial->serialize_object(array);
 
         assert(kv->get_queue_->size() == 1);
         assert(kv->get_queue_->get(key->get_key()) > 0);
 
-        kv->put(key, serial);
+        kv->put(key, array);
 
         assert(kv->get_queue_->size() == 0);
 
@@ -438,7 +431,6 @@ void test_wait_get() {
         delete kv;
         delete key;
         delete array;
-        delete serial;
         delete server_ip;
         delete client_ip1;
         delete client_ip2;
@@ -466,12 +458,14 @@ void test_wait_get() {
         Key* key = new Key("key", 1);
 
         char* serial = kv->wait_get_value_serial(key);
-        IntArray* array = IntArray::deserialize(serial);
+        Deserializer* deserializer = new Deserializer(serial);
+        Array* array = new IntArray(*deserializer);
         assert(array);
-        assert(array->get(0) == 1);
+        assert(array->get(0).i == 1);
 
         kv->wait_for_shutdown();
 
+        delete deserializer;
         delete kv;
         delete key;
         delete array;
@@ -528,10 +522,8 @@ void test_wait_local_get() {
         Key* key = new Key("key", 0);
         IntArray* array = new IntArray(1);
         array->push(1);
-        Serializer* serial = new Serializer(array->serial_len());
-        serial->serialize_object(array);
 
-        kv->put(key, serial);
+        kv->put(key, array);
 
         assert(kv->get_queue_->size() == 0);
 
@@ -540,7 +532,6 @@ void test_wait_local_get() {
         delete kv;
         delete key;
         delete array;
-        delete serial;
         delete server_ip;
         delete client_ip1;
         delete client_ip2;
@@ -568,12 +559,14 @@ void test_wait_local_get() {
         Key* key = new Key("key", 0);
 
         char* serial = kv->wait_get_value_serial(key);
-        IntArray* array = IntArray::deserialize(serial);
+        Deserializer* deserializer = new Deserializer(serial);
+        IntArray* array = new IntArray(*deserializer);
         assert(array);
         assert(array->get(0) == 1);
 
         kv->wait_for_shutdown();
 
+        delete deserializer;
         delete kv;
         delete key;
         delete array;
@@ -608,7 +601,7 @@ void test_wait_local_get() {
 int main(int argc, char const *argv[]) {
     test_put_get();
     test_int_array();
-    test_float_array();
+    test_double_array();
     test_bool_array();
     test_string_array();
     test_multiple();

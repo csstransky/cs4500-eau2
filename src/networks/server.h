@@ -226,7 +226,7 @@ class Server {
             char buff[message_size];
             valread = read(sd, &buff, message_size);
 
-            Message* m = deserialize_message(buff);
+            Message* m = Message::deserialize_message(buff);
             return m;
         }   
     }

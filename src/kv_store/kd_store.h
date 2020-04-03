@@ -25,19 +25,16 @@ class KD_Store : public Object {
         kv_->wait_for_shutdown();
     }
 
-    DataFrame* get(Key* key) {
-        char* kv_serial = kv_->get_value_serial(key);
-        DataFrame* df = DataFrame::deserialize(kv_serial, kv_);
-        delete[] kv_serial;
-        return df; 
+    DataFrame* deserialize_df_(char* serial) {
+        Deserializer deserializer(serial);
+        DataFrame* df = new DataFrame(deserializer, kv_);
+        delete[] serial;
+        return df;
     }
 
-    DataFrame* wait_and_get(Key* key) {
-       char* serial = kv_->wait_get_value_serial(key);
-       DataFrame* df = DataFrame::deserialize(serial, kv_);
-       delete[] serial;
-       return df;
-    }
+    DataFrame* get(Key* key) { return deserialize_df_(kv_->get_value_serial(key)); }
+
+    DataFrame* wait_and_get(Key* key) { return deserialize_df_(kv_->wait_get_value_serial(key)); }
 
     void put(Key* key, DataFrame* df) {
         kv_->put(key, df);
@@ -49,11 +46,12 @@ class KD_Store : public Object {
 
 };
 
+// TODO: abstract this code later on with a helper function inside
 // Moved here to remove circular dependency. See piazza post @963
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, int* array) {
     Schema s("");
     DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
-    IntColumn col(kd->get_kv(), key->get_key(), 0);
+    Column col('I', kd->get_kv(), key->get_key(), 0);
     for (size_t i = 0; i < num; i++) {
         col.push_back(array[i]);
     }
@@ -65,10 +63,10 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, int* array)
 }
 
 // Moved here to remove circular dependency. See piazza post @963
-DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, float* array) {
+DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, double* array) {
     Schema s("");
     DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
-    FloatColumn col(kd->get_kv(), key->get_key(), 0);
+    Column col('D', kd->get_kv(), key->get_key(), 0);
     for (size_t i = 0; i < num; i++) {
         col.push_back(array[i]);
     }
@@ -83,7 +81,7 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, float* arra
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, bool* array) {
     Schema s("");
     DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
-    BoolColumn col(kd->get_kv(), key->get_key(), 0);
+    Column col('B', kd->get_kv(), key->get_key(), 0);
     for (size_t i = 0; i < num; i++) {
         col.push_back(array[i]);
     }
@@ -98,7 +96,7 @@ DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, bool* array
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, String** array) {
     Schema s("");
     DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
-    StringColumn col(kd->get_kv(), key->get_key(), 0);
+    Column col('S', kd->get_kv(), key->get_key(), 0);
     for (size_t i = 0; i < num; i++) {
         col.push_back(array[i]);
     }
@@ -115,8 +113,8 @@ DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, int val) {
     return DataFrame::from_array(key, kd, 1, array);
 }
 
-DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, float val) {
-    float array[1];
+DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, double val) {
+    double array[1];
     array[0] = val;
     return DataFrame::from_array(key, kd, 1, array);
 }
