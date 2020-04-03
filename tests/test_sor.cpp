@@ -54,11 +54,11 @@ void test_easy_txt(char* file_path) {
     DataFrame* dataframe = sor.get_dataframe();
 
     String* schema_types = dataframe->get_schema().types_;
-    assert(strcmp("SFIBS", schema_types->c_str()) == 0);
+    assert(strcmp("SDIBS", schema_types->c_str()) == 0);
 
     String string1("hi");
     assert(dataframe->get_string(0, 0)->equals(&string1));
-    assert(dataframe->get_double(1, 0) == (double)12.34);
+    assert(dataframe->get_double(1, 0) - ((double)12.34) < 0.001);
     assert(dataframe->get_int(2, 0) == 22);
     assert(!dataframe->get_bool(3, 0));
     String string2("true");
