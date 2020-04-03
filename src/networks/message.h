@@ -9,19 +9,13 @@
 #include "../helpers/serial.h"
 #include "../helpers/array.h"
 
-int MESSAGE_ID = 0;
-
-// TODO: MESSAGE STILL NEEDS TO BE REFACTORED
-
 enum class MsgKind { Ack, Put, Get, WaitAndGet, Value, Kill, Register, Directory, Complete };
-// TODO: A lot of repeated code, make sure to refactor this in the future
+
 class Message : public Object {
     public:
 
     MsgKind kind_;  // the message kind
     String* sender_; // the index of the sender node
-    // TODO: We don't need target ip anymore because we are connecting directly to Nodes,
-    // BUT when you do refactor, be very careful and test because of serializing
     String* target_; // the index of the receiver node
 
     Message(MsgKind kind, String* sender, String* target) {
@@ -41,20 +35,14 @@ class Message : public Object {
         delete target_;
     }
 
-    MsgKind get_kind() {
-        return kind_;
-    }
+    MsgKind get_kind() { return kind_; }
 
-    String* get_sender() {
-        return sender_;
-    }
+    String* get_sender() { return sender_; }
 
-    String* get_target() {
-        return target_;
-    }
+    String* get_target() { return target_; }
 
     virtual size_t serial_len() {
-        return sizeof(size_t) 
+        return sizeof(size_t) // size of kind_
             + sender_->serial_len() 
             + target_->serial_len();
     }
@@ -88,16 +76,11 @@ class Ack : public Message {
         message_ = new String(deserializer);
     }
 
-    ~Ack() {
-        delete message_;
-    }
+    ~Ack() { delete message_; }
 
-    String* get_message() {
-        return message_;
-    }
+    String* get_message() { return message_; }
 
     size_t serial_len() {
-        // includes the total serial length at the beginning
         return Message::serial_len()
             + message_->serial_len();
     }
@@ -135,12 +118,11 @@ class Register : public Message {
         node_index_ = deserializer.deserialize_size_t();
     }
 
-    size_t get_node_index() {
-        return node_index_;
-    }
+    size_t get_node_index() { return node_index_; }
 
     size_t serial_len() {
-        return Message::serial_len() + sizeof(size_t);
+        return Message::serial_len() 
+            + sizeof(size_t); // size of node_index_
     }
 
     char* serialize() {
@@ -173,13 +155,9 @@ class Directory : public Message {
         delete node_indexes_;
     }
 
-    StringArray* get_addresses() {
-        return addresses_;
-    }
+    StringArray* get_addresses() { return addresses_; }
 
-    IntArray* get_node_indexes() {
-        return node_indexes_;
-    }
+    IntArray* get_node_indexes() { return node_indexes_; }
 
     size_t serial_len() {
         return Message::serial_len() 
@@ -220,25 +198,18 @@ class Put : public Message {
         delete value_;
     }
 
-    String* get_key_name() {
-        return key_name_;
-    }
+    String* get_key_name() { return key_name_; }
 
-    Serializer* get_value() {
-        return value_;
-    }
+    Serializer* get_value() { return value_; }
 
-    /**
-     * NOTE: You are getting a NEW character array with this function, so make sure to delete it
-     */
-    char* get_serial() {
-        return value_->get_serial();
-    }
+    /** NOTE: You are getting a NEW character array with this function, so make sure to delete it */
+    char* get_serial() { return value_->get_serial(); }
 
     size_t serial_len() {
         return Message::serial_len() 
             + key_name_->serial_len()
-            + value_->get_serial_size() + sizeof(size_t);
+            + sizeof(size_t) // serial_size variable itself
+            + value_->get_serial_size(); // size of the serial
     }
 
     char* serialize() {
@@ -266,13 +237,9 @@ class Get : public Message {
         key_name_ = new String(deserializer);
     }
 
-    ~Get() {
-        delete key_name_;
-    }
+    ~Get() { delete key_name_; }
 
-    String* get_key_name() {
-        return key_name_;
-    }
+    String* get_key_name() { return key_name_; }
 
     size_t serial_len() {
         return Message::serial_len() 
@@ -290,21 +257,18 @@ class Get : public Message {
 
 class WaitAndGet : public Get {
     public:
-
     WaitAndGet(String* sender, String* target, String* key_name_) : Get(sender, target, key_name_) {
         kind_ = MsgKind::WaitAndGet;
     }
-
-    WaitAndGet(Deserializer& deserializer) : Get(deserializer) {
-        kind_ = MsgKind::WaitAndGet;
-    }
+    WaitAndGet(Deserializer& deserializer) : Get(deserializer) { kind_ = MsgKind::WaitAndGet; }
 };
 
 class Value : public Message {
     public:
     Serializer* value_;
 
-    Value(String* sender, String* target, Serializer* value) : Message(MsgKind::Value, sender, target){
+    Value(String* sender, String* target, Serializer* value) 
+        : Message(MsgKind::Value, sender, target){
         value_ = value->clone();
     }
 
@@ -315,24 +279,17 @@ class Value : public Message {
         delete[] serial;
     }
 
-    ~Value() {
-        delete value_;
-    }
+    ~Value() { delete value_; }
 
-    Serializer* get_value() {
-        return value_;
-    }
+    Serializer* get_value() { return value_; }
     
-    /**
-     * NOTE: You are getting a NEW character array with this function, so make sure to delete it
-     */
-    char* get_serial() {
-        return value_->get_serial();
-    }
+    /** NOTE: You are getting a NEW character array with this function, so make sure to delete it */
+    char* get_serial() { return value_->get_serial(); }
 
-    size_t serial_len() {
+    size_t serial_len() { 
         return Message::serial_len() 
-            + value_->get_serial_size() + sizeof(size_t);
+            + sizeof(size_t) // serial_size variable itself
+            + value_->get_serial_size(); // size of the serial
     }
 
     char* serialize() {
