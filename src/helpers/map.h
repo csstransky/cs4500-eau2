@@ -225,31 +225,33 @@ class Map: public Object {
             }
             return nullptr;
         }
+
+        virtual Array* keySet() {
+            ObjectArray* keys = new ObjectArray(count_);
+            for (size_t ii = 0; ii < buckets_size_; ii++) {
+                ObjectArray* bucket_array = dynamic_cast<ObjectArray*>(buckets_->get(ii));
+                for (size_t jj = 0; jj < bucket_array->length(); jj++) {
+                    Pair* pair = dynamic_cast<Pair*>(bucket_array->get(jj));
+                    keys->push(pair->get_key());
+                }
+            }
+            return keys;
+        }
 };
 
 class Num : public Object {
     public:
-    size_t num_;
-    Num() {}
-    Num(size_t n) { num_ = n; };
-    Num* clone() { return new Num(num_); }
+    size_t v;
+    Num() : Num(0) {}
+    Num(size_t n) { v = n; };
+    Num* clone() { return new Num(v); }
 };
 
 class SIMap : public Map {
     public:
     SIMap() : Map() { }
-    size_t get(String* s) { return dynamic_cast<Num*>(Map::get(s))->num_; }
-    
-    size_t put(String* s, size_t val) { 
-        Num n(val);
-        Num* num = dynamic_cast<Num*>(Map::put(s, &n));
-        return num ? num->num_ : -1; 
-    }
-
-    size_t remove(String* s) { 
-        Num* n = dynamic_cast<Num*>(Map::remove(s)); 
-        size_t num = n ? n->num_ : -1;
-        delete n;
-        return num;
-    }
+    Num* get(String* s) { return dynamic_cast<Num*>(Map::get(s)); }
+    Num* put(String* s, Num* val) { return dynamic_cast<Num*>(Map::put(s, val)); }
+    Num* remove(String* s) { return dynamic_cast<Num*>(Map::remove(s)); }
+    StringArray* keySet() { return dynamic_cast<StringArray*>(Map::keySet()); }
 };
