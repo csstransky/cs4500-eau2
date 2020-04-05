@@ -1,5 +1,6 @@
 #include "../src/dataframe/dataframe.h" 
 #include "../src/kv_store/kd_store.h"
+#include "../src/application/word_count_rowers.h"
 
 #define GT_TRUE(a)   assert(a)
 #define GT_FALSE(a)  assert(!a)
@@ -57,32 +58,6 @@ class AddRower : public Rower {
   }
  
 };
-
-class Summer : public Rower {
-public:
-  SIMap& map_;
-  size_t index_ = 0;
-  StringArray* keys_;
- 
-  Summer(SIMap& map) : map_(map) {
-    keys_ = map_.key_set();
-  }
-
-  ~Summer() {
-    delete keys_;
-  }
- 
-  bool accept(Row& r) {
-    String* key = keys_->get(index_);
-    size_t value = map_.get(key)->value;
-    r.set(0, key);
-    r.set(1, (int) value);
-    index_++;
-    return index_ == keys_->length();
-  }
-
-  void join_delete(Rower* other) { delete other; }
- };
 
 void test() {
   Schema s("II");
@@ -1278,6 +1253,10 @@ void test_from_rower_summer() {
   printf("Dataframe from rower summer test passed!\n");
 }
 
+void test_from_rower_file() {
+  printf("Dataframe from rower file reader test passed!\n");
+}
+
 int main(int argc, char **argv) {
   max_test();
   min_test();
@@ -1322,6 +1301,7 @@ int main(int argc, char **argv) {
   test_from_file();
   test_from_scalar();
   test_from_rower_summer();
+  test_from_rower_file();
 
   printf("All dataframe tests pass!\n");
 }
