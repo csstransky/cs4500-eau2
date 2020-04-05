@@ -166,13 +166,13 @@ void testSIMap() {
     for (size_t i = 0; i < size; i++) {
         snprintf(buf, 20, "k_%zu", i);
         String s(buf);
-        assert(map.get(&s)->v == i);
+        assert(map.get(&s)->value == i);
     }
 
     for (size_t i = 0; i < size; i++) {
         snprintf(buf, 20, "k_%zu", i);
         String s(buf);
-        assert(map.remove(&s)->v == i);
+        assert(map.remove(&s)->value == i);
     }
 
     assert(map.size() == 0);

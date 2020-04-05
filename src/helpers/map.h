@@ -226,7 +226,7 @@ class Map: public Object {
             return nullptr;
         }
 
-        virtual Array* keySet() {
+        virtual Array* key_set() {
             ObjectArray* keys = new ObjectArray(count_);
             for (size_t ii = 0; ii < buckets_size_; ii++) {
                 ObjectArray* bucket_array = dynamic_cast<ObjectArray*>(buckets_->get(ii));
@@ -241,10 +241,10 @@ class Map: public Object {
 
 class Num : public Object {
     public:
-    size_t v;
+    size_t value;
     Num() : Num(0) {}
-    Num(size_t n) { v = n; };
-    Num* clone() { return new Num(v); }
+    Num(size_t n) { value = n; }
+    Num* clone() { return new Num(value); }
 };
 
 class SIMap : public Map {
@@ -253,5 +253,11 @@ class SIMap : public Map {
     Num* get(String* s) { return dynamic_cast<Num*>(Map::get(s)); }
     Num* put(String* s, Num* val) { return dynamic_cast<Num*>(Map::put(s, val)); }
     Num* remove(String* s) { return dynamic_cast<Num*>(Map::remove(s)); }
-    StringArray* keySet() { return dynamic_cast<StringArray*>(Map::keySet()); }
+    StringArray* key_set() { 
+        ObjectArray* key_set = dynamic_cast<ObjectArray*>(Map::key_set()); 
+        StringArray* keys = new StringArray(key_set->length());
+        for (size_t ii = 0; ii < key_set->length(); ii++) keys->push(key_set->get(ii));
+        delete key_set;
+        return keys;
+    }
 };
