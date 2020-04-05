@@ -1299,6 +1299,8 @@ void test_local_map() {
   String* client_ip1 = new String("127.0.0.2");
   String* client_ip2 = new String("127.0.0.3");
 
+  RServer* server = new RServer(server_ip->c_str());
+
   // Fork to create another process
   if ((cpid[0] = fork())) {
       
@@ -1330,6 +1332,7 @@ void test_local_map() {
     delete server_ip;
     delete client_ip1;
     delete client_ip2;
+    delete server;
 
     // exit
     exit(0);
@@ -1342,7 +1345,7 @@ void test_local_map() {
     // In child process
     sleep(0.5);
     KD_Store* kd = new KD_Store(0, client_ip2->c_str(), server_ip->c_str());
-    sleep(1);
+    sleep(2);
 
     size_t count = 300;
     Key* key = new Key("key", 0);
@@ -1370,6 +1373,7 @@ void test_local_map() {
     delete server_ip;
     delete client_ip1;
     delete client_ip2;
+    delete server;
 
     // exit
     exit(0);
@@ -1377,8 +1381,7 @@ void test_local_map() {
 
   // In parent process
 
-  // Start server
-  RServer* server = new RServer(server_ip->c_str()); 
+  // Start server 
   server->run_server(10);
   server->wait_for_shutdown();
 
