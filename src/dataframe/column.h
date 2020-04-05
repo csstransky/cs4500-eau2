@@ -218,6 +218,12 @@ class Column : public Object {
     return type_;
   }
 
+  size_t get_home_node(size_t idx) {
+    size_t array = idx / ELEMENT_ARRAY_SIZE;
+    if (is_index_in_cache_(idx)) return kv_->get_node_index();
+    return keys_->get(array)->get_node_index();
+  }
+
   size_t serial_len() {
     return sizeof(char) // type_
       + sizeof(size_t) // size_

@@ -64,6 +64,7 @@ class DataFrame : public Object {
   DataFrame(Deserializer& deserializer, KV_Store* kv_store) : schema_(deserializer) {
     cols_ = new ColumnArray(deserializer, kv_store);
     name_ = nullptr;
+    kv_ = kv_store;
   }
   
   ~DataFrame() {
@@ -251,6 +252,17 @@ class DataFrame : public Object {
     size_t num_rows = this->schema_.length();
     Row* row = new Row(this->schema_);
     for (size_t ii = 0; ii < num_rows; ii++) {
+      this->fill_row(ii, *row);
+      r.accept(*row);
+    }
+    delete row;
+  }
+
+  void local_map(Rower& r) {
+    size_t num_rows = this->schema_.length();
+    Row* row = new Row(this->schema_);
+    for (size_t ii = 0; ii < num_rows; ii++) {
+      if (kv_->get_node_index() != cols_->get(0)->get_home_node(ii)) continue;
       this->fill_row(ii, *row);
       r.accept(*row);
     }
