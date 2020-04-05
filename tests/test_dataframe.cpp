@@ -58,6 +58,32 @@ class AddRower : public Rower {
  
 };
 
+class Summer : public Rower {
+public:
+  SIMap& map_;
+  size_t index_ = 0;
+  StringArray* keys_;
+ 
+  Summer(SIMap& map) : map_(map) {
+    keys_ = map_.key_set();
+  }
+
+  ~Summer() {
+    delete keys_;
+  }
+ 
+  bool accept(Row& r) {
+    String* key = keys_->get(index_);
+    size_t value = map_.get(key)->value;
+    r.set(0, key);
+    r.set(1, (int) value);
+    index_++;
+    return index_ == keys_->length();
+  }
+
+  void join_delete(Rower* other) { delete other; }
+ };
+
 void test() {
   Schema s("II");
 
@@ -1167,6 +1193,91 @@ void test_from_file() {
   printf("Dataframe from file tests pass!\n");
 }
 
+void test_from_scalar() {
+  Key k_int("int", 0);
+  KD_Store kd(0);
+  DataFrame* df = DataFrame::from_scalar(&k_int, &kd, 1);
+  assert(df->get_int(0,0) == 1);
+  delete df;
+
+  Key k_double("double", 0);
+  df = DataFrame::from_scalar(&k_double, &kd, (double)1.1);
+  assert(df->get_double(0,0) == (double)1.1);
+  delete df;
+
+  Key k_bool("bool", 0);
+  df = DataFrame::from_scalar(&k_bool, &kd, (bool)1);
+  assert(df->get_bool(0,0) == true);
+  delete df;
+
+  Key k_string("string", 0);
+  String s("s");
+  df = DataFrame::from_scalar(&k_string, &kd, &s);
+  assert(df->get_string(0,0)->equals(&s));
+  delete df;
+
+  df = kd.get(&k_int);
+  assert(df->get_int(0,0) == 1);
+  delete df;
+
+  df = kd.get(&k_double);
+  assert(df->get_double(0,0) == 1.1);
+  delete df;
+
+  df = kd.get(&k_bool);
+  assert(df->get_bool(0,0) == true);
+  delete df;
+
+  df = kd.get(&k_string);
+  assert(df->get_string(0,0)->equals(&s));
+  delete df;
+
+  printf("Dataframe from scalar tests pass!\n");
+}
+
+void test_from_rower_summer() {
+  SIMap map;
+  char buf[20];
+  size_t count = 300;
+  for (size_t ii = 0; ii < count; ii++) {
+    snprintf(buf, 20, "s_%zu", ii);
+    String s(buf);
+    Num n(ii);
+    map.put(&s, &n);
+  }
+
+  Summer cnt(map); 
+  Key summer("summer", 0);
+  KD_Store kd(0);
+  DataFrame* df = DataFrame::from_rower(&summer, &kd, "SI", cnt);
+
+  assert(df->ncols() == 2);
+  assert(df->nrows() == count);
+  for (size_t ii = 0; ii < count; ii++) {
+    int c = df->get_int(1, ii);
+    snprintf(buf, 20, "s_%d", c);
+    String s(buf);
+    assert(df->get_string(0, ii)->equals(&s));
+  }
+
+  delete df;
+
+  df = kd.get(&summer);
+
+  assert(df->ncols() == 2);
+  assert(df->nrows() == count);
+  for (size_t ii = 0; ii < count; ii++) {
+    int c = df->get_int(1, ii);
+    snprintf(buf, 20, "s_%d", c);
+    String s(buf);
+    assert(df->get_string(0, ii)->equals(&s));
+  }
+
+  delete df;
+
+  printf("Dataframe from rower summer test passed!\n");
+}
+
 int main(int argc, char **argv) {
   max_test();
   min_test();
@@ -1209,4 +1320,8 @@ int main(int argc, char **argv) {
   test_from_array_bool();
   test_from_array_string();
   test_from_file();
+  test_from_scalar();
+  test_from_rower_summer();
+
+  printf("All dataframe tests pass!\n");
 }
