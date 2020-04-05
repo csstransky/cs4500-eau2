@@ -1254,6 +1254,39 @@ void test_from_rower_summer() {
 }
 
 void test_from_rower_file() {
+  FileReader fr("data/words.txt");
+  Key key("key", 0);
+  KD_Store kd(0);
+  DataFrame* df = DataFrame::from_rower(&key, &kd, "S", fr);
+
+  String hi("hi");
+  String hello("hello");
+  String yo("yo");
+
+  assert(df->ncols() == 1);
+  assert(df->nrows() == 6);
+  assert(df->get_string(0, 0)->equals(&hi));
+  assert(df->get_string(0, 1)->equals(&hello));
+  assert(df->get_string(0, 2)->equals(&yo));
+  assert(df->get_string(0, 3)->equals(&yo));
+  assert(df->get_string(0, 4)->equals(&hi));
+  assert(df->get_string(0, 5)->equals(&hi));
+
+  delete df;
+
+  df = kd.get(&key);
+
+  assert(df->ncols() == 1);
+  assert(df->nrows() == 6);
+  assert(df->get_string(0, 0)->equals(&hi));
+  assert(df->get_string(0, 1)->equals(&hello));
+  assert(df->get_string(0, 2)->equals(&yo));
+  assert(df->get_string(0, 3)->equals(&yo));
+  assert(df->get_string(0, 4)->equals(&hi));
+  assert(df->get_string(0, 5)->equals(&hi));
+
+  delete df;
+
   printf("Dataframe from rower file reader test passed!\n");
 }
 
