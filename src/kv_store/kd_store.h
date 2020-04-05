@@ -136,3 +136,13 @@ DataFrame* DataFrame::from_file(Key* key, KD_Store* kd, char* file_name) {
     kd->put(key, sor.get_dataframe());
     return sor.get_dataframe();
 }
+
+DataFrame* DataFrame::from_rower(Key* key, KD_Store* kd, const char* schema, Rower& rower) {
+    Schema s(schema);
+    DataFrame* df = new DataFrame(s, key->get_key(), kd->get_kv());
+    Row r(s);
+    while (!rower.accept(r)) df->add_row(r);
+    df->add_row(r);
+    kd->put(key, df);
+    return df;
+}

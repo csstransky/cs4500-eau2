@@ -108,6 +108,7 @@ class DataFrame : public Object {
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, bool* array);
   static DataFrame* from_array(Key* key, KD_Store* kd, size_t num, String** array);
   static DataFrame* from_file(Key* key, KD_Store* kd, char* file_name);
+  static DataFrame* from_rower(Key* key, KD_Store* kd, const char* schema, Rower& rower);
  
   /** Returns the dataframe's schema. Modifying the schema after a dataframe
     * has been created in undefined. */
