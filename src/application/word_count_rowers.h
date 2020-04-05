@@ -125,7 +125,7 @@ public:
     if (num) {
         num->value++;
     } else {
-        Num n;
+        Num n(1);
         map_.put(word, &n);
     }
     return false;

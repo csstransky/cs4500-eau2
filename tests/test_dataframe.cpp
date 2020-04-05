@@ -1,6 +1,9 @@
+#include <sys/wait.h>
+
 #include "../src/dataframe/dataframe.h" 
 #include "../src/kv_store/kd_store.h"
 #include "../src/application/word_count_rowers.h"
+#include "../src/networks/rendezvous_server.h"
 
 #define GT_TRUE(a)   assert(a)
 #define GT_FALSE(a)  assert(!a)
@@ -1290,6 +1293,106 @@ void test_from_rower_file() {
   printf("Dataframe from rower file reader test passed!\n");
 }
 
+void test_local_map() {
+  int cpid[2];
+  String* server_ip = new String("127.0.0.1");
+  String* client_ip1 = new String("127.0.0.2");
+  String* client_ip2 = new String("127.0.0.3");
+
+  // Fork to create another process
+  if ((cpid[0] = fork())) {
+      
+  } else {
+    // In child process
+    sleep(0.5);
+    KD_Store* kd = new KD_Store(1, client_ip1->c_str(), server_ip->c_str());
+    sleep(2);
+
+    Key* key = new Key("key", 0);
+    String* hi = new String("hi");
+    DataFrame* df = kd->wait_and_get(key);
+    
+    SIMap* map = new SIMap();
+    Adder* adder = new Adder(*map);
+    df->local_map(*adder);
+
+    assert(map->count_ == 1);
+    assert(map->get(hi)->value == 200);
+
+    kd->application_complete();
+
+    delete kd;
+    delete key;
+    delete hi;
+    delete df;
+    delete map;
+    delete adder;
+    delete server_ip;
+    delete client_ip1;
+    delete client_ip2;
+
+    // exit
+    exit(0);
+  }
+
+  // Fork to create another process
+  if ((cpid[1] = fork())) {
+      
+  } else {
+    // In child process
+    sleep(0.5);
+    KD_Store* kd = new KD_Store(0, client_ip2->c_str(), server_ip->c_str());
+    sleep(1);
+
+    size_t count = 300;
+    Key* key = new Key("key", 0);
+    String* hi = new String("hi");
+    String** vals = new String*[count];
+    for (int ii = 0; ii < count; ii++) vals[ii] = hi;
+    DataFrame* df = DataFrame::from_array(key, kd, count, vals);
+    
+    SIMap* map = new SIMap();
+    Adder* adder = new Adder(*map);
+    df->local_map(*adder);
+
+    assert(map->count_ == 1);
+    assert(map->get(hi)->value == 100);
+
+    kd->application_complete();
+
+    delete kd;
+    delete key;
+    delete[] vals;
+    delete df;
+    delete map;
+    delete adder;
+    delete hi;
+    delete server_ip;
+    delete client_ip1;
+    delete client_ip2;
+
+    // exit
+    exit(0);
+  }
+
+  // In parent process
+
+  // Start server
+  RServer* server = new RServer(server_ip->c_str()); 
+  server->run_server(10);
+  server->wait_for_shutdown();
+
+  // wait for child to finish
+  int st;
+  waitpid(cpid[0], &st, 0);
+  waitpid(cpid[1], &st, 0);
+  delete server;
+  delete client_ip1;
+  delete client_ip2;
+  delete server_ip;
+  printf("Dataframe local map test passed!\n");
+}
+
 int main(int argc, char **argv) {
   max_test();
   min_test();
@@ -1322,9 +1425,10 @@ int main(int argc, char **argv) {
   dataframe_add_row_tests();
   test();
 
-  // Parallel map
+  // Map
   test_pmap_add();
   test_map_add();
+  test_local_map();
 
   // From Constructors
   test_from_array_int();
