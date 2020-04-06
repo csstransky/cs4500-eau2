@@ -125,15 +125,19 @@ make trivial
 ```
 make demo
 ```
-4. runs the tests for all of our code  
+4. runs the demo application for Milestone 4
+```
+make wordcount
+```
+5. runs the tests for all of our code  
 ```
 make test
 ```
-5. runs a valgrind check on all our code (may take a while for `test_application`)
+6. runs a valgrind check on all our code (may take a while for `test_application`)
 ```
 make valgrind
 ```
-6. removes the directory with executables  
+7. removes the directory with executables  
 ```
 make clean
 ```

@@ -18,6 +18,13 @@ demo: build
 	(build/src/demo -ip 127.0.0.3 -s 127.0.0.1 1)&
 	build/src/demo -ip 127.0.0.4 -s 127.0.0.1 2
 
+wordcount: build
+	(build/src/rserver -ip 127.0.0.1)&
+	@sleep 1
+	(build/src/word_count -ip 127.0.0.2 -s 127.0.0.1 -o data/100k.txt 0)&
+	(build/src/word_count -ip 127.0.0.3 -s 127.0.0.1 -o data/100k.txt 1)&
+	build/src/word_count -ip 127.0.0.4 -s 127.0.0.1 -o data/100k.txt 2
+
 test: build
 	build/tests/test_serial
 	build/tests/test_sorer
@@ -28,6 +35,7 @@ test: build
 	build/tests/test_kd_store
 	build/tests/test_application
 	build/tests/test_networking
+	build/tests/test_word_count
 
 valgrind: build
 	valgrind build/tests/test_serial
@@ -39,6 +47,7 @@ valgrind: build
 	valgrind build/tests/test_application
 	valgrind build/tests/test_dataframe
 	valgrind build/tests/test_networking
+	valgrind build/tests/test_word_count
 
 clean:
 	rm -rf build
