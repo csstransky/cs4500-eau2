@@ -106,8 +106,6 @@ All of our code valgrinds and all tests run properly. The WordCount application 
 
 Our code refactor is complete, and we have reduced our code by over 1000 lines of code. The main highlights are that **Array uses unions, reducing A LOT of code** and **there is now only one Column class which strictly uses an Array class, and keeps track of its type with col_type_**. We made sure to reduce code based on Jan's comments (still a little unsure about removing map() and pmap(), but probably will), and we made sure that all legacy functions as expected (for example, you can now strictly use an Array if desired, but you can still use an IntAray for example).
 
-We still plan to refactor the entire application/ folder though, as it seems that we're now starting to duplicate a lot of code, especially when it comes to getting arguments.
-
 We also plan to add a "get" cache to the column class to reduce network calls when a "get()" is called on the Column. For example, getting the first 100 elements in a Column, we can simply make 1 network call to grab and cache the array of elements from a remote kv_store, and then grab the next 99 elements locally, rather than making 100 network calls.
 
 Steps to run our code:
