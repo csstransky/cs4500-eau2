@@ -1,31 +1,5 @@
 #include "application.h"
-
-const char* DEFAULT_CLIENT_IP = "127.0.0.2";
-const char* DEFAULT_SERVER_IP = "127.0.0.1";
-
-// TODO: Super rigid input command getter, but it works and we don't need anything too nice
-const char* get_input_client_ip_address(int argc, char const *argv[]) {
-    if (argc < 2 || strcmp(argv[1], "-ip") != 0) {
-        printf("If you wish to choose an IP for the client, use:\n");
-        printf("./client -ip <IP address>\n\n");
-        return DEFAULT_CLIENT_IP;
-    }
-    else {
-        return argv[2];
-    }
-}
-
-// TODO: Super rigid input command getter, but it works and we don't need anything too nice
-const char* get_input_server_ip_address(int argc, char const *argv[]) {
-    if (argc < 4 || strcmp(argv[3], "-s") != 0) {
-        printf("If you wish to choose an IP for the client AND the server, use:\n");
-        printf("./client -ip <IP address> -s <Server IP address>\n\n");
-        return DEFAULT_SERVER_IP;
-    }
-    else {
-        return argv[4];
-    }
-}
+#include "arguments.h"
 
 class Demo : public Application {
 public:

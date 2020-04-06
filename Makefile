@@ -14,16 +14,16 @@ trivial: build
 demo: build
 	(build/src/rserver -ip 127.0.0.1)&
 	@sleep 1
-	(build/src/demo -ip 127.0.0.2 -s 127.0.0.1 0)&
-	(build/src/demo -ip 127.0.0.3 -s 127.0.0.1 1)&
-	build/src/demo -ip 127.0.0.4 -s 127.0.0.1 2
+	(build/src/demo -ip 127.0.0.2 -s 127.0.0.1 -n 0)&
+	(build/src/demo -ip 127.0.0.3 -s 127.0.0.1 -n 1)&
+	build/src/demo -ip 127.0.0.4 -s 127.0.0.1 -n 2
 
 wordcount: build
 	(build/src/rserver -ip 127.0.0.1)&
 	@sleep 1
-	(build/src/word_count -ip 127.0.0.2 -s 127.0.0.1 -o data/more_words.txt 0)&
-	(build/src/word_count -ip 127.0.0.3 -s 127.0.0.1 -o data/more_words.txt 1)&
-	build/src/word_count -ip 127.0.0.4 -s 127.0.0.1 -o data/more_words.txt 2
+	(build/src/word_count -ip 127.0.0.2 -s 127.0.0.1 -o data/more_words.txt -n 0)&
+	(build/src/word_count -ip 127.0.0.3 -s 127.0.0.1 -o data/more_words.txt -n 1)&
+	build/src/word_count -ip 127.0.0.4 -s 127.0.0.1 -o data/more_words.txt -n 2
 
 test: build
 	build/tests/test_serial
