@@ -5,9 +5,9 @@
 #include "../src/networks/rendezvous_server.h"
 #include "../src/application/word_count_rowers.h"
 
-const char* WORDS_TEXT_FILE = "data/100k.txt";
-size_t FILE_WORD_COUNT = 10000;
-size_t DIFFERENT_WORD_COUNT = 463;
+const char* WORDS_TEXT_FILE = "data/more_words.txt";
+size_t FILE_WORD_COUNT = 786;
+size_t DIFFERENT_WORD_COUNT = 94;
  
 // We took Jan's code (with some function name changes) and put tests throughout them
 /****************************************************************************

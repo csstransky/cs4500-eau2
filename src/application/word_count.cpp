@@ -7,7 +7,7 @@
 
 const char* DEFAULT_CLIENT_IP = "127.0.0.2";
 const char* DEFAULT_SERVER_IP = "127.0.0.1";
-const char* DEFAULT_TEXT_FILE = "data/100k.txt";
+const char* DEFAULT_TEXT_FILE = "data/words.txt";
 
 // TODO: Super rigid input command getter, but it works and we don't need anything too nice
 const char* get_input_client_ip_address(int argc, char const *argv[]) {

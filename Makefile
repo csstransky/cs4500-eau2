@@ -21,9 +21,9 @@ demo: build
 wordcount: build
 	(build/src/rserver -ip 127.0.0.1)&
 	@sleep 1
-	(build/src/word_count -ip 127.0.0.2 -s 127.0.0.1 -o data/100k.txt 0)&
-	(build/src/word_count -ip 127.0.0.3 -s 127.0.0.1 -o data/100k.txt 1)&
-	build/src/word_count -ip 127.0.0.4 -s 127.0.0.1 -o data/100k.txt 2
+	(build/src/word_count -ip 127.0.0.2 -s 127.0.0.1 -o data/more_words.txt 0)&
+	(build/src/word_count -ip 127.0.0.3 -s 127.0.0.1 -o data/more_words.txt 1)&
+	build/src/word_count -ip 127.0.0.4 -s 127.0.0.1 -o data/more_words.txt 2
 
 test: build
 	build/tests/test_serial
