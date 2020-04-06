@@ -1,7 +1,7 @@
 #include <sys/wait.h>
 #include "arguments.h"
-#include "word_count.h"
-
+#include "application.h"
+#include "word_count_rowers.h"
 
 // NOTE: Took this straight from Jan's assignment (with refactoring of some functions)
 /****************************************************************************
