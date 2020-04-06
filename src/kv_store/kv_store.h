@@ -177,14 +177,11 @@ class KV_Store : public Node {
     }
 
     bool decode_message_(Message* message, int client) {
-        if (Node::decode_message_(message, client)) {
-            return 1;
-        }
         switch (message->get_kind()) {
             case MsgKind::Put: {
                 Put* put_message = dynamic_cast<Put*>(message);
                 put_map_(put_message->get_key_name(), put_message->get_value());
-                break;
+                return 1;
             }
             case MsgKind::Get: {
                 Get* get_message = dynamic_cast<Get*>(message);
@@ -195,7 +192,7 @@ class KV_Store : public Node {
                 }
                 Value value_message(my_ip_, get_message->get_sender(), value);
                 send_message(client_sockets_->get(client), &value_message);
-                break;
+                return 1;
             }
             case MsgKind::WaitAndGet: {
                 WaitAndGet* get_message = dynamic_cast<WaitAndGet*>(message);
@@ -206,12 +203,11 @@ class KV_Store : public Node {
                 } else {
                     put_get_queue_(get_message->get_key_name(), client_sockets_->get(client));
                 }
-                break;
+                return 1;
             }   
             default:
-                // Nobody inherits from kv store so it has to handle the message
-                return 0;
+                // Priority is now kicked up to the Parent class
+                return Node::decode_message_(message, client);
         }
-        return 1;
     }
 };

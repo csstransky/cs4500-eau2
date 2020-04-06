@@ -96,10 +96,6 @@ class Node : public Server {
 
     // -1 is the server
     bool decode_message_(Message* message, int client) {
-        if (Server::decode_message_(message, client)) {
-            return 1;
-        }
-
         switch (message->get_kind()) {
             case MsgKind::Directory: {
                 Directory* dir_message = dynamic_cast<Directory*>(message);
@@ -107,16 +103,16 @@ class Node : public Server {
                 other_nodes_ = dir_message->get_addresses()->clone();
                 delete other_node_indexes_;
                 other_node_indexes_ = dir_message->get_node_indexes()->clone();
-                break;
+                return 1;
             }
             case MsgKind::Kill: {
                 kill_ = true;
-                break;
+                return 1;
             }
             default:
-                return 0;
+                // Priority is now kicked up to the Parent class
+                return Server::decode_message_(message, client);
         }
-        return 1;
     }
 
     int set_socket_set_() {

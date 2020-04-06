@@ -83,12 +83,6 @@ class RServer : public Server {
     }
 
     bool decode_message_(Message* message, int client) {
-        // TODO: This design philosophy is fine, BUT the child class should have priority over the parent class,
-        // instead of the current parent class having priority.
-        // TODO: Also, maybe the exit code should be 0? Just a thought, fine with either
-        if (Server::decode_message_(message, client)) {
-            return 1;
-        }
         switch (message->get_kind()) {
             case MsgKind::Register: {
                 Register* reg = dynamic_cast<Register*>(message);
@@ -99,18 +93,16 @@ class RServer : public Server {
                 node_indexes_->replace(client, reg->get_node_index());
                 delete old;
                 send_directory_message_(); 
-                break;
+                return 1;
             }
             case MsgKind::Complete: {
                 node_complete_count_++;
-                break;
+                return 1;
             }
             default:
                 // Nobody inherits from rserver so it has to handle the message
-                return 0;
+                return Server::decode_message_(message, client);
         }
-
-        return 1;
     }
 
     void remove_client_(int index) {
