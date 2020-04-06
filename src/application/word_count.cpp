@@ -94,7 +94,9 @@ public:
     words->local_map(add);
     delete words;
     Summer cnt(map);
-    delete DataFrame::from_rower(mk_key(node_index_), &kd_, "SI", cnt);
+    Key* node_key = mk_key(node_index_);
+    delete DataFrame::from_rower(node_key, &kd_, "SI", cnt);
+    delete node_key;
   }
  
   /** Merge the data frames of all nodes */

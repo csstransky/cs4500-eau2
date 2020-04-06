@@ -65,7 +65,8 @@ public:
     Summer cnt(map);
     assert(map.size() < FILE_WORD_COUNT);
     assert(map.size() > 0);
-    DataFrame* test_frame = DataFrame::from_rower(mk_key(node_index_), &kd_, "SI", cnt);
+    Key* node_key = mk_key(node_index_);
+    DataFrame* test_frame = DataFrame::from_rower(node_key, &kd_, "SI", cnt);
     assert(test_frame->nrows() == map.size());
     Column* test_int_column = test_frame->get_column(1);
     for (size_t ii = 0; ii < map.size(); ii++) {
@@ -74,6 +75,7 @@ public:
     assert(map.size() < FILE_WORD_COUNT);
     assert(map.size() > 0);
     delete test_frame;
+    delete node_key;
   }
  
   /** Merge the data frames of all nodes */
