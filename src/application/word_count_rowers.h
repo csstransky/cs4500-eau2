@@ -1,3 +1,5 @@
+// author: pmaj
+
 #include "../dataframe/dataframe.h"
 
 /** NOTE: file has to end in newline for the last word to be correct **/

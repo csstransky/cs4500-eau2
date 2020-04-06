@@ -103,6 +103,7 @@ public:
   }
 }; // WordcountDemo
 
+// author: kaylindevchand & csstransky
 void test_word_count() {
   int cpid[3];
   const char* server_ip = "127.0.0.1";

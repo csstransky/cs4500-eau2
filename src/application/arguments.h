@@ -1,4 +1,6 @@
+// Written by Kaylin Devchand & Cristian Stransky
 #pragma once
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
