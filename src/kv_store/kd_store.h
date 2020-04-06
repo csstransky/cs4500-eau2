@@ -46,65 +46,44 @@ class KD_Store : public Object {
 
 };
 
-// TODO: abstract this code later on with a helper function inside
-// Moved here to remove circular dependency. See piazza post @963
-DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, int* array) {
+// TODO: To keep Jan's convention of using specific type of arrays in his assignment code, we have
+// to make this funky helper function, but maybe we can go back to those Application files and make
+// them use OUR arrays
+DataFrame* make_new_dataframe_from_array_(Key* key, KD_Store* kd, size_t num, char type, 
+    int* int_array, double* double_array, bool* bool_array, String** string_array) {
     Schema s("");
     DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
-    Column col('I', kd->get_kv(), key->get_key(), 0);
-    for (size_t i = 0; i < num; i++) {
-        col.push_back(array[i]);
-    }
+    Column col(type, kd->get_kv(), key->get_key(), 0);
+    for (size_t i = 0; i < num; i++)
+        switch(type) {
+            case 'I': col.push_back(int_array[i]); break;
+            case 'D': col.push_back(double_array[i]); break;
+            case 'B': col.push_back(bool_array[i]); break;
+            case 'S': col.push_back(string_array[i]); break;
+        }
     d->add_column(&col);
-    
     kd->put(key, d);
-
     return d;
+}
+
+// Moved here to remove circular dependency. See piazza post @963
+DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, int* array) {
+    return make_new_dataframe_from_array_(key, kd, num, 'I', array, nullptr, nullptr, nullptr);
 }
 
 // Moved here to remove circular dependency. See piazza post @963
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, double* array) {
-    Schema s("");
-    DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
-    Column col('D', kd->get_kv(), key->get_key(), 0);
-    for (size_t i = 0; i < num; i++) {
-        col.push_back(array[i]);
-    }
-    d->add_column(&col);
-
-    kd->put(key, d);
-
-    return d;
+    return make_new_dataframe_from_array_(key, kd, num, 'D', nullptr, array, nullptr, nullptr);
 }
 
 // Moved here to remove circular dependency. See piazza post @963
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, bool* array) {
-    Schema s("");
-    DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
-    Column col('B', kd->get_kv(), key->get_key(), 0);
-    for (size_t i = 0; i < num; i++) {
-        col.push_back(array[i]);
-    }
-    d->add_column(&col);
-
-    kd->put(key, d);
-
-    return d;
+    return make_new_dataframe_from_array_(key, kd, num, 'B', nullptr, nullptr, array, nullptr);
 }  
 
 // Moved here to remove circular dependency. See piazza post @963
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, String** array) {
-    Schema s("");
-    DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
-    Column col('S', kd->get_kv(), key->get_key(), 0);
-    for (size_t i = 0; i < num; i++) {
-        col.push_back(array[i]);
-    }
-    d->add_column(&col);
-
-    kd->put(key, d);
-
-    return d;
+    return make_new_dataframe_from_array_(key, kd, num, 'S', nullptr, nullptr, nullptr, array);
 }
 
 DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, int val) { return DataFrame::from_array(key, kd, 1, &val); }
