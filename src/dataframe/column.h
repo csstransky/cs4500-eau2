@@ -34,7 +34,7 @@ class Column : public Object {
   String* dataframe_name_;
   size_t column_index_;
   KeyArray* keys_; // owned
-  int node_for_chunk_; // TODO: remove this field in the future
+  int chunk_node_index_; // keeps track of which node to place the next full chunk into
   // Elements are stored as an array of int arrays where each int array holds ELEMENT_ARRAY_SIZE 
   // number of elements.
   Array* buffered_elements_;  
@@ -50,7 +50,7 @@ class Column : public Object {
     dataframe_name_ = dataframe_name? dataframe_name->clone() : nullptr;
     column_index_ = index;
     keys_ = keys ? keys->clone() : nullptr;
-    node_for_chunk_ = 0; // TODO: remove this field in the future
+    chunk_node_index_ = 0;
     buffered_elements_ = local_array ? local_array->clone() : nullptr;
     cache_string_ = nullptr;
   }
@@ -109,7 +109,7 @@ class Column : public Object {
     key_name.concat("_");
     key_name.concat(array_index);
 
-    size_t home_index = kv_->get_node_index(node_for_chunk_++ % kv_->get_num_other_nodes());
+    size_t home_index = kv_->get_node_index(chunk_node_index_++ % kv_->get_num_other_nodes());
     Key* new_key = new Key(&key_name, home_index);
     return new_key;    
   }
