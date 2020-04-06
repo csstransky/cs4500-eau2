@@ -94,21 +94,19 @@ class CreateDataframe : public Application {
 ```
 
 ## Open questions
-+ If we were to use get() on a kv_store that doesn't have the kv pair, is it okay if we can error out?   
-We expect that if you use get(), you know the key is already in the kv_store (wait_and_get should be used if you don't know if the key is there).
-
-+ Are we going to need is_missing (from the refactor video) in our dataframe?
-+ How will we construct DataFrames in the future? Will it only be done with fromArray, fromFile, or fromScalar? We assume we will write into the DataFrame at first, and then read all the data. If we have to write and read in random chunks (write 10, read 10, write 100, read 100), that means we'll have to have a "put" cache and "get" cache for our Column, but if we strictly read and then write, we can have just 1 cache.
++ Now that we have a local_map(...) function, do we need map(...) or pmap(...) anymore?
++ There was a function called DataFrame::fromVistor(...), we renamed it to DataFrame::from_rower(...). Is using a Rower the same thing as a Vistor, or do we need to use a different approach?
++ We're currently splitting up Columns into 100 element chunks and putting them into kv_stores, but is there a more optimal number? 1,000? 10,000?
++ We're actually using a "put cache" for Columns called buffered_elements_ that makes sure to only do 10 network calls for 1000 read in elements, instead of doing 1000 network calls. We DON'T have a "get cache", so if we try to grab 1000 elements from a Column 1-by-1, it'll STILL make 1000 network calls to get values and then deserialize them. Would it make sense to have a "get cache" of some kind so that we temporarily load in the entire value array for quick get()?
++ To add to the previous question, would it make sense to have one "cache" that would switch between being a "put cache" and then a "get cache"? This is assuming we strictly put first, THEN get.
++ To add even further, it seems that DataFrames are only constructed with a `DataFrame::from_<something>(...)`, would it make even more sense to only store a "put cache" in that function, and then a "get cache" inside the actual DataFrame class itself?
 
 ## Status
-All of our code valgrinds. The application runs on multiple nodes using a complete network layer. The pseudo network approach was not taken. The demo class example given in the assignment description for Milestone 3 works. 
+All of our code valgrinds and all tests run properly. The WordCount application runs on multiple nodes using a complete network layer. Using the 100k.txt file, **our final word count was 463**.
 
-We are in the middle of refactor and deleting duplicate code but have not merged this refactor with our master branch. 
-+ We have completed refactoring array to use a union for its payload instead of duplicating code for each Array. 
-+ We have not implemented the array changes in the rest of the code yet, so we are not submitting the refactored array. 
-+ For the next milestone, we will have the refactored array changes reflected throughout our code, change our implementation of column to use one class, and delete unused code in map and dataframe, as per Jan's notes. 
-+ Serialization and deserialization is also being redesigned to reduce code. 
-- We can provide the link to our refactor branch to show that we are deleting the duplicate code (but right now the repo is private).
+Our code refactor is complete, and we have reduced our code by over 1000 lines of code. The main highlights are that **Array uses unions, reducing A LOT of code** and **there is now only one Column class which strictly uses an Array class, and keeps track of its type with col_type_**. We made sure to reduce code based on Jan's comments (still a little unsure about removing map() and pmap(), but probably will), and we made sure that all legacy functions as expected (for example, you can now strictly use an Array if desired, but you can still use an IntAray for example).
+
+We still plan to refactor the entire application/ folder though, as it seems that we're now starting to duplicate a lot of code, especially when it comes to getting arguments.
 
 We also plan to add a "get" cache to the column class to reduce network calls when a "get()" is called on the Column. For example, getting the first 100 elements in a Column, we can simply make 1 network call to grab and cache the array of elements from a remote kv_store, and then grab the next 99 elements locally, rather than making 100 network calls.
 
