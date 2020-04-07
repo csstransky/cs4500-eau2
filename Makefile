@@ -14,20 +14,28 @@ trivial: build
 demo: build
 	(build/src/rserver -ip 127.0.0.1)&
 	@sleep 1
-	(build/src/demo -ip 127.0.0.2 -s 127.0.0.1 0)&
-	(build/src/demo -ip 127.0.0.3 -s 127.0.0.1 1)&
-	build/src/demo -ip 127.0.0.4 -s 127.0.0.1 2
+	(build/src/demo -ip 127.0.0.2 -s 127.0.0.1 -n 0)&
+	(build/src/demo -ip 127.0.0.3 -s 127.0.0.1 -n 1)&
+	build/src/demo -ip 127.0.0.4 -s 127.0.0.1 -n 2
+
+wordcount: build
+	(build/src/rserver -ip 127.0.0.1)&
+	@sleep 1
+	(build/src/word_count -ip 127.0.0.2 -s 127.0.0.1 -o data/more_words.txt -n 0)&
+	(build/src/word_count -ip 127.0.0.3 -s 127.0.0.1 -o data/more_words.txt -n 1)&
+	build/src/word_count -ip 127.0.0.4 -s 127.0.0.1 -o data/more_words.txt -n 2
 
 test: build
 	build/tests/test_serial
 	build/tests/test_sorer
 	build/tests/test-array
 	build/tests/test-map
-	build/tests/dataframe/parallel_map_personal_test_suite
+	build/tests/test_dataframe
 	build/tests/test_kv_store
 	build/tests/test_kd_store
 	build/tests/test_application
 	build/tests/test_networking
+	build/tests/test_word_count
 
 valgrind: build
 	valgrind build/tests/test_serial
@@ -37,7 +45,9 @@ valgrind: build
 	valgrind build/tests/test_kv_store
 	valgrind build/tests/test_kd_store
 	valgrind build/tests/test_application
+	valgrind build/tests/test_dataframe
 	valgrind build/tests/test_networking
+	valgrind build/tests/test_word_count
 
 clean:
 	rm -rf build

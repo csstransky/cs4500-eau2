@@ -9,15 +9,11 @@
 // we get a number that's optimal. Jan does say 100 is too small though.
 const int ELEMENT_ARRAY_SIZE = 100; 
 const int DEFAULT_INT_VALUE = 0;
-const float DEFAULT_FLOAT_VALUE = 0;
+const double DEFAULT_DOUBLE_VALUE = 0;
 const bool DEFAULT_BOOL_VALUE = 0;
 String DEFAULT_STRING_VALUE("");
 const int NUM_THREADS = 4;
 
-class IntColumn;
-class FloatColumn;
-class BoolColumn;
-class StringColumn;
 class KD_Store;
 class ColumnArray;
 
@@ -29,7 +25,6 @@ class ColumnArray;
  * equality. 
  * Authors: Kaylin Devchand & Cristian Stransky
  * */
-// TODO: In the future, there will only be ONE Column class (no need to IntColumn, BoolColumn, etc)
 class Column : public Object {
  public:
 
@@ -39,60 +34,73 @@ class Column : public Object {
   String* dataframe_name_;
   size_t column_index_;
   KeyArray* keys_; // owned
-  int node_for_chunk_;
- 
-  /** Type converters: Return same column under its actual type, or
-   *  nullptr if of the wrong type.  */
-  virtual IntColumn* as_int() { return nullptr; }
-  virtual BoolColumn*  as_bool() { return nullptr; }
-  virtual FloatColumn* as_float() { return nullptr; }
-  virtual StringColumn* as_string() { return nullptr; }
- 
-  /** Type appropriate push_back methods. Calling the wrong method is
-    * undefined behavior. **/
-  // Child classes implement these so if these get called the program should break
-  virtual void push_back(int val) {
-    assert(0);
-  }
+  int chunk_node_index_; // keeps track of which node to place the next full chunk into
+  // Elements are stored as an array of int arrays where each int array holds ELEMENT_ARRAY_SIZE 
+  // number of elements.
+  Array* buffered_elements_;  
+  // Since Strings can be stored in a kv_store, we need to be able to use get(...) without having to 
+  // worry about deleting the deserialized String later, this cache string will be used to hold it
+  String* cache_string_; // TODO: This will change in the future when we add a real cache
 
-  virtual void push_back(bool val) {
-    assert(0);
-  }
-
-  virtual void push_back(float val) {
-    assert(0);
-  }
-
-  virtual void push_back(String* val) {
-    assert(0);
-  }
-
-  size_t get_num_arrays() {
-    return size_ / ELEMENT_ARRAY_SIZE + 1;
-  }
-
-  void set_parent_values_(size_t size, char type, KV_Store* kv, String* dataframe_name, 
-    size_t col_index) {
-    kv_ = kv;
-    dataframe_name_ = dataframe_name ? dataframe_name->clone() : nullptr;
-    column_index_ = col_index;
+  Column(char type, KV_Store* kv, String* dataframe_name, size_t index, size_t size, KeyArray* keys, 
+    Array* local_array) {
     type_ = type;
     size_ = size;
-    size_t num_arrays_ = get_num_arrays();
-    keys_ = new KeyArray(num_arrays_);
-    node_for_chunk_ = 0;
+    kv_ = kv;
+    dataframe_name_ = dataframe_name? dataframe_name->clone() : nullptr;
+    column_index_ = index;
+    keys_ = keys ? keys->clone() : nullptr;
+    chunk_node_index_ = 0;
+    buffered_elements_ = local_array ? local_array->clone() : nullptr;
+    cache_string_ = nullptr;
   }
 
-  void set_parent_values_(size_t size, char type, KV_Store* kv, String* dataframe_name, 
-    size_t col_index, KeyArray* keys) { 
-    kv_ = kv;
-    dataframe_name_ = dataframe_name ? dataframe_name->clone() : nullptr;
-    column_index_ = col_index;
-    type_ = type;
-    size_ = size;
-    keys_ = keys->clone();
-    node_for_chunk_ = 0;
+  Column(char type, KV_Store* kv, String* name, size_t index) 
+    : Column(type, kv, name, index, 0, nullptr, nullptr) { 
+      keys_ = new KeyArray(1);
+      switch(type) {
+        case 'I': buffered_elements_ = new IntArray(ELEMENT_ARRAY_SIZE); break;
+        case 'B': buffered_elements_ = new BoolArray(ELEMENT_ARRAY_SIZE); break;
+        case 'D': buffered_elements_ = new DoubleArray(ELEMENT_ARRAY_SIZE); break;
+        case 'S': buffered_elements_ = new StringArray(ELEMENT_ARRAY_SIZE); break;
+      }
+      
+    }
+
+  Column(Column& other) 
+    : Column(other.type_, other.kv_, other.dataframe_name_, other.column_index_, other.size_, 
+      other.keys_, other.buffered_elements_) { }
+  
+  Column(Column& other, String* df_name, KV_Store* kv, size_t index) 
+    : Column(other.type_, kv, df_name, index, other.size_, 
+      other.keys_, other.buffered_elements_) { }
+
+  Column(char type) : Column(type, nullptr, nullptr, 0) {  }
+
+  Column(Deserializer& deserializer, KV_Store* kv_store) {
+    kv_ = kv_store;
+    type_ = deserializer.deserialize_char();
+    size_ = deserializer.deserialize_size_t(); 
+    keys_ = new KeyArray(deserializer);
+    switch(type_) {
+      case 'I': buffered_elements_ = new IntArray(deserializer); break;
+      case 'B': buffered_elements_ = new BoolArray(deserializer); break;
+      case 'D': buffered_elements_ = new DoubleArray(deserializer); break;
+      case 'S': buffered_elements_ = new StringArray(deserializer); break;
+    }
+    cache_string_ = nullptr;
+    dataframe_name_ = nullptr;
+    column_index_ = 0;
   }
+
+  ~Column() {
+    delete dataframe_name_;
+    delete buffered_elements_;
+    delete keys_;
+    delete cache_string_;
+  }
+
+  Column* clone() { return new Column(*this); }
 
   Key* generate_key_(size_t array_index) {
     String key_name(*dataframe_name_);
@@ -101,648 +109,135 @@ class Column : public Object {
     key_name.concat("_");
     key_name.concat(array_index);
 
-    // TODO: Cristian change get_random_node_index if you don't want it completely random
-    size_t home_index = kv_->get_node_index(node_for_chunk_++ % kv_->get_num_other_nodes());
+    size_t home_index = kv_->get_node_index(chunk_node_index_++ % kv_->get_num_other_nodes());
     Key* new_key = new Key(&key_name, home_index);
     return new_key;    
   }
+
+  bool is_buffer_full_() { return size_ % ELEMENT_ARRAY_SIZE == ELEMENT_ARRAY_SIZE - 1; }
+
+  void store_buffer_in_kv_() {
+    size_t key_index = size_ / ELEMENT_ARRAY_SIZE;
+    Key* k = generate_key_(key_index);
+    keys_->push(k);
+    kv_->put(k, buffered_elements_); 
+    delete k;
+    buffered_elements_->clear();
+  }
+
+  void push_back_payload_(Payload payload) {
+    buffered_elements_->push(payload);
+    if (is_buffer_full_()) store_buffer_in_kv_();
+    size_++;
+  }
  
- /** Returns the number of elements in the column. */
-  virtual size_t size() {
+  /** Type appropriate push_back methods. Calling the wrong method is
+    * undefined behavior. **/
+  void push_back(int val) {
+    assert(type_ == 'I');
+    push_back_payload_(int_to_payload(val));
+  }
+
+  void push_back(bool val) {
+    assert(type_ == 'B');
+    push_back_payload_(bool_to_payload(val));
+  }
+
+  void push_back(double val) {
+    assert(type_ == 'D');
+    push_back_payload_(double_to_payload(val));
+  }
+
+  void push_back(String* val) {
+    assert(type_ == 'S');
+    String* string_clone = val ? val->clone() : DEFAULT_STRING_VALUE.clone();
+    push_back_payload_(object_to_payload(string_clone));
+  }
+
+  // TODO: Change this to a cache that uses both get and put correctly in the future
+  Payload get_cached_element_(size_t idx) {
+    size_t index = idx % ELEMENT_ARRAY_SIZE;
+    return buffered_elements_->get(index);
+  }
+
+  Payload get_kv_stored_element_(size_t idx) {
+    size_t index = idx % ELEMENT_ARRAY_SIZE;
+    size_t array = idx / ELEMENT_ARRAY_SIZE;
+    Key* k = keys_->get(array);
+    Array* data = kv_->get_array(k, type_);
+    Payload payload = data->get(index);
+    if (type_ == 'S') {
+      payload.o = payload.o->clone();
+      delete cache_string_;
+      cache_string_ = static_cast<String*>(payload.o);
+    }
+    delete data;
+    return payload;
+  }
+
+  bool is_index_in_cache_(size_t idx) { 
+    return size_ / ELEMENT_ARRAY_SIZE == idx / ELEMENT_ARRAY_SIZE;
+  }
+
+  Payload get_element_(size_t idx) {
+    assert(idx < size_);
+    if (is_index_in_cache_(idx))
+      return get_cached_element_(idx);
+    else {
+      return get_kv_stored_element_(idx);
+    }
+  }
+
+  int get_int(size_t idx) {
+    assert(type_ == 'I');
+    return get_element_(idx).i;
+  }
+
+  bool get_bool(size_t idx) {
+    assert(type_ == 'B');
+    return get_element_(idx).b;
+  }
+
+  double get_double(size_t idx) {
+    assert(type_ == 'D');
+    return get_element_(idx).d;
+  }
+
+  String* get_string(size_t idx) {
+    assert(type_ == 'S');
+    return static_cast<String*>(get_element_(idx).o);
+  }
+ 
+  /** Returns the number of elements in the column. */
+  size_t size() {
     return size_;
   }
  
-  /** Return the type of this column as a char: 'S', 'B', 'I' and 'F'. */
+  /** Return the type of this column as a char: 'S', 'B', 'I' and 'D'. */
   char get_type() {
     return type_;
   }
 
-  size_t column_serial_size_(Array* buffered_elements) {
-    return sizeof(size_t) // serial_size
-      + sizeof(char) // type_
-      + sizeof(size_t) // size_
-      + dataframe_name_->serial_len()
-      + sizeof(column_index_) // column_index_
-      + keys_->serial_len()
-      + buffered_elements->serial_len();
+  size_t get_home_node(size_t idx) {
+    size_t array = idx / ELEMENT_ARRAY_SIZE;
+    if (is_index_in_cache_(idx)) return kv_->get_node_index();
+    return keys_->get(array)->get_node_index();
   }
 
-  // TODO: Fix in the future so that you only serialize what you need
-  void serialize_column_(Serializer& serializer, Array* buffered_elements) {
-    serializer.serialize_size_t(serializer.get_serial_size());
+  size_t serial_len() {
+    return sizeof(char) // type_
+      + sizeof(size_t) // size_
+      + keys_->serial_len()
+      + buffered_elements_->serial_len();
+  }
+
+  char* serialize() {
+    size_t serial_size = serial_len();
+    Serializer serializer(serial_size);
     serializer.serialize_char(type_);
     serializer.serialize_size_t(size_);
-    serializer.serialize_object(dataframe_name_);
-    serializer.serialize_size_t(column_index_);
     serializer.serialize_object(keys_);
-    serializer.serialize_object(buffered_elements);
-  }
-
-  static Column* deserialize(char* serial, KV_Store* kv_store) {
-    Deserializer deserializer(serial);
-    return deserialize(deserializer, kv_store);
-  }
-
-  // TODO: get rid of this. I have a new way to Serialize things (look in branch reduce_code, Array.h)
-  static char get_column_type(Deserializer& deserializer) {
-    size_t deserial_start_index = deserializer.get_serial_index();
-    deserializer.deserialize_size_t(); // skip serial_length
-    char column_type = deserializer.deserialize_char();
-    deserializer.set_serial_index(deserial_start_index); // reset serial index back to the beginning
-    return column_type;
-  }
-
-  static Column* deserialize(Deserializer& deserializer, KV_Store* kv_store);
-};
- 
-/*************************************************************************
- * IntColumn::
- * Holds int values.
- */
-class IntColumn : public Column {
- public:
-
-  // Elements are stored as an array of int arrays where each int array holds ELEMENT_ARRAY_SIZE 
-  // number of elements.
-  IntArray* buffered_elements_;  
-
-  IntColumn(KV_Store* kv, String* name, size_t index, size_t size, KeyArray* keys, 
-    IntArray* local_array) {
-    set_parent_values_(size, 'I', kv, name, index, keys);
-    buffered_elements_ = local_array->clone();
-  }
-
-  IntColumn(KV_Store* kv, String* name, size_t index) {
-    set_parent_values_(0, 'I', kv, name, index);
-    buffered_elements_ = new IntArray(ELEMENT_ARRAY_SIZE);
-  }
-
-  IntColumn(IntColumn& other) 
-    : IntColumn(other.kv_, other.dataframe_name_, other.column_index_, other.size_, other.keys_, 
-      other.buffered_elements_) {
-
-  }
-
-  IntColumn() : IntColumn(nullptr, nullptr, 0) {
-
-  }
-
-  ~IntColumn() {
-    delete dataframe_name_;
-    delete buffered_elements_;
-    delete keys_;
-  }
-
-  IntColumn* clone() {
-    return new IntColumn(*this);
-  }
-
-  int get(size_t idx) {
-    assert(idx < size_);
-    size_t array = idx / ELEMENT_ARRAY_SIZE;
-    size_t index = idx % ELEMENT_ARRAY_SIZE;
-    size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
-
-    // if element is in last array, get buffered_elements_ ow get blocks
-    if (last_array == array) {
-      return buffered_elements_->get(index);
-    } else {
-      Key* k = keys_->get(array);
-      IntArray* data = kv_->get_int_array(k);
-      int i = data->get(index);
-      delete data;
-      return i;
-    }
-  }
-
-  IntColumn* as_int() { return this; }
-
-  // TODO: We actually don't need to set anymore because we're doing read-only, so get rid of ALL sets
-  /** Set value at idx. An out of bound idx is undefined.  */
-  void set(size_t idx, int val) {
-    assert(idx < size_);
-    size_t array = idx / ELEMENT_ARRAY_SIZE;
-    size_t index = idx % ELEMENT_ARRAY_SIZE;
-    size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
-
-    // if element is to be place in last array, update buffered_elements, else get from kvstore
-    if (last_array == array) {
-      buffered_elements_->replace(index, val);
-    } else {
-      Key* k = keys_->get(array);
-      IntArray* data = kv_->get_int_array(k);
-      data->replace(index, val);
-      kv_->put(k, data);
-      delete data;
-    }
-
-  }
-
-  size_t size() {
-    // Parent provides all the implementation needed.
-    return Column::size();
-  }
-
-  void push_back(int val) {
-    size_t array = size_ / ELEMENT_ARRAY_SIZE;
-    size_t index = size_ % ELEMENT_ARRAY_SIZE;
-
-    buffered_elements_->push(val);
-    
-    // If buffered elements is full, create key and add to kvstore
-    if (index == ELEMENT_ARRAY_SIZE - 1) {
-      Key* k = generate_key_(array);
-      keys_->push(k);
-      kv_->put(k, buffered_elements_); 
-      delete k;
-      delete buffered_elements_;
-      buffered_elements_ = new IntArray(ELEMENT_ARRAY_SIZE);
-    }
-
-    size_++;
-  }
-
-  size_t serial_len() {
-    return column_serial_size_(buffered_elements_);
-  }
-
-  char* serialize() {
-    size_t serial_size = serial_len();
-    Serializer serializer(serial_size);
-    serialize_column_(serializer, buffered_elements_);
+    serializer.serialize_object(buffered_elements_);
     return serializer.get_serial();
   }
-
-  static IntColumn* deserialize(char* serial, KV_Store* kv_store) {
-    Deserializer deserializer(serial);
-    return deserialize(deserializer, kv_store);
-  }
-
-  static IntColumn* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
-    deserializer.deserialize_size_t(); // skip serial size
-    deserializer.deserialize_char(); // skip type
-    size_t dataframe_size = deserializer.deserialize_size_t(); 
-    String* dataframe_name = String::deserialize(deserializer);
-    size_t dataframe_index = deserializer.deserialize_size_t();
-    KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
-    IntArray* buffered_elements = IntArray::deserialize(deserializer);
-
-    IntColumn* new_int_column = new IntColumn(kv_store, dataframe_name, dataframe_index, 
-      dataframe_size, dataframe_keys, buffered_elements);
-    delete dataframe_name;
-    delete dataframe_keys;
-    delete buffered_elements;
-    return new_int_column;
-  }
 };
- 
-/*************************************************************************
- * FloatColumn::
- * Holds float values.
- */
-class FloatColumn : public Column {
-  public:
-  // Elements are stored as an array of int arrays where each int array holds ELEMENT_ARRAY_SIZE 
-  // number of elements.
-  FloatArray* buffered_elements_;
-
-  FloatColumn(KV_Store* kv, String* name, size_t index, size_t size, KeyArray* keys, 
-    FloatArray* local_array) {
-    set_parent_values_(size, 'F', kv, name, index, keys);
-    buffered_elements_ = local_array->clone();
-  }
-
-  FloatColumn(KV_Store* kv, String* name, size_t index) {
-    set_parent_values_(0, 'F', kv, name, index);
-    buffered_elements_ = new FloatArray(ELEMENT_ARRAY_SIZE);
-  }
-
-  FloatColumn(FloatColumn& other) 
-    : FloatColumn(other.kv_, other.dataframe_name_, other.column_index_, other.size_, other.keys_, 
-      other.buffered_elements_) {
-
-  }
-
-  FloatColumn() : FloatColumn(nullptr, nullptr, 0) {
-    
-  }
-
-  ~FloatColumn() {
-    delete dataframe_name_;
-    delete buffered_elements_;
-    delete keys_;
-  }
-
-  FloatColumn* clone() {
-    return new FloatColumn(*this);
-  }
-
-  float get(size_t idx) {
-    assert(idx < size_);
-    size_t array = idx / ELEMENT_ARRAY_SIZE;
-    size_t index = idx % ELEMENT_ARRAY_SIZE;
-    size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
-
-    // if element is in last array, get buffered_elements_ ow get blocks
-    if (last_array == array) {
-      return buffered_elements_->get(index);
-    } else {
-      Key* k = keys_->get(array);
-      FloatArray* data = kv_->get_float_array(k);
-      float i = data->get(index);
-      delete data;
-      return i;
-    }
-  }
-
-  FloatColumn* as_float() { return this; }
-
-
-  /** Set value at idx. An out of bound idx is undefined.  */
-  void set(size_t idx, float val) {
-    assert(idx < size_);
-    size_t array = idx / ELEMENT_ARRAY_SIZE;
-    size_t index = idx % ELEMENT_ARRAY_SIZE;
-    size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
-
-    // if element is to be place in last array, update buffered_elements, else get from kvstore
-    if (last_array == array) {
-      buffered_elements_->replace(index, val);
-    } else {
-      Key* k = keys_->get(array);
-      FloatArray* data = kv_->get_float_array(k);
-      data->replace(index, val);
-      kv_->put(k, data);
-      delete data;
-    }
-  }
-
-  size_t size() {
-    // Parent provides all the implementation needed.
-    return Column::size();
-  }
-
-  void push_back(float val) {
-    size_t array = size_ / ELEMENT_ARRAY_SIZE;
-    size_t index = size_ % ELEMENT_ARRAY_SIZE;
-
-    buffered_elements_->push(val);
-    
-    // If buffered elements is full, create key and add to kvstore
-    if (index == ELEMENT_ARRAY_SIZE - 1) {
-      Key* k = generate_key_(array);
-      keys_->push(k);
-      kv_->put(k, buffered_elements_); 
-      delete k;
-      delete buffered_elements_;
-      buffered_elements_ = new FloatArray(ELEMENT_ARRAY_SIZE);
-    }
-
-    size_++;
-  }
-
-  size_t serial_len() {
-    return column_serial_size_(buffered_elements_);
-  }
-
-  char* serialize() {
-    size_t serial_size = serial_len();
-    Serializer serializer(serial_size);
-    serialize_column_(serializer, buffered_elements_);
-    return serializer.get_serial();
-  }
-
-  static FloatColumn* deserialize(char* serial, KV_Store* kv_store) {
-    Deserializer deserializer(serial);
-    return deserialize(deserializer, kv_store);
-  }
-
-  static FloatColumn* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
-    deserializer.deserialize_size_t(); // skip serial size
-    deserializer.deserialize_char(); // skip type
-    size_t dataframe_size = deserializer.deserialize_size_t(); 
-    String* dataframe_name = String::deserialize(deserializer);
-    size_t dataframe_index = deserializer.deserialize_size_t();
-    KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
-    FloatArray* buffered_elements = FloatArray::deserialize(deserializer);
-
-    FloatColumn* new_float_column = new FloatColumn(kv_store, dataframe_name, dataframe_index, 
-      dataframe_size, dataframe_keys, buffered_elements);
-    delete dataframe_name;
-    delete dataframe_keys;
-    delete buffered_elements;
-    return new_float_column;
-  }
-};
-
-/*************************************************************************
- * BoolColumn::
- * Holds Boolean values.
- */
-class BoolColumn : public Column {
- public:
-   // Elements are stored as an array of bool arrays where each bool array holds ELEMENT_ARRAY_SIZE 
-  // number of elements.
-  BoolArray* buffered_elements_;
-
-  BoolColumn(KV_Store* kv, String* name, size_t index, size_t size, KeyArray* keys, 
-    BoolArray* local_array) {
-    set_parent_values_(size, 'B', kv, name, index, keys);
-    buffered_elements_ = local_array->clone();
-  }
-
-  BoolColumn(KV_Store* kv, String* name, size_t index) {
-    set_parent_values_(0, 'B', kv, name, index);
-    buffered_elements_ = new BoolArray(ELEMENT_ARRAY_SIZE);
-  }
-
-  BoolColumn(BoolColumn& other) 
-    : BoolColumn(other.kv_, other.dataframe_name_, other.column_index_, other.size_, other.keys_, 
-      other.buffered_elements_) {
-
-  }
-
-  BoolColumn() : BoolColumn(nullptr, nullptr, 0) {
-    
-  }
-
-  BoolColumn* clone() {
-    return new BoolColumn(*this);
-  }
-
-  ~BoolColumn() {
-    delete dataframe_name_;
-    delete buffered_elements_;
-    delete keys_;
-  }
-
-  bool get(size_t idx) {
-    assert(idx < size_);
-    size_t array = idx / ELEMENT_ARRAY_SIZE;
-    size_t index = idx % ELEMENT_ARRAY_SIZE;
-    size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
-
-    // if element is in last array, get buffered_elements_ ow get blocks
-    if (last_array == array) {
-      return buffered_elements_->get(index);
-    } else {
-      Key* k = keys_->get(array);
-      BoolArray* data = kv_->get_bool_array(k);
-      bool i = data->get(index);
-      delete data;
-      return i;
-    }
-  }
-
-  BoolColumn* as_bool() { return this; }
-
-
-  /** Set value at idx. An out of bound idx is undefined.  */
-  void set(size_t idx, bool val) {
-    assert(idx < size_);
-    size_t array = idx / ELEMENT_ARRAY_SIZE;
-    size_t index = idx % ELEMENT_ARRAY_SIZE;
-    size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
-
-    // if element is to be place in last array, update buffered_elements, else get from kvstore
-    if (last_array == array) {
-      buffered_elements_->replace(index, val);
-    } else {
-      Key* k = keys_->get(array);
-      BoolArray* data = kv_->get_bool_array(k);
-      data->replace(index, val);
-      kv_->put(k, data);
-      delete data;
-    }
-  }
-
-  size_t size() {
-    // Parent provides all the implementation needed.
-    return Column::size();
-  }
-
-  void push_back(bool val) {
-    size_t array = size_ / ELEMENT_ARRAY_SIZE;
-    size_t index = size_ % ELEMENT_ARRAY_SIZE;
-
-    buffered_elements_->push(val);
-    
-    // If buffered elements is full, create key and add to kvstore
-    if (index == ELEMENT_ARRAY_SIZE - 1) {
-      Key* k = generate_key_(array);
-      keys_->push(k);
-      kv_->put(k, buffered_elements_); 
-      delete k;
-      delete buffered_elements_;
-      buffered_elements_ = new BoolArray(ELEMENT_ARRAY_SIZE);
-    }
-
-    size_++;
-  }
-
-  size_t serial_len() {
-    return column_serial_size_(buffered_elements_);
-  }
-
-  char* serialize() {
-    size_t serial_size = serial_len();
-    Serializer serializer(serial_size);
-    serialize_column_(serializer, buffered_elements_);
-    return serializer.get_serial();
-  }
-
-  static BoolColumn* deserialize(char* serial, KV_Store* kv_store) {
-    Deserializer deserializer(serial);
-    return deserialize(deserializer, kv_store);
-  }
-
-  static BoolColumn* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
-    deserializer.deserialize_size_t(); // skip serial size
-    deserializer.deserialize_char(); // skip type
-    size_t dataframe_size = deserializer.deserialize_size_t(); 
-    String* dataframe_name = String::deserialize(deserializer);
-    size_t dataframe_index = deserializer.deserialize_size_t();
-    KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
-    BoolArray* buffered_elements = BoolArray::deserialize(deserializer);
-
-    BoolColumn* new_bool_column = new BoolColumn(kv_store, dataframe_name, dataframe_index, 
-      dataframe_size, dataframe_keys, buffered_elements);
-    delete dataframe_name;
-    delete dataframe_keys;
-    delete buffered_elements;
-    return new_bool_column;
-  }
-};
- 
-/*************************************************************************
- * StringColumn::
- * Holds string pointers. The strings are external.  Nullptr is a valid
- * value.
- */
-class StringColumn : public Column {
- public:
-  // Elements are stored as an array of int arrays where each int array holds ELEMENT_ARRAY_SIZE 
-  // number of elements.
-  StringArray* buffered_elements_;
-  // Since Strings can be stored in a kv_store, we need to be able to use get(...) without having to 
-  // worry about deleting the deserialized String later, this cache string will be used to hold it
-  String* cache_string_;
-
-  StringColumn(KV_Store* kv, String* name, size_t index, size_t size, KeyArray* keys, 
-    StringArray* local_array) {
-    set_parent_values_(size, 'S', kv, name, index, keys);
-    buffered_elements_ = local_array->clone();
-    cache_string_ = nullptr;
-  }
-
-  StringColumn(KV_Store* kv, String* name, size_t index) {
-    set_parent_values_(0, 'S', kv, name, index);
-    buffered_elements_ = new StringArray(ELEMENT_ARRAY_SIZE);
-    cache_string_ = nullptr;
-  }
-
-  StringColumn(StringColumn& other) 
-    : StringColumn(other.kv_, other.dataframe_name_, other.column_index_, other.size_, other.keys_, 
-      other.buffered_elements_) {
-
-  }
-
-  StringColumn() : StringColumn(nullptr, nullptr, 0) {
-    
-  }
-
-  ~StringColumn() {
-    delete cache_string_;
-    delete dataframe_name_;
-    delete buffered_elements_;
-    delete keys_;
-  }
-
-  StringColumn* clone() {
-    return new StringColumn(*this);
-  }
-
-  // NOTE: Returns a pointer that can be volatile (if coming from KV store, will overwrite the old
-  // cache String pointer, so String address CAN change later), clone if needed longer
-  String* get(size_t idx) {
-    assert(idx < size_);
-    size_t array = idx / ELEMENT_ARRAY_SIZE;
-    size_t index = idx % ELEMENT_ARRAY_SIZE;
-    size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
-
-    String* s;
-    // if element is in last array, get buffered_elements_ ow get blocks
-    if (last_array == array) {
-      s = buffered_elements_->get(index);
-    } else {
-      Key* k = keys_->get(array);
-      StringArray* data = kv_->get_string_array(k);
-      delete cache_string_;
-      cache_string_ = data->get(index)->clone();
-      delete data;
-      s = cache_string_;
-    }
-    return s;
-  }
-
-  StringColumn* as_string() { return this; }
-
-
-  /** Set value at idx. An out of bound idx is undefined.  */
-  void set(size_t idx, String* val) {
-    assert(idx < size_);
-    size_t array = idx / ELEMENT_ARRAY_SIZE;
-    size_t index = idx % ELEMENT_ARRAY_SIZE;
-    size_t last_array = size_ / ELEMENT_ARRAY_SIZE;
-
-    // if element is to be place in last array, update buffered_elements, else get from kvstore
-    if (last_array == array) {
-      String* old = buffered_elements_->replace(index, val);
-      delete old;
-    } else {
-      Key* k = keys_->get(array);
-      StringArray* data = kv_->get_string_array(k);
-      String* old = data->replace(index, val);
-      delete old;
-      kv_->put(k, data);
-      delete data;
-    }
-  }
-
-  size_t size() {
-    // Parent provides all the implementation needed.
-    return Column::size();
-  }
-
-  void push_back(String* val) {
-    if (val == nullptr) {
-      val = &DEFAULT_STRING_VALUE;
-    }
-    size_t array = size_ / ELEMENT_ARRAY_SIZE;
-    size_t index = size_ % ELEMENT_ARRAY_SIZE;
-
-    buffered_elements_->push(val);
-    
-    // If buffered elements is full, create key and add to kvstore
-    if (index == ELEMENT_ARRAY_SIZE - 1) {
-      Key* k = generate_key_(array);
-      keys_->push(k);
-      kv_->put(k, buffered_elements_); 
-      delete k;
-      delete buffered_elements_;
-      buffered_elements_ = new StringArray(ELEMENT_ARRAY_SIZE);
-    }
-
-    size_++;
-
-  }
-// 
-  size_t serial_len() {
-    return column_serial_size_(buffered_elements_);
-  }
-
-  char* serialize() {
-    size_t serial_size = serial_len();
-    Serializer serializer(serial_size);
-    serialize_column_(serializer, buffered_elements_);
-    return serializer.get_serial();
-  }
-
-  static StringColumn* deserialize(char* serial, KV_Store* kv_store) {
-    Deserializer deserializer(serial);
-    return deserialize(deserializer, kv_store);
-  }
-
-  static StringColumn* deserialize(Deserializer& deserializer, KV_Store* kv_store) {
-    deserializer.deserialize_size_t(); // skip serial size
-    deserializer.deserialize_char(); // skip type
-    size_t dataframe_size = deserializer.deserialize_size_t(); 
-    String* dataframe_name = String::deserialize(deserializer);
-    size_t dataframe_index = deserializer.deserialize_size_t();
-    KeyArray* dataframe_keys = KeyArray::deserialize(deserializer);
-    StringArray* buffered_elements = StringArray::deserialize(deserializer);
-
-    StringColumn* new_string_column = new StringColumn(kv_store, dataframe_name, dataframe_index, 
-      dataframe_size, dataframe_keys, buffered_elements);
-    delete dataframe_name;
-    delete dataframe_keys;
-    delete buffered_elements;
-    return new_string_column;
-  }
-};
-
-Column* Column::deserialize(Deserializer& deserializer, KV_Store* kv_store) {
-  char column_type = get_column_type(deserializer);
-  switch(column_type) {
-    case 'I':
-      return IntColumn::deserialize(deserializer, kv_store);
-    case 'F':
-      return FloatColumn::deserialize(deserializer, kv_store);
-    case 'B':
-      return BoolColumn::deserialize(deserializer, kv_store);
-    case 'S':
-      return StringColumn::deserialize(deserializer, kv_store);
-    default:
-      assert(0);
-  }
-}

@@ -202,12 +202,11 @@ class Server {
         switch (message->get_kind()) {
             case MsgKind::Ack: {
                 Ack* ack_message = dynamic_cast<Ack*>(message);
-                break;
+                return 1;
             }
             default:
                 return 0;
         }
-        return 1;
     }
 
     // nullptr is return if it is a disconnect
@@ -226,7 +225,7 @@ class Server {
             char buff[message_size];
             valread = read(sd, &buff, message_size);
 
-            Message* m = deserialize_message(buff);
+            Message* m = Message::deserialize_message(buff);
             return m;
         }   
     }

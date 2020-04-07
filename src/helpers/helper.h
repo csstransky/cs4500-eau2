@@ -1,4 +1,4 @@
-// Made by Kaylin Devchand and Cristian Stransky
+// Made by Jan Vitek, Kaylin Devchand and Cristian Stransky
 
 #pragma once
 //lang::Cpp
@@ -8,13 +8,9 @@
 #include <iostream>
 #include <assert.h>
 
-size_t max_(size_t a, size_t b) {
-  return (a > b) ? a : b;
-}
+size_t max(size_t a, size_t b) { return (a > b) ? a : b; }
 
-size_t min_(size_t a, size_t b) {
-  return (a < b) ? a : b;
-}
+size_t min(size_t a, size_t b) { return (a < b) ? a : b; }
 
 /** Helper class providing some C++ functionality and convenience
  *  functions. This class has no data, constructors, destructors or
@@ -26,7 +22,7 @@ class Sys {
   // Printing functions
   Sys& p(char* c) { std::cout << c; return *this; }
   Sys& p(bool c) { std::cout << c; return *this; }
-  Sys& p(float c) { std::cout << c; return *this; }  
+  Sys& p(double c) { std::cout << c; return *this; }  
   Sys& p(int i) { std::cout << i;  return *this; }
   Sys& p(size_t i) { std::cout << i;  return *this; }
   Sys& p(const char* c) { std::cout << c;  return *this; }
@@ -36,7 +32,7 @@ class Sys {
   Sys& pln(char* c) { std::cout << c << "\n";  return *this; }
   Sys& pln(bool c) { std::cout << c << "\n";  return *this; }  
   Sys& pln(char c) { std::cout << c << "\n";  return *this; }
-  Sys& pln(float x) { std::cout << x << "\n";  return *this; }
+  Sys& pln(double x) { std::cout << x << "\n";  return *this; }
   Sys& pln(size_t x) { std::cout << x << "\n";  return *this; }
   Sys& pln(const char* c) { std::cout << c << "\n";  return *this; }
 

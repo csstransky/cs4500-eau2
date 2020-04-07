@@ -7,13 +7,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
 find_package(Threads REQUIRED)
 
-add_subdirectory(dataframe)
-
-add_executable(serial_examples serial_examples.cpp)
-
 add_executable(test_serial test_serial.cpp)
 add_executable(test-array test-array.cpp)
 add_executable(test-map test-map.cpp)
+add_executable(test_dataframe test_dataframe.cpp)
+target_link_libraries (test_dataframe ${CMAKE_THREAD_LIBS_INIT})
 add_executable(test_sorer test_sor.cpp)
 target_link_libraries (test_sorer ${CMAKE_THREAD_LIBS_INIT})
 add_executable(test_key test_key.cpp)
@@ -25,3 +23,5 @@ add_executable(test_application test_application.cpp)
 target_link_libraries (test_application ${CMAKE_THREAD_LIBS_INIT})
 add_executable(test_networking test_networking.cpp)
 target_link_libraries (test_networking ${CMAKE_THREAD_LIBS_INIT})
+add_executable(test_word_count test_word_count.cpp)
+target_link_libraries (test_word_count ${CMAKE_THREAD_LIBS_INIT})

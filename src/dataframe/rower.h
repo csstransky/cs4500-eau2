@@ -1,8 +1,6 @@
 #pragma once
 
-#include "../helpers/object.h"
-
-class Row;
+#include "row.h"
 
 /*******************************************************************************
  *  Rower::

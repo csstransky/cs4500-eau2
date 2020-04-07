@@ -15,8 +15,8 @@ const int LOCAL_SOCKET_DESCRIPTOR = 0;
 
 class KV_Store : public Node {
     public:
-    SOMap* kv_map_; // String* -> Serializer* 
-    SIAMap* get_queue_;
+    Map* kv_map_; // String* -> Serializer* 
+    Map* get_queue_;
     size_t local_node_index_;
     std::mutex kv_map_mutex_;
     std::mutex get_queue_mutex_;
@@ -24,14 +24,14 @@ class KV_Store : public Node {
     
     KV_Store(const char* client_ip_address, const char* server_ip_address, size_t local_node_index) 
         : Node(client_ip_address, server_ip_address) {
-        kv_map_ = new SOMap();
-        get_queue_ = new SIAMap();
+        kv_map_ = new Map();
+        get_queue_ = new Map();
         local_node_index_ = local_node_index;
     }
 
     KV_Store(size_t local_node_index) : Node() {
-        kv_map_ = new SOMap();
-        get_queue_ = new SIAMap();
+        kv_map_ = new Map();
+        get_queue_ = new Map();
         local_node_index_ = local_node_index;
     }
 
@@ -44,7 +44,8 @@ class KV_Store : public Node {
         for (int i = 0; i < sockets->length(); i++) {
             int socket = sockets->get(i);
             if (socket > LOCAL_SOCKET_DESCRIPTOR) {
-                // TODO: Target IPs will be removed in the future
+                // TODO: We will need to find a way to actually grab the target IP from the socket
+                // and the socket descriptor some time in the future. Low priority though, no needed
                 String no_ip("NO TARGET IP");
                 Value value_message(my_ip_, &no_ip, value);
                 send_message(socket, &value_message);
@@ -58,7 +59,8 @@ class KV_Store : public Node {
     // waiting in the queue
     void put_map_(String* key_name, Serializer* value) {
         std::unique_lock<std::mutex> kv_lock(kv_map_mutex_);
-        kv_map_->put(key_name, value);
+        Object* old = kv_map_->put(key_name, value);
+        delete old;
         kv_lock.unlock();
 
         std::unique_lock<std::mutex> get_lock(get_queue_mutex_);
@@ -121,7 +123,7 @@ class KV_Store : public Node {
     }
 
     void put_socket_into_queue_(String* key_name, int socket_descriptor) {
-        IntArray* sockets = get_queue_->get(key_name);
+        IntArray* sockets = dynamic_cast<IntArray*>(get_queue_->get(key_name));
         if (sockets) {
             sockets->push(socket_descriptor);
         } else {
@@ -156,36 +158,18 @@ class KV_Store : public Node {
 
     }
 
-    // Returns a new IntArray, make sure to delete it later
-    IntArray* get_int_array(Key* key) {
+    Array* get_array(Key* key, char type) {
         char* kv_serial = get_value_serial(key);
-        IntArray* int_array = IntArray::deserialize(kv_serial);
+        Deserializer deserializer(kv_serial);
+        Array* array;
+        switch(type) {
+            case 'I': array = new IntArray(deserializer); break;
+            case 'B': array = new BoolArray(deserializer); break;
+            case 'D': array = new DoubleArray(deserializer); break;
+            case 'S': array = new StringArray(deserializer); break;
+        }
         delete[] kv_serial;
-        return int_array;
-    }
-
-    // Returns a new BoolArray, make sure to delete it later
-    BoolArray* get_bool_array(Key* key) {
-        char* kv_serial = get_value_serial(key);
-        BoolArray* bool_array = BoolArray::deserialize(kv_serial);
-        delete[] kv_serial;
-        return bool_array;
-    }
-
-    // Returns a new FloatArray, make sure to delete it later
-    FloatArray* get_float_array(Key* key) {
-        char* kv_serial = get_value_serial(key);
-        FloatArray* float_array = FloatArray::deserialize(kv_serial);
-        delete[] kv_serial;
-        return float_array;
-    }
-
-    // Returns a new StringArray, make sure to delete it later
-    StringArray* get_string_array(Key* key) {
-        char* kv_serial = get_value_serial(key);
-        StringArray* string_array = StringArray::deserialize(kv_serial);
-        delete[] kv_serial;
-        return string_array;
+        return array;
     }
 
     size_t get_node_index(size_t index) {
@@ -193,14 +177,11 @@ class KV_Store : public Node {
     }
 
     bool decode_message_(Message* message, int client) {
-        if (Node::decode_message_(message, client)) {
-            return 1;
-        }
         switch (message->get_kind()) {
             case MsgKind::Put: {
                 Put* put_message = dynamic_cast<Put*>(message);
                 put_map_(put_message->get_key_name(), put_message->get_value());
-                break;
+                return 1;
             }
             case MsgKind::Get: {
                 Get* get_message = dynamic_cast<Get*>(message);
@@ -208,11 +189,10 @@ class KV_Store : public Node {
                 if (!value) {
                     // There is no key value pair, for the given key
                     assert(0);
-                    // TODO: think of a better way to do this than an assert, maybe send an Nack message instead
                 }
                 Value value_message(my_ip_, get_message->get_sender(), value);
                 send_message(client_sockets_->get(client), &value_message);
-                break;
+                return 1;
             }
             case MsgKind::WaitAndGet: {
                 WaitAndGet* get_message = dynamic_cast<WaitAndGet*>(message);
@@ -223,12 +203,11 @@ class KV_Store : public Node {
                 } else {
                     put_get_queue_(get_message->get_key_name(), client_sockets_->get(client));
                 }
-                break;
+                return 1;
             }   
             default:
-                // Nobody inherits from kv store so it has to handle the message
-                return 0;
+                // Priority is now kicked up to the Parent class
+                return Node::decode_message_(message, client);
         }
-        return 1;
     }
 };
