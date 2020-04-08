@@ -1,8 +1,6 @@
-#include "../dataframe/dataframe.h"
-#include "application.h"
-#include "linus_rowers.h"
-#include "arguments.h"
-
+#include "../src/dataframe/dataframe.h"
+#include "../src/application/application.h"
+#include "../src/application/linus_rowers.h"
 
 /**
  * The input data is a processed extract from GitHub.
@@ -38,7 +36,7 @@ public:
   Set* uSet; // Linus' collaborators
   Set* pSet; // projects of collaborators
 
-  Linus(size_t node_index, const char* my_ip, const char* server_ip) : Application(node_index, my_ip, server_ip) {}
+  Linus(size_t node_index, const char* my_ip, const char* server_ip, const char* file) : Application(node_index, my_ip, server_ip) {}
 
   /** Compute DEGREES of Linus.  */
   void run_() override {
@@ -151,11 +149,6 @@ public:
   }
 }; // Linus
 
-int main(int argc, const char** argv) {
-  const char* client_ip_address = get_input_client_ip_address(argc, argv);
-  const char* server_ip_address = get_input_server_ip_address(argc, argv);
-  const char* text_file = get_input_text_file(argc, argv);
-  int node_index = get_input_node_index(argc, argv);
-  Linus app(node_index, client_ip_address, server_ip_address);
-  app.run_();
+int main(int argc, char** argv) {
+    
 }
