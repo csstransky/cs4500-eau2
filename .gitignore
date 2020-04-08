@@ -37,4 +37,5 @@ tests/build/*
 *.out
 build/*
 100k.txt
+*.ltgt
 
