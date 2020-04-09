@@ -218,7 +218,7 @@ class SoR {
                     }
                     break;
                 case '\n':
-                    if (max_column_size < current_column_size) {
+                    if (max_column_size <= current_column_size) {
                         max_column_size = current_column_size;
                         max_column_strings = current_column_strings;
                     }
