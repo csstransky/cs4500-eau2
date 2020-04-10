@@ -37,5 +37,7 @@ tests/build/*
 *.out
 build/*
 100k.txt
-*.ltgt
+data/commits.ltgt
+data/projects.ltgt
+data/users.ltgt
 
