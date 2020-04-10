@@ -1,6 +1,9 @@
+#include <sys/wait.h>
+
 #include "../src/dataframe/dataframe.h"
 #include "../src/application/application.h"
 #include "../src/application/linus_rowers.h"
+#include "../src/networks/rendezvous_server.h"
 
 /**
  * The input data is a processed extract from GitHub.
@@ -25,24 +28,33 @@
  **************************************************************************/
 class Linus : public Application {
 public:
-  int DEGREES = 4;  // How many degrees of separation form linus?
-  int LINUS = 4967;   // The uid of Linus (offset in the user df)
-  const char* PROJ = "data/projects.ltgt";
-  const char* USER = "data/users.ltgt";
-  const char* COMM = "data/commits.ltgt";
+  int DEGREES = 1;  // How many degrees of separation form linus?
+  int LINUS = 24;   // The uid of Linus (offset in the user df)
+  const char* PROJ = "data/sub_projects.ltgt";
+  const char* USER = "data/sub_users.ltgt";
+  const char* COMM = "data/sub_commits.ltgt";
   DataFrame* projects; //  pid x project name
   DataFrame* users;  // uid x user name
   DataFrame* commits;  // pid x uid x uid 
   Set* uSet; // Linus' collaborators
   Set* pSet; // projects of collaborators
 
-  Linus(size_t node_index, const char* my_ip, const char* server_ip, const char* file) : Application(node_index, my_ip, server_ip) {}
+  Linus(size_t node_index, const char* my_ip, const char* server_ip) : Application(node_index, my_ip, server_ip) {}
 
   /** Compute DEGREES of Linus.  */
   void run_() override {
     readInput();
     for (size_t i = 0; i < DEGREES; i++) step(i);
   }
+
+   Key* mk_key(const char* name, size_t stage, size_t index) {
+   String s(name);
+   s.concat("-");
+   s.concat(stage);
+   s.concat("-");
+   s.concat(index);
+   return new Key(&s, index);
+ }
 
   /** Node 0 reads three files, cointainng projects, users and commits, and
    *  creates thre dataframes. All other nodes wait and load the three
@@ -63,24 +75,25 @@ public:
       commits = DataFrame::from_file(&cK, &kd_, const_cast<char*>(COMM));
        p("    ").p(commits->nrows()).pln(" commits");
        // This dataframe contains the id of Linus.
-       Key user("users-0-0", 0);
-       delete DataFrame::from_scalar(&user, &kd_, LINUS);
+       Key* user = mk_key("users", 0, 0);
+       delete DataFrame::from_scalar(user, &kd_, LINUS);
+       delete user;
     } else {
-       projects = dynamic_cast<DataFrame*>(kd_.wait_and_get(&pK));
-       users = dynamic_cast<DataFrame*>(kd_.wait_and_get(&uK));
-       commits = dynamic_cast<DataFrame*>(kd_.wait_and_get(&cK));
+       projects = kd_.wait_and_get(&pK);
+       users = kd_.wait_and_get(&uK);
+       commits = kd_.wait_and_get(&cK);
     }
+    assert(projects->ncols() == 2);
+    assert(projects->nrows() == 300);
+    assert(strcmp(projects->get_schema().types_->c_str(), "IS") == 0);
+    assert(users->ncols() == 2);
+    assert(users->nrows() == 5000);
+    assert(strcmp(users->get_schema().types_->c_str(), "IS") == 0);
+    assert(commits->ncols() == 3);
+    assert(commits->nrows() == 500);
+    assert(strcmp(commits->get_schema().types_->c_str(), "III") == 0);
     uSet = new Set(users);
     pSet = new Set(projects);
- }
-
- Key* mk_key(const char* name, size_t stage, size_t node_index) {
-   String s(name);
-   s.concat("-");
-   s.concat(stage);
-   s.concat("-");
-   s.concat(node_index_);
-   return new Key(&s, node_index_);
  }
 
  /** Performs a step of the linus calculation. It operates over the three
@@ -91,7 +104,7 @@ public:
     // Key of the shape: users-stage-0
     Key* uK = mk_key("users", stage, 0);
     // A df with all the users added on the previous round
-    DataFrame* newUsers = dynamic_cast<DataFrame*>(kd_.wait_and_get(uK));  
+    DataFrame* newUsers = kd_.wait_and_get(uK);  
     delete uK;  
     Set delta(users);
     SetUpdater upd(delta);  
@@ -99,15 +112,17 @@ public:
     delete newUsers;
     ProjectsTagger ptagger(delta, *pSet, projects);
     commits->local_map(ptagger); // marking all projects touched by delta
-    merge(ptagger.newProjects, "projects-", stage);
+    merge(ptagger.newProjects, "projects", stage);
     pSet->union_(ptagger.newProjects); // 
     UsersTagger utagger(ptagger.newProjects, *uSet, users);
     commits->local_map(utagger);
-    merge(utagger.newUsers, "users-", stage + 1);
+    merge(utagger.newUsers, "users", stage + 1);
     uSet->union_(utagger.newUsers);
     p("    after stage ").p(stage).pln(":");
-    p("        tagged projects: ").pln(pSet->size());
-    p("        tagged users: ").pln(uSet->size());
+    p("        tagged projects: ").pln(pSet->tagged());
+    pSet->print();
+    p("        tagged users: ").pln(uSet->tagged());
+    uSet->print();
   }
 
   /** Gather updates to the given set from all the nodes in the systems.
@@ -117,7 +132,7 @@ public:
    * computed.
    */ 
   void merge(Set& set, char const* name, int stage) {
-    if (this_node() == 0) {
+    if (node_index_ == 0) {
       for (size_t i = 1; i < kd_.get_kv()->get_num_other_nodes(); ++i) {
         Key* nK = mk_key(name, stage, i);
         DataFrame* delta = dynamic_cast<DataFrame*>(kd_.wait_and_get(nK));
@@ -127,13 +142,13 @@ public:
         delta->map(upd);
         delete delta;
       }
-      p("    storing ").p(set.size()).pln(" merged elements");
+      p("    storing ").p(set.tagged()).pln(" merged elements");
       SetWriter writer(set);
       Key* k = mk_key(name, stage, 0);
       delete DataFrame::from_rower(k, &kd_, "I", writer);
       delete k;
     } else {
-      p("    sending ").p(set.size()).pln(" elements to master node");
+      p("    sending ").p(set.tagged()).pln(" elements to master node");
       SetWriter writer(set);
       Key* k = mk_key(name, stage, node_index_);
       delete DataFrame::from_rower(k, &kd_, "I", writer);
@@ -149,6 +164,140 @@ public:
   }
 }; // Linus
 
+// author: kaylindevchand & csstransky
+void test_linus() {
+  int cpid[3];
+  const char* server_ip = "127.0.0.1";
+  const char** client_ips = new const char*[3];
+  client_ips[0] = "127.0.0.2";
+  client_ips[1] = "127.0.0.3";
+  client_ips[2] = "127.0.0.4";
+
+  RServer* server = new RServer(server_ip); 
+
+  for (int i = 0; i < 2; i++) {
+    if ((cpid[i] = fork())) {
+      // parent, do nothing now
+    } else {
+      // child process
+      Linus* demo = new Linus(i, client_ips[i], server_ip);
+      demo->run_();
+      delete demo;
+      delete server;
+      delete[] client_ips;
+      exit(0);
+    } 
+  }
+
+  // In parent process
+  server->run_server();
+  server->wait_for_shutdown();
+
+  // wait for child to finish
+  for (int i = 0; i < 3; i++) {
+    int st;
+    waitpid(cpid[i], &st, 0);
+  }
+  delete server;
+  delete[] client_ips;
+
+  printf("Linus application test passed!\n");
+}
+
+void test_set() {
+  size_t count = 500;
+  Set set(count);
+  assert(set.size() == count);
+  
+  for (size_t ii = 0; ii < count; ii++) {
+    set.set(ii*2);
+  }
+
+  for (size_t ii = 0; ii < count; ii += 2) {
+    assert(set.test(ii) == true);
+    assert(set.test(ii+1) == false);
+  }
+
+  for (size_t ii = count; ii < 2*count; ii++) {
+    assert(set.test(ii) == false);
+  }
+
+  Set set2(2);
+
+  set2.union_(set);
+  assert(set2.test(0) == true);
+  assert(set2.test(1) == false);
+
+  printf("Set test passed!\n");
+}
+
+void test_set_updater() {
+  int cpid;
+  const char* server_ip = "127.0.0.1";
+  const char* client_ip = "127.0.0.2";
+
+  RServer* server = new RServer(server_ip); 
+
+  if ((cpid = fork())) {
+    // parent, do nothing now
+  } else {
+    // child process
+    KD_Store* kd = new KD_Store(0, client_ip, server_ip);
+
+    size_t count = 50;
+
+    Set* set = new Set(count);
+    set->set(2);
+    set->set(4);
+
+    for (size_t ii = 0; ii < count; ii++) {
+      if (ii == 2 || ii == 4) {
+        assert(set->test(ii) == true);
+      } else {
+        assert(set->test(ii) == false);
+      } 
+    }
+
+    SetUpdater* set_updater = new SetUpdater(*set);
+    int array[2] = {5, 10};
+    Key* key = new Key("key", 0);
+    DataFrame* df = DataFrame::from_array(key, kd, 2, array);
+    df->map(*set_updater);
+
+    for (size_t ii = 0; ii < count; ii++) {
+      if (ii == 2 || ii == 4 || ii == 5 || ii == 10) {
+        assert(set->test(ii) == true);
+      } else {
+        assert(set->test(ii) == false);
+      } 
+    }
+
+    kd->application_complete();
+    delete kd;
+    delete set;
+    delete set_updater;
+    delete key;
+    delete df;
+    delete server;
+    exit(0);
+  } 
+  
+
+  // In parent process
+  server->run_server(10);
+  server->wait_for_shutdown();
+
+  // wait for child to finish
+  int st;
+  waitpid(cpid, &st, 0);
+
+  delete server;
+
+  printf("Set updater test passed!\n");
+}
+
 int main(int argc, char** argv) {
-    
+  test_set();
+  test_set_updater();
+  test_linus();
 }

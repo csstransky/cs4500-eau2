@@ -46,6 +46,15 @@ public:
     for (size_t i = 0; i < DEGREES; i++) step(i);
   }
 
+   Key* mk_key(const char* name, size_t stage, size_t index) {
+   String s(name);
+   s.concat("-");
+   s.concat(stage);
+   s.concat("-");
+   s.concat(index);
+   return new Key(&s, index);
+ }
+
   /** Node 0 reads three files, cointainng projects, users and commits, and
    *  creates thre dataframes. All other nodes wait and load the three
    *  dataframes. Once we know the size of users and projects, we create
@@ -65,24 +74,16 @@ public:
       commits = DataFrame::from_file(&cK, &kd_, const_cast<char*>(COMM));
        p("    ").p(commits->nrows()).pln(" commits");
        // This dataframe contains the id of Linus.
-       Key user("users-0-0", 0);
-       delete DataFrame::from_scalar(&user, &kd_, LINUS);
+       Key* user = mk_key("users", 0, 0);
+       delete DataFrame::from_scalar(user, &kd_, LINUS);
+       delete user;
     } else {
-       projects = dynamic_cast<DataFrame*>(kd_.wait_and_get(&pK));
-       users = dynamic_cast<DataFrame*>(kd_.wait_and_get(&uK));
-       commits = dynamic_cast<DataFrame*>(kd_.wait_and_get(&cK));
+       projects = kd_.wait_and_get(&pK);
+       users = kd_.wait_and_get(&uK);
+       commits = kd_.wait_and_get(&cK);
     }
     uSet = new Set(users);
     pSet = new Set(projects);
- }
-
- Key* mk_key(const char* name, size_t stage, size_t node_index) {
-   String s(name);
-   s.concat("-");
-   s.concat(stage);
-   s.concat("-");
-   s.concat(node_index_);
-   return new Key(&s, node_index_);
  }
 
  /** Performs a step of the linus calculation. It operates over the three
@@ -93,7 +94,7 @@ public:
     // Key of the shape: users-stage-0
     Key* uK = mk_key("users", stage, 0);
     // A df with all the users added on the previous round
-    DataFrame* newUsers = dynamic_cast<DataFrame*>(kd_.wait_and_get(uK));  
+    DataFrame* newUsers = kd_.wait_and_get(uK);  
     delete uK;  
     Set delta(users);
     SetUpdater upd(delta);  
@@ -101,15 +102,15 @@ public:
     delete newUsers;
     ProjectsTagger ptagger(delta, *pSet, projects);
     commits->local_map(ptagger); // marking all projects touched by delta
-    merge(ptagger.newProjects, "projects-", stage);
+    merge(ptagger.newProjects, "projects", stage);
     pSet->union_(ptagger.newProjects); // 
     UsersTagger utagger(ptagger.newProjects, *uSet, users);
     commits->local_map(utagger);
-    merge(utagger.newUsers, "users-", stage + 1);
+    merge(utagger.newUsers, "users", stage + 1);
     uSet->union_(utagger.newUsers);
     p("    after stage ").p(stage).pln(":");
-    p("        tagged projects: ").pln(pSet->size());
-    p("        tagged users: ").pln(uSet->size());
+    p("        tagged projects: ").pln(pSet->tagged());
+    p("        tagged users: ").pln(uSet->tagged());
   }
 
   /** Gather updates to the given set from all the nodes in the systems.
@@ -119,7 +120,7 @@ public:
    * computed.
    */ 
   void merge(Set& set, char const* name, int stage) {
-    if (this_node() == 0) {
+    if (node_index_ == 0) {
       for (size_t i = 1; i < kd_.get_kv()->get_num_other_nodes(); ++i) {
         Key* nK = mk_key(name, stage, i);
         DataFrame* delta = dynamic_cast<DataFrame*>(kd_.wait_and_get(nK));
@@ -129,13 +130,13 @@ public:
         delta->map(upd);
         delete delta;
       }
-      p("    storing ").p(set.size()).pln(" merged elements");
+      p("    storing ").p(set.tagged()).pln(" merged elements");
       SetWriter writer(set);
       Key* k = mk_key(name, stage, 0);
       delete DataFrame::from_rower(k, &kd_, "I", writer);
       delete k;
     } else {
-      p("    sending ").p(set.size()).pln(" elements to master node");
+      p("    sending ").p(set.tagged()).pln(" elements to master node");
       SetWriter writer(set);
       Key* k = mk_key(name, stage, node_index_);
       delete DataFrame::from_rower(k, &kd_, "I", writer);
@@ -154,7 +155,6 @@ public:
 int main(int argc, const char** argv) {
   const char* client_ip_address = get_input_client_ip_address(argc, argv);
   const char* server_ip_address = get_input_server_ip_address(argc, argv);
-  const char* text_file = get_input_text_file(argc, argv);
   int node_index = get_input_node_index(argc, argv);
   Linus app(node_index, client_ip_address, server_ip_address);
   app.run_();
