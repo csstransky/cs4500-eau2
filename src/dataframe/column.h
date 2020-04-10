@@ -104,9 +104,9 @@ class Column : public Object {
 
   Key* generate_key_(size_t array_index) {
     String key_name(*dataframe_name_);
-    key_name.concat("_");
+    key_name.concat('_');
     key_name.concat(column_index_);
-    key_name.concat("_");
+    key_name.concat('_');
     key_name.concat(array_index);
 
     size_t home_index = kv_->get_node_index(chunk_node_index_++ % kv_->get_num_other_nodes());
