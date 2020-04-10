@@ -341,7 +341,7 @@ void test_wait_get() {
         }
 
         assert(kd->kv_->get_queue_->size() == 1);
-        assert(kd->kv_->get_queue_->get(key->get_key()) > 0);
+        assert(kd->kv_->get_queue_->get(key->get_key()) != nullptr);
 
         DataFrame* df = DataFrame::from_array(key, kd, 10, array);
 
