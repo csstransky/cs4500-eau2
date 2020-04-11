@@ -47,13 +47,13 @@ public:
     for (size_t i = 0; i < DEGREES; i++) step(i);
   }
 
-   Key* mk_key(const char* name, size_t stage, size_t index) {
-   String s(name);
-   s.concat("-");
-   s.concat(stage);
-   s.concat("-");
-   s.concat(index);
-   return new Key(&s, index);
+  Key* mk_key(const char* name, size_t stage, size_t index) {
+    String s(name);
+    s.concat("-");
+    s.concat(stage);
+    s.concat("-");
+    s.concat(index);
+    return new Key(&s, index);
  }
 
   /** Node 0 reads three files, cointainng projects, users and commits, and
@@ -73,15 +73,15 @@ public:
       users = DataFrame::from_file(&uK, &kd_, const_cast<char*>(USER));
       p("    ").p(users->nrows()).pln(" users");
       commits = DataFrame::from_file(&cK, &kd_, const_cast<char*>(COMM));
-       p("    ").p(commits->nrows()).pln(" commits");
-       // This dataframe contains the id of Linus.
-       Key* user = mk_key("users", 0, 0);
-       delete DataFrame::from_scalar(user, &kd_, LINUS);
-       delete user;
+      p("    ").p(commits->nrows()).pln(" commits");
+      // This dataframe contains the id of Linus.
+      Key* user = mk_key("users", 0, 0);
+      delete DataFrame::from_scalar(user, &kd_, LINUS);
+      delete user;
     } else {
-       projects = kd_.wait_and_get(&pK);
-       users = kd_.wait_and_get(&uK);
-       commits = kd_.wait_and_get(&cK);
+      projects = kd_.wait_and_get(&pK);
+      users = kd_.wait_and_get(&uK);
+      commits = kd_.wait_and_get(&cK);
     }
     assert(projects->ncols() == 2);
     assert(projects->nrows() == 300);
@@ -296,8 +296,63 @@ void test_set_updater() {
   printf("Set updater test passed!\n");
 }
 
+void test_set_writer() {
+  int cpid;
+  const char* server_ip = "127.0.0.1";
+  const char* client_ip = "127.0.0.2";
+
+  RServer* server = new RServer(server_ip); 
+
+  if ((cpid = fork())) {
+    // parent, do nothing now
+  } else {
+    // child process
+    KD_Store* kd = new KD_Store(0, client_ip, server_ip);
+
+    size_t count = 50;
+
+    Set* set = new Set(count);
+
+    SetWriter* set_writer = new SetWriter(*set);
+    Key* key = new Key("key", 0);
+    DataFrame* df = DataFrame::from_rower(key, kd, "I", *set_writer);
+
+    assert(set->tagged() == 0);
+    assert(set->size() == count);
+    for (size_t ii = 0; ii < count; ii++) {
+      assert(set->test(ii) == false);
+    }
+
+    assert(df->nrows() == 0);
+    assert(df->ncols() == 1);
+
+    kd->application_complete();
+    delete kd;
+    delete set;
+    delete set_writer;
+    delete key;
+    delete df;
+    delete server;
+    exit(0);
+  } 
+  
+
+  // In parent process
+  server->run_server(10);
+  server->wait_for_shutdown();
+
+  // wait for child to finish
+  int st;
+  waitpid(cpid, &st, 0);
+
+  delete server;
+
+  printf("Set writer test passed!\n");
+}
+
 int main(int argc, char** argv) {
   test_set();
   test_set_updater();
+  test_set_writer();
   test_linus();
 }
