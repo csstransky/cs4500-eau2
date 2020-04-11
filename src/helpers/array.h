@@ -257,7 +257,8 @@ public:
   StringArray(StringArray& arr) : ObjectArray(arr) { }
   
   StringArray(Deserializer& deserializer) : ObjectArray(deserializer) {
-    for (size_t ii = 0; ii < count_; ii++) elements_[ii].o = new String(deserializer);
+    for (size_t ii = 0; ii < count_; ii++) 
+      elements_[ii].o = new String(deserializer);
   }
 
   size_t push(Object* const to_add) { 

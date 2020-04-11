@@ -81,21 +81,15 @@ class Column : public Object {
   Payload get_element_(size_t idx) {
     assert(idx < size_);
     size_t index = idx % ELEMENT_ARRAY_SIZE;
-    size_t array = idx / ELEMENT_ARRAY_SIZE;
+    size_t array_index = idx / ELEMENT_ARRAY_SIZE;
 
-    if (cache_ == nullptr || cache_index_ != array) {
+    if (cache_ == nullptr || cache_index_ != array_index) {
       delete cache_;
-      Key* k = keys_->get(array);
+      Key* k = keys_->get(array_index);
       cache_ = kv_->get_array(k, type_);
-      cache_index_ = array;
+      cache_index_ = array_index;
     }
-
-    Payload payload = cache_->get(index);
-    if (type_ == 'S') {
-      payload.o = payload.o->clone();
-    }
-
-    return payload;
+    return cache_->get(index);
   }
 
   int get_int(size_t idx) {
@@ -129,8 +123,8 @@ class Column : public Object {
   }
 
   size_t get_home_node(size_t idx) {
-    size_t array = idx / ELEMENT_ARRAY_SIZE;
-    return keys_->get(array)->get_node_index();
+    size_t array_index = idx / ELEMENT_ARRAY_SIZE;
+    return keys_->get(array_index)->get_node_index();
   }
 
   size_t serial_len() {

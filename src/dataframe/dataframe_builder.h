@@ -10,6 +10,7 @@ class DataFrameBuilder {
 	size_t num_nodes_;
 	size_t num_chunks_;
 
+	// TODO: Change the schema to an actual Schema object
     DataFrameBuilder(const char* schema, String* name, KV_Store* kv) : buffers_(strlen(schema)) {
         name_ = name->clone();
         Schema s(schema);
@@ -58,6 +59,13 @@ class DataFrameBuilder {
 		}
 		num_chunks_++;
 	}
+
+	bool is_buffer_full_() {
+		size_t buffer_length = static_cast<Array*>(buffers_.get(0))->length();
+		if (buffer_length > ELEMENT_ARRAY_SIZE)
+			assert(0);
+		return buffer_length == ELEMENT_ARRAY_SIZE;
+	}
 	
 	void add_row(Row& row) {
 		for (size_t ii = 0; ii < buffers_.length(); ii++) {
@@ -68,10 +76,8 @@ class DataFrameBuilder {
                 case 'S': static_cast<StringArray*>(buffers_.get(ii))->push(row.get_string(ii)); break;
             }
 		}
-
-		if (static_cast<Array*>(buffers_.get(0))->length() == ELEMENT_ARRAY_SIZE) {
+		if (is_buffer_full_()) 
 			add_to_column_();
-		}
 		df_->get_schema().add_row();
 	}	
 
