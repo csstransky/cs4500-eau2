@@ -40,19 +40,27 @@ public:
 
   Linus(size_t node_index, const char* my_ip, const char* server_ip) : Application(node_index, my_ip, server_ip) {}
 
+  ~Linus() {
+    delete projects;
+    delete users;
+    delete commits;
+    delete uSet;
+    delete pSet;
+  }
+
   /** Compute DEGREES of Linus.  */
   void run_() override {
     readInput();
     for (size_t i = 0; i < DEGREES; i++) step(i);
   }
 
-   Key* mk_key(const char* name, size_t stage, size_t index) {
-   String s(name);
-   s.concat("-");
-   s.concat(stage);
-   s.concat("-");
-   s.concat(index);
-   return new Key(&s, index);
+  Key* mk_key(const char* name, size_t stage, size_t index) {
+    String s(name);
+    s.concat("-");
+    s.concat(stage);
+    s.concat("-");
+    s.concat(index);
+    return new Key(&s, index);
  }
 
   /** Node 0 reads three files, cointainng projects, users and commits, and

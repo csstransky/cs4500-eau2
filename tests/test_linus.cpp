@@ -41,6 +41,14 @@ public:
 
   Linus(size_t node_index, const char* my_ip, const char* server_ip) : Application(node_index, my_ip, server_ip) {}
 
+  ~Linus() {
+    delete projects;
+    delete users;
+    delete commits;
+    delete uSet;
+    delete pSet;
+  }
+
   /** Compute DEGREES of Linus.  */
   void run_() override {
     readInput();
