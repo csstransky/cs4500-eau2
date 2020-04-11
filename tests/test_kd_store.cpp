@@ -9,16 +9,12 @@ void test_one_dataframe() {
     Key key("key", 0);
     KD_Store kd(0);
 
-    Column col('I', kd.get_kv(), key.get_key(), 0);
+    int* array = new int[200];
     for (int i = 0; i < 200; i++) {
-        col.push_back(i);
+        array[i] = i;
     }
 
-    Schema s("");
-    DataFrame df(s, key.get_key(), kd.get_kv());
-    df.add_column(&col);
-
-    kd.put(&key, &df);
+    DataFrame* df = DataFrame::from_array(&key, &kd, 200, array);
     DataFrame* df2 = kd.get(&key);
 
     assert(df2);
@@ -29,6 +25,8 @@ void test_one_dataframe() {
         assert(df2->get_int(0, i) == i);
     }
 
+    delete df;
+    delete[] array;
     delete df2;
 
     printf("KD Store one dataframe tests pass!\n");
@@ -40,60 +38,39 @@ void test_multiple_dataframe() {
     Key key2("key2", 0);
     KD_Store kd(0);
 
-    Column col_int('I', kd.get_kv(), key.get_key(), 0);
-    Column col_double('D', kd.get_kv(), key.get_key(), 1);
-    Column col_bool('B', kd.get_kv(), key.get_key(), 2);
-    Column col_string('S', kd.get_kv(), key.get_key(), 3);
+    DataFrameBuilder df_builder("IDBS", key.get_key(), kd.get_kv());
+    DataFrameBuilder df_builder2("I", key2.get_key(), kd.get_kv());
+
     String test("test");
+    Schema s("IDBS");
+    Row r(s);
     for (size_t i = 0; i < rows; i++) {
-        col_int.push_back((int)i);
-        assert(col_int.get_int(i) == i);
-        col_double.push_back((double)i + 0.1);
-        col_bool.push_back((bool)(i % 2));
-        col_string.push_back(&test);
+        r.set(0, (int)i);
+        r.set(1, (double)i + 0.1);
+        r.set(2, (bool)(i % 2));
+        r.set(3, &test);
+        df_builder.add_row(r);
+        df_builder2.add_row(r);
     }
 
-    for (size_t i = 0; i < rows; i++) {
-        assert(col_int.get_int(i) == i);
-        assert(col_double.get_double(i) == (double)(i + 0.1));
-        assert(col_bool.get_bool(i) == (bool)(i % 2));
-        assert(col_string.get_string(i)->equals(&test));
-    }
+    DataFrame* df = df_builder.done();
+    DataFrame* df3 = df_builder2.done();
 
-    Schema s("");
-    DataFrame df(s, key.get_key(), kd.get_kv());
-    DataFrame df3(s, key2.get_key(), kd.get_kv());
-    df.add_column(&col_int);
-    df.add_column(&col_double);
-    df.add_column(&col_bool);
-    df.add_column(&col_string);
-    df3.add_column(&col_int);
-
-    assert(df.get_schema().col_type(0) == 'I');
-    assert(df.get_schema().col_type(1) == 'D');
-    assert(df.get_schema().col_type(2) == 'B');
-    assert(df.get_schema().col_type(3) == 'S');
+    assert(df->get_schema().col_type(0) == 'I');
+    assert(df->get_schema().col_type(1) == 'D');
+    assert(df->get_schema().col_type(2) == 'B');
+    assert(df->get_schema().col_type(3) == 'S');
 
     for (size_t i = 0; i < rows; i++) {
-        assert(df3.get_int(0, i) == i);
-        assert(df.get_int(0, i) == i);
-        assert(df.get_double(1, i) == (double)(i+0.1));
-        assert(df.get_bool(2, i) == i % 2);
-        assert(df.get_string(3, i)->equals(&test));
+        assert(df3->get_int(0, i) == i);
+        assert(df->get_int(0, i) == i);
+        assert(df->get_double(1, i) == (double)(i+0.1));
+        assert(df->get_bool(2, i) == i % 2);
+        assert(df->get_string(3, i)->equals(&test));
     }
 
-    Row r(df3.get_schema());
-    for (int i = 0; i < rows; i++) {
-        r.set(0, i+2);
-        df3.add_row(r);
-    }
-
-    for (size_t i = rows; i < rows * 2; i++) {
-        assert(df3.get_int(0, i) == (i - rows + 2));
-    }
-
-    kd.put(&key, &df);
-    kd.put(&key2, &df3);
+    kd.put(&key, df);
+    kd.put(&key2, df3);
     DataFrame* df2 = kd.get(&key);
     DataFrame* df4 = kd.get(&key2);
 
@@ -102,7 +79,7 @@ void test_multiple_dataframe() {
     assert(df2->ncols() == 4);
 
     assert(df4);
-    assert(df4->nrows() == rows*2);
+    assert(df4->nrows() == rows);
     assert(df4->ncols() == 1);
 
     for (size_t i = 0; i < rows; i++) {
@@ -113,10 +90,8 @@ void test_multiple_dataframe() {
         assert(df2->get_string(3, i)->equals(&test));
     }
 
-    for (size_t i = rows; i < rows * 2; i++) {
-        assert(df4->get_int(0, i) == (i - rows + 2));
-    }
-
+    delete df;
+    delete df3;
     delete df2;
     delete df4;
 
@@ -176,11 +151,11 @@ void test_put_other_node() {
         // start node
         KD_Store* kd = new KD_Store(0, client_ip2->c_str(), server_ip->c_str());
 
-        sleep(2);
+        sleep(3);
 
         Key* key = new Key("key", 0);
 
-        assert(kd->kv_->kv_map_->size() == 1);
+        assert(kd->kv_->kv_map_->size() > 1);
         DataFrame* df = kd->get(key);
         assert(df);
         for (int i = 0; i < 10; i++) {
