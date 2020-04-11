@@ -2,6 +2,7 @@
 
 #include "../dataframe/dataframe.h"
 #include "../helpers/sor.h"
+#include "../dataframe/dataframe_builder.h"
 
 class KD_Store : public Object {
     public:
@@ -49,43 +50,37 @@ class KD_Store : public Object {
 // TODO: To keep Jan's convention of using specific type of arrays in his assignment code, we have
 // to make this funky helper function, but maybe we can go back to those Application files and make
 // them use OUR arrays
-DataFrame* make_new_dataframe_from_array_(Key* key, KD_Store* kd, size_t num, char type, 
+DataFrame* make_new_dataframe_from_array_(Key* key, KD_Store* kd, size_t num, const char* type, 
     int* int_array, double* double_array, bool* bool_array, String** string_array) {
-    Schema s("");
-    DataFrame* d = new DataFrame(s, key->get_key(), kd->get_kv());
-    Column col(type, kd->get_kv(), key->get_key(), 0);
-    for (size_t i = 0; i < num; i++)
-        switch(type) {
-            case 'I': col.push_back(int_array[i]); break;
-            case 'D': col.push_back(double_array[i]); break;
-            case 'B': col.push_back(bool_array[i]); break;
-            case 'S': col.push_back(string_array[i]); break;
+    DataFrameBuilder df_builder(type, key->get_key(), kd->get_kv());
+    Schema s(type);
+    Row r(s);
+    for (size_t ii = 0; ii < num; ii++) {
+        switch(type[0]) {
+            case 'I': r.set(0, int_array[ii]); break;
+            case 'D': r.set(0, double_array[ii]); break;
+            case 'B': r.set(0, bool_array[ii]); break;
+            case 'S': r.set(0, string_array[ii]); break;
         }
-    d->add_column(&col);
+        df_builder.add_row(r);
+    }
+    DataFrame* d = df_builder.done();
     kd->put(key, d);
     return d;
 }
 
-// Moved here to remove circular dependency. See piazza post @963
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, int* array) {
-    return make_new_dataframe_from_array_(key, kd, num, 'I', array, nullptr, nullptr, nullptr);
+    return make_new_dataframe_from_array_(key, kd, num, "I", array, nullptr, nullptr, nullptr);
 }
-
-// Moved here to remove circular dependency. See piazza post @963
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, double* array) {
-    return make_new_dataframe_from_array_(key, kd, num, 'D', nullptr, array, nullptr, nullptr);
+    return make_new_dataframe_from_array_(key, kd, num, "D", nullptr, array, nullptr, nullptr);
 }
-
-// Moved here to remove circular dependency. See piazza post @963
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, bool* array) {
-    return make_new_dataframe_from_array_(key, kd, num, 'B', nullptr, nullptr, array, nullptr);
+    return make_new_dataframe_from_array_(key, kd, num, "B", nullptr, nullptr, array, nullptr);
 }  
-
-// Moved here to remove circular dependency. See piazza post @963
 DataFrame* DataFrame::from_array(Key* key, KD_Store* kd, size_t num, String** array) {
-    return make_new_dataframe_from_array_(key, kd, num, 'S', nullptr, nullptr, nullptr, array);
+    return make_new_dataframe_from_array_(key, kd, num, "S", nullptr, nullptr, nullptr, array);
 }
-
 DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, int val) { return DataFrame::from_array(key, kd, 1, &val); }
 DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, double val) { return DataFrame::from_array(key, kd, 1, &val); }
 DataFrame* DataFrame::from_scalar(Key* key, KD_Store* kd, bool val) { return DataFrame::from_array(key, kd, 1, &val); }
@@ -99,9 +94,10 @@ DataFrame* DataFrame::from_file(Key* key, KD_Store* kd, char* file_name) {
 
 DataFrame* DataFrame::from_rower(Key* key, KD_Store* kd, const char* schema, Rower& rower) {
     Schema s(schema);
-    DataFrame* df = new DataFrame(s, key->get_key(), kd->get_kv());
+    DataFrameBuilder df_builder(schema, key->get_key(), kd->get_kv());
     Row r(s);
-    while (!rower.accept(r)) df->add_row(r);
+    while (!rower.accept(r)) df_builder.add_row(r);
+    DataFrame* df = df_builder.done();
     kd->put(key, df);
     return df;
 }

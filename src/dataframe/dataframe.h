@@ -28,13 +28,11 @@ class DataFrame : public Object {
  public:
   Schema schema_;
   ColumnArray* cols_;
-  String* name_; // owned
   KV_Store* kv_; // not owned
 
   /** Create a data frame from a schema and columns. All columns are created
     * empty. */
-  DataFrame(Schema& schema, String* name, KV_Store* kv) {
-    name_ = name->clone();
+  DataFrame(Schema& schema, KV_Store* kv) {
     kv_ = kv;
     size_t num_cols = schema.width();
     // It's possible to make a schema with 0 columns, so we want to make sure we have atleast an 
@@ -46,30 +44,27 @@ class DataFrame : public Object {
         char col_type = schema.col_type(ii);
         this->schema_.add_column(col_type);
 
-        Column temp_col(col_type, kv_, name_, ii);
+        Column temp_col(col_type, kv_);
         this->cols_->push(&temp_col);
     }
   }
 
   /** copy constructor mainly used for deserialization */
-  DataFrame(Schema& schema, String* name, KV_Store* kv, ColumnArray* columns) : schema_(schema) {
+  DataFrame(Schema& schema, KV_Store* kv, ColumnArray* columns) : schema_(schema) {
     this->kv_ = kv;
-    this->name_ = name->clone();
     this->cols_ = columns->clone();    
   }
 
   /** Create a data frame with the same columns as the given df but with no rows or rownmaes */
-  DataFrame(DataFrame& df, String* name) : DataFrame(df.get_schema(), name, df.kv_) { }
+  DataFrame(DataFrame& df) : DataFrame(df.get_schema(), df.kv_) { }
 
   DataFrame(Deserializer& deserializer, KV_Store* kv_store) : schema_(deserializer) {
     cols_ = new ColumnArray(deserializer, kv_store);
-    name_ = nullptr;
     kv_ = kv_store;
   }
   
   ~DataFrame() {
     delete cols_;
-    delete name_;
   }
 
   /** Subclasses should redefine */
@@ -77,13 +72,12 @@ class DataFrame : public Object {
     DataFrame* other_df = dynamic_cast<DataFrame*>(other);
     return other_df != nullptr
       && schema_.equals(&other_df->schema_)
-      && cols_->equals(other_df->cols_)
-      && name_->equals(other_df->name_);
+      && cols_->equals(other_df->cols_);
   }
 
   /** Return a copy of the object; nullptr is considered an error */
   DataFrame* clone() {
-    return new DataFrame(schema_, name_, kv_, cols_);
+    return new DataFrame(schema_, kv_, cols_);
   }
 
   size_t serial_len() {
@@ -114,79 +108,6 @@ class DataFrame : public Object {
   /** Returns the dataframe's schema. Modifying the schema after a dataframe
     * has been created in undefined. */
   Schema& get_schema() { return this->schema_; }
-
-  /**
-   * Helper function that will fill the given Column with default values until a given
-   * num_rows_to_fill values. Usually used to fill a column that needs to reach a certain size so 
-   * that the dataframe can have Columns of equal size.
-   */
-  void fill_rest_of_column_with_empty_values_(Column* column, size_t num_rows_to_fill) {
-    char column_type = column->get_type();
-    // The for loops are inside the switch cases instead of just having 1 for loop outside the 
-    // switch case for a little more efficiency by avoiding unnecessary checks every iteration
-    switch (column_type) {
-      case 'I': {
-        for (size_t jj = 0; jj < num_rows_to_fill; jj++) {
-          column->push_back(DEFAULT_INT_VALUE);
-        }
-        break;
-      }
-      case 'D': {
-        for (size_t jj = 0; jj < num_rows_to_fill; jj++) {
-          column->push_back(DEFAULT_DOUBLE_VALUE);
-        }
-        break;
-      }
-      case 'B': {
-        for (size_t jj = 0; jj < num_rows_to_fill; jj++) {
-          column->push_back(DEFAULT_BOOL_VALUE);
-        }
-        break;
-      }
-      case 'S': {
-        for (size_t jj = 0; jj < num_rows_to_fill; jj++) {
-          column->push_back(&DEFAULT_STRING_VALUE);
-        }
-        break;
-      }
-      default:
-        // Schema should always have a type between 'IFBS', otherwise an error is thrown
-        assert(0);
-    }
-  }
-
-  /** Adds a column this dataframe, updates the schema, the new column
-    * is external, and appears as the last column of the dataframe, the
-    * name is optional and external. A nullptr colum is undefined. */
-  // NOTE: We are making a NEW copy of the col being passed in, BUT all columns will be deleted 
-  // later by the DataFrame deconstructor
-  void add_column(Column* col) {
-    assert(col != nullptr);
-    size_t num_rows = this->schema_.length();
-    size_t num_cols = this->schema_.width();
-    size_t col_size = col->size();
-
-    Column copy_column(*col, name_, kv_, num_cols);
-
-    // We want to make sure that every single Column has the SAME amount of rows
-    if (col_size < num_rows) {
-      // If the column you are adding has less rows than the dataframe,
-      // fill the rest of the column with empty values.
-      fill_rest_of_column_with_empty_values_(&copy_column, num_rows - col_size);
-    }
-    else if (col_size > num_rows) {
-      // If the column you are adding has more rows than the dataframe,
-      // fill the dataframe with empty rows
-      for (size_t ii = 0; ii < num_cols; ii++) {
-        fill_rest_of_column_with_empty_values_(this->cols_->get(ii), col_size - num_rows);
-      }
-      for (size_t jj = 0; jj < col_size - num_rows; jj++) {
-        this->schema_.add_row();
-      }
-    }
-    this->cols_->push(&copy_column);
-    this->schema_.add_column(col->get_type());
-  }
 
   /** Gets a specific Column inside of the DataFrame. */
   Column* get_column(size_t col) { return this->cols_->get(col); }
@@ -223,26 +144,7 @@ class DataFrame : public Object {
       } 
     }
   }
- 
-  /** Add a row at the end of this dataframe. The row is expected to have
-   *  the right schema and be filled with values, otherwise undedined.  */
-  void add_row(Row& row) {
-    size_t num_cols = this->schema_.width();
-    assert(num_cols > 0);
-    for (size_t ii = 0; ii < num_cols; ii++) {
-      char row_type = row.col_type(ii);
-      char schema_type = this->schema_.col_type(ii);
-      assert(row_type == schema_type);
-      switch (row_type) {
-        case 'I': cols_->get(ii)->push_back(row.get_int(ii)); break;
-        case 'D': cols_->get(ii)->push_back(row.get_double(ii)); break;
-        case 'B': cols_->get(ii)->push_back(row.get_bool(ii)); break;
-        case 'S': cols_->get(ii)->push_back(row.get_string(ii)); break;
-      } 
-    }
-    this->schema_.add_row();
-  }
- 
+  
   size_t nrows() { return this->schema_.length(); }
  
   size_t ncols() { return this->schema_.width(); }

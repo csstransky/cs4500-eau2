@@ -9,6 +9,7 @@
 
 #include "../helpers/helper.h"
 #include "../dataframe/dataframe.h"
+#include "../dataframe/dataframe_builder.h"
 
 using namespace std;
 
@@ -67,8 +68,8 @@ class SoR {
     }
 
     void add_line(vector<string> line) {
-        Schema schema = dataframe_->get_schema();
-        Row row(dataframe_->get_schema());
+        Schema schema(cols_types_);
+        Row row(schema);
         for (int i = 0; i < schema.width(); i++) {
             char type = schema.col_type(i);
             // NOTE: There is no checking to make sure that a value being input into the Row's 
@@ -107,7 +108,7 @@ class SoR {
                 }
             }
         }
-        dataframe_->add_row(row);
+        df_builder_->add_row(row);
     }
 
     bool is_file_boolean(std::string line_string) {
@@ -369,20 +370,24 @@ class SoR {
 
     public:
 
-    DataFrame* dataframe_;
+    DataFrameBuilder* df_builder_;
+    char* cols_types_;
 
     SoR(char* file_path, String* name, KV_Store* kv) : SoR(file_path, 0, get_file_size(file_path), name, kv) { }
 
     SoR(char* file_path, size_t from, size_t len, String* name, KV_Store* kv) {
         // get column types of the first 500 lines (using max column)
-        char* cols_types = get_column_types(file_path);
-        Schema schema_(cols_types);
-        delete[] cols_types;
+        cols_types_ = get_column_types(file_path);    
 
-        dataframe_ = new DataFrame(schema_, name, kv);
+        df_builder_ = new DataFrameBuilder(cols_types_, name, kv);
 
         // parse again to add each element
         parse_and_add(file_path, from, len);
+    }
+
+    ~SoR() {
+        delete df_builder_;
+        delete[] cols_types_;
     }
 
     /**
@@ -390,6 +395,6 @@ class SoR {
      * NOTE: Make sure to delete this, as it is independent to the SoR deconstructor.
      */
     DataFrame* get_dataframe() {
-        return dataframe_;
+        return df_builder_->done();
     }
 };
