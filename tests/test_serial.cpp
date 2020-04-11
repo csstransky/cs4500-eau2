@@ -575,9 +575,9 @@ void test_int_column() {
     // Test that each kv chunk is still correct
     for (size_t ii = 0; ii < number_of_kv_chunks; ii++) {
         String stored_string(df_name);
-        stored_string.concat("_");
+        stored_string.concat('_');
         stored_string.concat(local_node_index);
-        stored_string.concat("_");
+        stored_string.concat('_');
         stored_string.concat(ii);
         Key stored_element_key(&stored_string, local_node_index);
         Array* stored_ints = deserial_int_col->kv_->get_array(&stored_element_key, 'I');
@@ -632,9 +632,9 @@ void test_double_column() {
     // Test that each kv chunk is still correct
     for (size_t ii = 0; ii < number_of_kv_chunks; ii++) {
         String stored_string(df_name);
-        stored_string.concat("_");
+        stored_string.concat('_');
         stored_string.concat(local_node_index);
-        stored_string.concat("_");
+        stored_string.concat('_');
         stored_string.concat(ii);
         Key stored_element_key(&stored_string, local_node_index);
         Array* stored_doubles = deserial_double_col->kv_->get_array(&stored_element_key, 'D');
@@ -690,9 +690,9 @@ void test_bool_column() {
     // Test that each kv chunk is still correct
     for (size_t ii = 0; ii < number_of_kv_chunks; ii++) {
         String stored_string(df_name);
-        stored_string.concat("_");
+        stored_string.concat('_');
         stored_string.concat(local_node_index);
-        stored_string.concat("_");
+        stored_string.concat('_');
         stored_string.concat(ii);
         Key stored_element_key(&stored_string, local_node_index);
         Array* stored_bools = deserial_bool_col->kv_->get_array(&stored_element_key, 'B');
@@ -756,9 +756,9 @@ void test_string_column() {
     // Test that each kv chunk is still correct
     for (size_t ii = 0; ii < number_of_kv_chunks; ii++) {
         String stored_string(df_name);
-        stored_string.concat("_");
+        stored_string.concat('_');
         stored_string.concat(local_node_index);
-        stored_string.concat("_");
+        stored_string.concat('_');
         stored_string.concat(ii);
         Key stored_element_key(&stored_string, local_node_index);
         Array* stored_strings = deserial_string_col->kv_->get_array(&stored_element_key, 'S');

@@ -56,9 +56,9 @@ public:
 
   Key* mk_key(const char* name, size_t stage, size_t index) {
     String s(name);
-    s.concat("-");
+    s.concat('-');
     s.concat(stage);
-    s.concat("-");
+    s.concat('-');
     s.concat(index);
     return new Key(&s, index);
  }
