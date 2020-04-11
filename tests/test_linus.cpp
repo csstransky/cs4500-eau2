@@ -28,7 +28,7 @@
  **************************************************************************/
 class Linus : public Application {
 public:
-  int DEGREES = 1;  // How many degrees of separation form linus?
+  int DEGREES = 3;  // How many degrees of separation form linus?
   int LINUS = 24;   // The uid of Linus (offset in the user df)
   const char* PROJ = "data/sub_projects.ltgt";
   const char* USER = "data/sub_users.ltgt";
@@ -44,7 +44,69 @@ public:
   /** Compute DEGREES of Linus.  */
   void run_() override {
     readInput();
-    for (size_t i = 0; i < DEGREES; i++) step(i);
+    for (size_t i = 0; i < DEGREES; i++) {
+      step(i);
+
+      if (i == 0) {
+        assert(uSet->tagged() == 2);
+        for (size_t ii = 0; ii < uSet->size(); ii++) {
+          if (ii == 24 || ii == 25) {
+            assert(uSet->test(ii) == true);
+          } else {
+            assert(uSet->test(ii) == false);
+          } 
+        }
+
+        assert(pSet->tagged() == 2);
+        for (size_t ii = 0; ii < pSet->size(); ii++) {
+          if (ii == 3 || ii == 4) {
+            assert(pSet->test(ii) == true);
+          } else {
+            assert(pSet->test(ii) == false);
+          } 
+        }
+      }
+
+      if (i == 1) {
+        assert(uSet->tagged() == 5);
+        for (size_t ii = 0; ii < uSet->size(); ii++) {
+          if (ii == 24 || ii == 25 || ii == 2 || ii == 3 || ii == 5) {
+            assert(uSet->test(ii) == true);
+          } else {
+            assert(uSet->test(ii) == false);
+          } 
+        }
+
+        assert(pSet->tagged() == 3);
+        for (size_t ii = 0; ii < pSet->size(); ii++) {
+          if (ii == 3 || ii == 4 || ii == 1) {
+            assert(pSet->test(ii) == true);
+          } else {
+            assert(pSet->test(ii) == false);
+          } 
+        }
+      }
+
+      if (i == 2) {
+        assert(uSet->tagged() == 6);
+        for (size_t ii = 0; ii < uSet->size(); ii++) {
+          if (ii == 24 || ii == 25 || ii == 2 || ii == 3 || ii == 5 || ii == 1) {
+            assert(uSet->test(ii) == true);
+          } else {
+            assert(uSet->test(ii) == false);
+          } 
+        }
+
+        assert(pSet->tagged() == 4);
+        for (size_t ii = 0; ii < pSet->size(); ii++) {
+          if (ii == 3 || ii == 4 || ii == 1 || ii == 2) {
+            assert(pSet->test(ii) == true);
+          } else {
+            assert(pSet->test(ii) == false);
+          } 
+        }
+      }
+    }
   }
 
   Key* mk_key(const char* name, size_t stage, size_t index) {
@@ -67,13 +129,9 @@ public:
     Key uK("usrs", 0);
     Key cK("comts", 0);
     if (node_index_ == 0) {
-      pln("Reading...");
       projects = DataFrame::from_file(&pK, &kd_, const_cast<char*>(PROJ));
-      p("    ").p(projects->nrows()).pln(" projects");
       users = DataFrame::from_file(&uK, &kd_, const_cast<char*>(USER));
-      p("    ").p(users->nrows()).pln(" users");
       commits = DataFrame::from_file(&cK, &kd_, const_cast<char*>(COMM));
-      p("    ").p(commits->nrows()).pln(" commits");
       // This dataframe contains the id of Linus.
       Key* user = mk_key("users", 0, 0);
       delete DataFrame::from_scalar(user, &kd_, LINUS);
@@ -100,7 +158,6 @@ public:
   *  datafrrames (projects, users, commits), the sets of tagged users and
   *  projects, and the users added in the previous round. */
   void step(size_t stage) {
-    p("Stage ").pln(stage);
     // Key of the shape: users-stage-0
     Key* uK = mk_key("users", stage, 0);
     // A df with all the users added on the previous round
@@ -118,11 +175,6 @@ public:
     commits->local_map(utagger);
     merge(utagger.newUsers, "users", stage + 1);
     uSet->union_(utagger.newUsers);
-    p("    after stage ").p(stage).pln(":");
-    p("        tagged projects: ").pln(pSet->tagged());
-    pSet->print();
-    p("        tagged users: ").pln(uSet->tagged());
-    uSet->print();
   }
 
   /** Gather updates to the given set from all the nodes in the systems.
@@ -137,18 +189,15 @@ public:
         Key* nK = mk_key(name, stage, i);
         DataFrame* delta = dynamic_cast<DataFrame*>(kd_.wait_and_get(nK));
         delete nK;
-        p("    received delta of ").p(delta->nrows()).p(" elements from node ").pln(i);
         SetUpdater upd(set);
         delta->map(upd);
         delete delta;
       }
-      p("    storing ").p(set.tagged()).pln(" merged elements");
       SetWriter writer(set);
       Key* k = mk_key(name, stage, 0);
       delete DataFrame::from_rower(k, &kd_, "I", writer);
       delete k;
     } else {
-      p("    sending ").p(set.tagged()).pln(" elements to master node");
       SetWriter writer(set);
       Key* k = mk_key(name, stage, node_index_);
       delete DataFrame::from_rower(k, &kd_, "I", writer);
@@ -156,7 +205,6 @@ public:
       Key* mK = mk_key(name, stage, 0);
       DataFrame* merged = dynamic_cast<DataFrame*>(kd_.wait_and_get(mK));
       delete mK;
-      p("    receiving ").p(merged->nrows()).pln(" merged elements");
       SetUpdater upd(set);
       merged->map(upd);
       delete merged;
@@ -175,7 +223,7 @@ void test_linus() {
 
   RServer* server = new RServer(server_ip); 
 
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 3; i++) {
     if ((cpid[i] = fork())) {
       // parent, do nothing now
     } else {
