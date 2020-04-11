@@ -32,14 +32,16 @@ class Column : public Object {
   size_t size_;
   KV_Store* kv_; // not owned by Column, simply used for kv methods
   KeyArray* keys_; // owned
-  String* cache_string_; // TODO: This will change in the future when we add a real cache
+  Array* cache_;
+  size_t cache_index_;
 
   Column(char type, KV_Store* kv, size_t size, KeyArray* keys) {
     type_ = type;
     size_ = size;
     kv_ = kv;
     keys_ = keys ? keys->clone() : nullptr;
-    cache_string_ = nullptr;
+    cache_ = nullptr;
+    cache_index_ = 0;
   }
 
   Column(char type, KV_Store* kv) : Column(type, kv, 0, nullptr) { 
@@ -57,12 +59,13 @@ class Column : public Object {
     type_ = deserializer.deserialize_char();
     size_ = deserializer.deserialize_size_t(); 
     keys_ = new KeyArray(deserializer);
-    cache_string_ = nullptr;
+    cache_ = nullptr;
+    cache_index_ = 0;
   }
 
   ~Column() {
     delete keys_;
-    delete cache_string_;
+    delete cache_;
   }
 
   Column* clone() { return new Column(*this); }
@@ -79,15 +82,19 @@ class Column : public Object {
     assert(idx < size_);
     size_t index = idx % ELEMENT_ARRAY_SIZE;
     size_t array = idx / ELEMENT_ARRAY_SIZE;
-    Key* k = keys_->get(array);
-    Array* data = kv_->get_array(k, type_);
-    Payload payload = data->get(index);
+
+    if (cache_ == nullptr || cache_index_ != array) {
+      delete cache_;
+      Key* k = keys_->get(array);
+      cache_ = kv_->get_array(k, type_);
+      cache_index_ = array;
+    }
+
+    Payload payload = cache_->get(index);
     if (type_ == 'S') {
       payload.o = payload.o->clone();
-      delete cache_string_;
-      cache_string_ = static_cast<String*>(payload.o);
     }
-    delete data;
+
     return payload;
   }
 
