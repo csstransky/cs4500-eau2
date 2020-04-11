@@ -92,11 +92,15 @@ public:
   SetWriter(Set& set): set_(set) { }
 
   bool accept(Row & row) { 
-    row.set(0, i_++);
-
-		/** Skip over false values and stop when the entire set has been seen */
-		while (i_ < set_.size() && set_.test(i_) == false) ++i_;
-    return i_ == set_.size();
+    /** Skip over false values and stop when the entire set has been seen */
+    while (i_ < set_.size() && set_.test(i_) == false) ++i_;
+    
+    if (i_ == set_.size()) {
+      return true;
+    } else {
+      row.set(0, i_++);
+      return false;
+    }		
   }
 
   void join_delete(Rower* other) { delete other; }

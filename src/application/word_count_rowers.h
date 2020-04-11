@@ -34,6 +34,7 @@ class FileReader : public Rower {
    more to read if we are at the end of the buffer and the file has
   all been read.     */
   bool accept(Row & r) override {
+    if ((i_ >= end_) && feof(file_)) return true;
     assert(i_ < end_);
     assert(! isspace(buf_[i_]));
     size_t wStart = i_;
@@ -53,7 +54,7 @@ class FileReader : public Rower {
     ++i_;
     skipWhitespace_();
 
-    return (i_ >= end_) && feof(file_);
+    return false;
   }
 
   /** Reads more data from the file. */
@@ -103,12 +104,13 @@ public:
   }
  
   bool accept(Row& r) {
+    if (index_ == keys_->length()) return true;
     String* key = keys_->get(index_);
     size_t value = map_.get(key)->value;
     r.set(0, key);
     r.set(1, (int) value);
     index_++;
-    return index_ == keys_->length();
+    return false;
   }
 
   void join_delete(Rower* other) { delete other; }

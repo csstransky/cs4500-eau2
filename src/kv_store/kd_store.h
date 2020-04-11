@@ -102,7 +102,6 @@ DataFrame* DataFrame::from_rower(Key* key, KD_Store* kd, const char* schema, Row
     DataFrame* df = new DataFrame(s, key->get_key(), kd->get_kv());
     Row r(s);
     while (!rower.accept(r)) df->add_row(r);
-    df->add_row(r);
     kd->put(key, df);
     return df;
 }
