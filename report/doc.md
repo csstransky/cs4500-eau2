@@ -29,9 +29,11 @@ The KVStore class stores its data in an String to Object map. It has a put metho
 The KVStore class also has a get queue, which is a String to IntArray map. This data structure is used to queue up wait and get requests. The get queue maps the key name to an array of socket descriptors waiting for the Value. Every time a put operation occurs, the get queue is checked for the key and the value is distributed to the nodes that requested it. Wait and get operations follow the same steps as the get operations except in the fact that it interacts with the get queue.
 
 ### Dataframe Layer
-The DataFrame layer consists of the DataFrame class and supporting classes. The implementation of the Dataframe class is the same as previous assignments with row and column names stripped. The column classes contain an additional field that points to the KVStore. The data in the Column classes is represented as distributed arrays. The column classes contain a list of keys where each key maps to a Value blob of 1000 elements. The Value blobs can be on any KVStore in the network. To retrieve data, the get method of the KVStore is called with the key. Only full 1000 blocks are distributed. If a block contains less than 100 elements it is kept as a local array in the Column. 
+The DataFrame layer consists of the DataFrame class and supporting classes. The implementation of the Dataframe class is the same as previous assignments with row and column names stripped. The column classes contain an additional field that points to the KVStore. The data in the Column classes is represented as distributed arrays. The column classes contain a list of keys where each key maps to a Value blob of 1000 elements. The Value blobs can be on any KVStore in the network. To retrieve data, the get method of the KVStore is called with the key. 
 
-The Column classes also have a buffered elements array. This is the last blob of elements and is used when constructing a Column so that every time an element is added, KVStore put and get do not need to be called. Columns create keys for their blobs by concating the dataframe name, column index in the dataframe, and blob index. Example:
+A DataFrame is constructed using the DataFrame builder class.
+
+Example:
 ```
 ELEMENT_ARRAY_SIZE = 10;
 
@@ -41,9 +43,8 @@ type_ = 'I'
 kv_ = kv_store1
 dataframe_name_ = "Main"
 column_index_ = 12
-size_ = 34
+size_ = 30
 keys_ = [Key("Main_12_0", 2), Key("Main_12_1", 2), Key("Main_12_2", 2)]
-buffered_elements_ = [31, 32, 33, 34]
 
 kv_store1
 -----
@@ -64,9 +65,6 @@ kv_map_ = {
 }
 ```
 
-A network call is (mostly) avoided for every push_back(...), and sometimes a network call can be avoided for a get(...). The reason `buffered_elements_` is used is to allow the creation of a DataFrame to be quicker, and allow for only **3 network calls** to store the above IntColumn (which we assume is placed in a different KV_Store than the DataFrame for this example), instead of needing to make **34 network calls** for every element. 
-
-This also has the added benefit of allowing a Row to simply use a ColumnArray for its fields, where each Column inside that ColumnArray **will not** have to make ANY network calls to set and put data into the DataFrame (especially with add_row(...), which is used often for our SoR file adapter).
 
 
 ### Application Layer
@@ -94,17 +92,10 @@ class CreateDataframe : public Application {
 ```
 
 ## Open questions
-+ Now that we have a local_map(...) function, do we need map(...) or pmap(...) anymore?
-+ There was a function called DataFrame::fromVistor(...), we renamed it to DataFrame::from_rower(...). Is using a Rower the same thing as a Vistor, or do we need to use a different approach?
-+ We're currently splitting up Columns into 100 element chunks and putting them into kv_stores, but is there a more optimal number? 1,000? 10,000?
-+ We're actually using a "put cache" for Columns called buffered_elements_ that makes sure to only do 10 network calls for 1000 read in elements, instead of doing 1000 network calls. We DON'T have a "get cache", so if we try to grab 1000 elements from a Column 1-by-1, it'll STILL make 1000 network calls to get values and then deserialize them. Would it make sense to have a "get cache" of some kind so that we temporarily load in the entire value array for quick get()?
-+ To add to the previous question, would it make sense to have one "cache" that would switch between being a "put cache" and then a "get cache"? This is assuming we strictly put first, THEN get.
-+ To add even further, it seems that DataFrames are only constructed with a `DataFrame::from_<something>(...)`, would it make even more sense to only store a "put cache" in that function, and then a "get cache" inside the actual DataFrame class itself?
++ We don't remember where exactly you answered us, but what is the optimal size of chunks to put inside the kv_store? 100 elements? 10,000 elements? 100,000 elements?
 
 ## Status
-All of our code valgrinds and all tests run properly. The WordCount application runs on multiple nodes using a complete network layer. Using the 100k.txt file, **our final word count was 463**.
-
-Our code refactor is complete, and we have reduced our code by over 1000 lines of code. The main highlights are that **Array uses unions, reducing A LOT of code** and **there is now only one Column class which strictly uses an Array class, and keeps track of its type with col_type_**. We made sure to reduce code based on Jan's comments (still a little unsure about removing map() and pmap(), but probably will), and we made sure that all legacy functions as expected (for example, you can now strictly use an Array if desired, but you can still use an IntAray for example).
+All of our *test* code valgrinds and run properly. We were running into a couple of issues with completely inconsistent errors. The first error was having TCP race conditions for normal messages and the message and wait, where a socket to a client would end up closing before the wait could properly continue (with receiving a value from the kv_store). Example: `wait_and_get[127.0.0.1]` on socket 7, and then `put[127.0.0.1]` on socket 7 would complete, closing the previous socket, causing the previous `wait_and_get` to return nothing because ofthe closed socket. Of course this error didn't happen consistently. 
 
 We also plan to add a "get" cache to the column class to reduce network calls when a "get()" is called on the Column. For example, getting the first 100 elements in a Column, we can simply make 1 network call to grab and cache the array of elements from a remote kv_store, and then grab the next 99 elements locally, rather than making 100 network calls.
 
@@ -121,19 +112,23 @@ make trivial
 ```
 make demo
 ```
-4. runs the demo application for Milestone 4
+4. runs the word count application for Milestone 4
 ```
 make wordcount
 ```
-5. runs the tests for all of our code  
+5. runs the linus application for Milestone 5
+```
+make linus
+```
+6. runs the tests for all of our code  
 ```
 make test
 ```
-6. runs a valgrind check on all our code (may take a while for `test_application`)
+7. runs a valgrind check on all our code (may take a while for `test_application`)
 ```
 make valgrind
 ```
-7. removes the directory with executables  
+8. removes the directory with executables  
 ```
 make clean
 ```
