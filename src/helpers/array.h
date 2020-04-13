@@ -262,7 +262,7 @@ public:
   }
 
   size_t push(Object* const to_add) { 
-    assert(dynamic_cast<String*>(to_add));
+    assert(to_add == nullptr || dynamic_cast<String*>(to_add));
     return ObjectArray::push(to_add); 
   }
 
