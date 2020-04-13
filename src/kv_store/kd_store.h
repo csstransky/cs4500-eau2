@@ -52,17 +52,17 @@ class KD_Store : public Object {
 // them use OUR arrays
 DataFrame* make_new_dataframe_from_array_(Key* key, KD_Store* kd, size_t num, const char* type, 
     int* int_array, double* double_array, bool* bool_array, String** string_array) {
-    DataFrameBuilder df_builder(type, key->get_key(), kd->get_kv());
-    Schema s(type);
-    Row r(s);
+    Schema schema(type);
+    DataFrameBuilder df_builder(schema, key->get_key(), kd->get_kv());
+    Row row(schema);
     for (size_t ii = 0; ii < num; ii++) {
         switch(type[0]) {
-            case 'I': r.set(0, int_array[ii]); break;
-            case 'D': r.set(0, double_array[ii]); break;
-            case 'B': r.set(0, bool_array[ii]); break;
-            case 'S': r.set(0, string_array[ii]); break;
+            case 'I': row.set(0, int_array[ii]); break;
+            case 'D': row.set(0, double_array[ii]); break;
+            case 'B': row.set(0, bool_array[ii]); break;
+            case 'S': row.set(0, string_array[ii]); break;
         }
-        df_builder.add_row(r);
+        df_builder.add_row(row);
     }
     DataFrame* d = df_builder.done();
     kd->put(key, d);
@@ -92,11 +92,12 @@ DataFrame* DataFrame::from_file(Key* key, KD_Store* kd, char* file_name) {
     return sor.get_dataframe();
 }
 
-DataFrame* DataFrame::from_rower(Key* key, KD_Store* kd, const char* schema, Rower& rower) {
-    Schema s(schema);
+DataFrame* DataFrame::from_rower(Key* key, KD_Store* kd, const char* types, Rower& rower) {
+    Schema schema(types);
     DataFrameBuilder df_builder(schema, key->get_key(), kd->get_kv());
-    Row r(s);
-    while (!rower.accept(r)) df_builder.add_row(r);
+    Row row(schema);
+    while (!rower.accept(row)) 
+        df_builder.add_row(row);
     DataFrame* df = df_builder.done();
     kd->put(key, df);
     return df;

@@ -1,7 +1,10 @@
+// AUTHORS: Kayling Devchand & Cristian Stransky
 #pragma once
 
 #include "dataframe.h"
 
+// IMPORTANT: You must retreive and delete the local df_ DataFrame, or else this will not valgrind
+// correctly.
 class DataFrameBuilder {
     public:
     String* name_;
@@ -10,17 +13,15 @@ class DataFrameBuilder {
 	size_t num_nodes_;
 	size_t num_chunks_;
 
-	// TODO: Change the schema to an actual Schema object
-    DataFrameBuilder(const char* schema, String* name, KV_Store* kv) : buffers_(strlen(schema)) {
-        name_ = name->clone();
-        Schema s(schema);
-        df_ = new DataFrame(s, kv);
+	void build_dataframe_builder_(Schema& schema, String* name, KV_Store* kv) {
+		name_ = name->clone();
+        df_ = new DataFrame(schema, kv);
 		num_nodes_ = kv->get_num_other_nodes();
 		num_chunks_ = 0;
 
-        for (size_t ii = 0; ii < s.width(); ii++) {
+        for (size_t ii = 0; ii < schema.width(); ii++) {
 			Array* array;
-            switch(s.col_type(ii)) {
+            switch(schema.col_type(ii)) {
                 case 'I': array = new IntArray(); break;
                 case 'D': array = new DoubleArray(); break;
                 case 'B': array = new BoolArray(); break;
@@ -29,6 +30,15 @@ class DataFrameBuilder {
 			buffers_.push(array);
 			delete array;
         }
+	}
+
+	DataFrameBuilder(const char* types, String* name, KV_Store* kv) : buffers_(strlen(types)) {
+		Schema schema(types);
+		build_dataframe_builder_(schema, name, kv);
+
+	}
+    DataFrameBuilder(Schema& schema, String* name, KV_Store* kv) : buffers_(schema.width()) {
+		build_dataframe_builder_(schema, name, kv);
     }
 
 	~DataFrameBuilder() {
