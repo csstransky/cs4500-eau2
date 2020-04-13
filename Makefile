@@ -28,9 +28,7 @@ wordcount: build
 linus: build
 	(build/src/rserver -ip 127.0.0.1)&
 	@sleep 1
-	(build/src/linus -ip 127.0.0.2 -s 127.0.0.1 -n 0)&
-	(build/src/linus -ip 127.0.0.3 -s 127.0.0.1 -n 1)&
-	(build/src/linus -ip 127.0.0.4 -s 127.0.0.1 -n 2)
+	(build/src/linus -ip 127.0.0.2 -s 127.0.0.1 -n 0)
 
 test: build
 	build/tests/test_serial
