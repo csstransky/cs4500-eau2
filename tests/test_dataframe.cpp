@@ -13,7 +13,8 @@ const int NUM_ROWS = 1000;
 
 /*******************************************************************************
  *  AddRower::
- *  A Rower to add a constant to every int.
+ *  A Rower to add a constant to every int. 
+ *  NOTE: Just an example used for testing map.
  */
 class AddRower : public Rower {
  public:
@@ -45,7 +46,6 @@ class AddRower : public Rower {
         break;
       }
     }
-
     return true;
   }
 
@@ -324,44 +324,6 @@ void dataframe_constructor_tests() {
   delete dataframe2;
 
   printf("Dataframe constructor test passed!\n");
-}
-
-void test_pmap_add() {
-  KV_Store kv(0);
-  String c("c");
-  Schema s("IIDI");
-  DataFrameBuilder df_b("IIDI", &c, &kv);
-  Row  r(s);
-  int actual = 0;
-  AddRower rower(actual);
-
-  for (size_t i = 0; i < NUM_ROWS; i++) {
-    r.set(0,(int)i);
-    r.set(1,(int)i+1);
-    r.set(2, (double)i);
-    df_b.add_row(r);
-  }
-  DataFrame* df = df_b.done();
-  df->pmap(rower);
-
-  int expected = 0;
-
-  for (size_t i = 0; i < NUM_ROWS; i++) {
-    expected += i+i+1;
-  }
-
-  GT_TRUE(actual == expected);
-
-  for (size_t i = 0; i < NUM_ROWS; i++) {
-    GT_EQUALS(df->get_int((size_t)0,i), i);
-    GT_EQUALS(df->get_int((size_t)1,i), i+1);
-    GT_EQUALS(df->get_double((size_t)2,i), (double)i);
-  }
-
-  delete df;
-
-  printf("Pmap add test passed!\n");
-  
 }
 
 void test_from_array_int() {
@@ -910,7 +872,6 @@ int main(int argc, char **argv) {
   test();
 
   // Map
-  test_pmap_add();
   test_map_add();
   test_local_map();
 

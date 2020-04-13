@@ -170,46 +170,4 @@ class DataFrame : public Object {
     }
     delete row;
   }
-
-  /** call map on the rows from start to end, not include the endth row */
-  void thread_map_(size_t start, size_t end, Rower& r) {
-    Row* row = new Row(this->schema_);
-    for (size_t i = start; i < end; i++) {
-      this->fill_row(i, *row);
-      r.accept(*row);
-    }
-    delete row;
-
-  }
-
-  // TODO: Maybe remove this since all kv_stores have their own seperate threads anyway
-  /** This method clones the Rower and executes the map in parallel. Join is
-  * used at the end to merge the results. */
-  void pmap(Rower& rower) {
-    std::thread* threads[NUM_THREADS];
-    Rower* clones[NUM_THREADS];
-
-    size_t num_rows = nrows();
-    // Add 1 to get ceiling of dividing size_t
-    size_t rows_per_thread = num_rows / NUM_THREADS;
-    if (num_rows % NUM_THREADS != 0) {
-      rows_per_thread++;
-    } 
-
-    // For each thread, clone rower and create thread
-    for (size_t i = 0; i < NUM_THREADS; i++) {
-      clones[i] = rower.clone();
-      size_t start = rows_per_thread * i;
-      // Minimum of the rows_per_thread and the leftover
-      size_t end = min(rows_per_thread * (i + 1), num_rows);
-      threads[i] = new std::thread(&DataFrame::thread_map_, this, start, end, std::ref(*clones[i]));
-    } 
-
-    // join threads and delete rower clones
-    for (size_t i = 0; i < NUM_THREADS; i++) {
-      threads[i]->join();
-      delete threads[i];
-      rower.join_delete(clones[i]);
-    }
-  }
 };
