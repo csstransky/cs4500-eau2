@@ -8,6 +8,8 @@
 #include <iostream>
 
 #include "../helpers/helper.h"
+#include "../helpers/string.h"
+#include "../helpers/array.h"
 #include "../dataframe/dataframe.h"
 #include "../dataframe/dataframe_builder.h"
 
@@ -22,52 +24,45 @@ size_t MAX_SCHEMA_READ = 500;
 // NOTE: The DataFrame is NOT deleted, and must be grabbed and deleted independently
 class SoR {
     private:
-    String* get_string_from_line(vector<string> line, size_t index) {
-        if (index < line.size()) {
-            string element = line.at(index);
-            return new String(element.c_str());
-        }
-        else {
-            return DEFAULT_STRING_VALUE.clone();
-        }
+    String* get_string_from_line(StringArray* line, size_t index) {
+        if (index < line->length())
+            return line->get(index);
+        else
+            return &DEFAULT_STRING_VALUE;
     }
 
-    double get_double_from_line(vector<string> line, size_t index) {
-        if (index < line.size()) {
-            string element = line.at(index);
-            return stof(element);
+    double get_double_from_line(StringArray* line, size_t index) {
+        if (index < line->length()) {
+            String* element = line->get(index);
+            return stof(element->c_str());
         }
-        else {
-            return (double)DEFAULT_DOUBLE_VALUE;
-        }
+        else
+            return DEFAULT_DOUBLE_VALUE;
     }
 
-    int get_int_from_line(vector<string> line, size_t index) {
-        if (index < line.size()) {
-            string element = line.at(index);
-            return atoi(element.c_str());
+    int get_int_from_line(StringArray* line, size_t index) {
+        if (index < line->length()) {
+            String* element = line->get(index);
+            return atoi(element->c_str());
         }
-        else {
-            return (int)DEFAULT_INT_VALUE;
-        }
+        else
+            return DEFAULT_INT_VALUE;
     }
 
-    bool get_bool(std::string element) {
-        // This is a little faster than doing something like: return stoi(element) == 1
-        return element.front() != '0' && element.front() != 0;
+    bool get_bool(String* element) {
+        return element->size() != 0 && element->at(0) != '0' && element->at(0) != 0;
     }
 
-    bool get_bool_from_line(vector<string> line, size_t index) {
-        if (index < line.size()) {
-            string element = line.at(index);
+    bool get_bool_from_line(StringArray* line, size_t index) {
+        if (index < line->length()) {
+            String* element = line->get(index);
             return get_bool(element);
         }
-        else {
-            return (bool)DEFAULT_BOOL_VALUE;
-        }
+        else
+            return DEFAULT_BOOL_VALUE;
     }
 
-    void add_line(vector<string> line) {
+    void add_line(StringArray* line) {
         Schema schema(cols_types_);
         Row row(schema);
         for (int i = 0; i < schema.width(); i++) {
@@ -83,7 +78,6 @@ class SoR {
                 case 'S': {
                     String* string_value = get_string_from_line(line, i);
                     row.set(i, string_value);
-                    if (string_value) { delete string_value; }
                     break;
                 }
                 case 'D': {
@@ -111,126 +105,107 @@ class SoR {
         df_builder_->add_row(row);
     }
 
-    bool is_file_boolean(std::string line_string) {
-        return line_string.compare("0") == 0 || line_string.compare("1") == 0;
+    bool is_file_boolean(String* line_string) {
+        return strcmp(line_string->c_str(), "0") == 0 || strcmp(line_string->c_str(), "1") == 0;
     }
 
-    bool is_first_char_numeric(std::string line_string) {
+    bool is_first_char_numeric(String* line_string) {
         // Ints and doubles can start with a + or - character, like "-2" or "+30"
-        return line_string.length() > 0 && (line_string[0] == '+' || line_string[0] == '-' || isdigit(line_string[0]));
+        return line_string->size() > 0 && (line_string->at(0) == '+' || line_string->at(0) == '-' || isdigit(line_string->at(0)));
     }
 
-    bool is_file_double(std::string line_string) {
+    bool is_file_double(String* line_string) {
         if (!is_first_char_numeric(line_string)) 
             return false;
 
         // We only consider a double to have ONE dot, ex: "12.2" = True, "1.1.1" = False, "13" = False
         bool has_dot = false;
-        for (size_t ii = 1; ii < line_string.length(); ii++) {
-            if (line_string[ii] == '.' && !has_dot) {
+        for (size_t ii = 1; ii < line_string->size(); ii++) {
+            if (line_string->at(ii) == '.' && !has_dot)
                 has_dot = true;
-            }
-            else if (!isdigit(line_string[ii]) || (line_string[ii] == '.' && has_dot)) {
+            else if (!isdigit(line_string->at(ii)) || (line_string->at(ii) == '.' && has_dot))
                 return false;
-            }
         }
         return has_dot;
     }
 
-    bool is_file_int(std::string line_string) {
+    bool is_file_int(String* line_string) {
         if (!is_first_char_numeric(line_string)) 
             return false;
 
-        for (size_t ii = 1; ii < line_string.length(); ii++) {
-            if (!isdigit(line_string[ii])) {
+        for (size_t ii = 1; ii < line_string->size(); ii++) {
+            if (!isdigit(line_string->at(ii)))
                 return false;
-            }
         }
         return true;
     }
 
-    bool is_file_string(std::string line_string) {
+    bool is_file_string(String* line_string) {
         // A file_string can NOT have spaces, UNLESS they are spaces within quotes, ex: '  hu ' = False, '"hi there"' = True
         // A string with nothing is not considered a string either, ex: '' = False, '""' = True
-        if (line_string.length() <= 0) 
+        if (line_string->size() <= 0) 
             return false;
 
         bool is_quotes = false;
-        for (size_t ii = 0; ii < line_string.length(); ii++) {
-            if (line_string[ii] == ' ' && !is_quotes) {
+        for (size_t ii = 0; ii < line_string->size(); ii++) {
+            if (line_string->at(ii) == ' ' && !is_quotes)
                 return false;
-            }
-            else if (line_string[ii] == '\"') {
+            else if (line_string->at(ii) == '\"')
                 is_quotes = !is_quotes;
-            }
         }
         return true;
     }
 
-    char get_column_char(string line_string) {
+    char get_column_char(String* line_string) {
         // NOTE: Order of these if else statements is important!
-        if (is_file_double(line_string)) {
-            return 'D';
-        }
+        if (is_file_double(line_string)) return 'D';
         // NOTE: Because of this, a "1" and "0" integer is NOT possible
-        else if (is_file_boolean(line_string)) {
-            return 'B';
-        }
-        else if (is_file_int(line_string)) {
-            return 'I';
-        }
-        else if (is_file_string(line_string)) {
-            return 'S';
-        }
+        else if (is_file_boolean(line_string)) return 'B';
+        else if (is_file_int(line_string)) return 'I';
+        else if (is_file_string(line_string)) return 'S';
         // If a file input cannot match into any category, they will be considred a Bool
-        else {
-            return 'B';
-        }
+        else return 'B';
     }
 
-    char* convert_strings_to_column_types(vector<string> column_strings) {
-        char* column_types = new char[column_strings.size() + 1];
+    char* convert_strings_to_column_types(StringArray* column_strings) {
+        char* column_types = new char[column_strings->length() + 1];
 
-        for (size_t ii = 0; ii < column_strings.size(); ii++) {
-            char col_enum = get_column_char(column_strings[ii]);
+        for (size_t ii = 0; ii < column_strings->length(); ii++) {
+            char col_enum = get_column_char(column_strings->get(ii));
             column_types[ii] = col_enum;
         }
-        column_types[column_strings.size()] = '\0';
+        column_types[column_strings->length()] = '\0';
         return column_types;
     }
 
-    vector<string> get_max_column_strings(ifstream& in_file) {
-        string file_line_string;
+    StringArray* get_max_column_strings(ifstream& in_file) {
+        String file_line_string("");
         char file_char;
         bool is_record = false;
         bool is_quotes = false;
-        size_t max_column_size = 0;
-        size_t current_column_size = 0;
-        vector<string> max_column_strings;
-        vector<string> current_column_strings;
+        StringArray* max_column_strings = new StringArray();
+        StringArray current_column_strings;
         int num_lines = 0;
 
         while(!in_file.eof() && num_lines < MAX_SCHEMA_READ) {
             in_file >> noskipws >> file_char;
             switch (file_char) {
                 case ' ':
-                    if (is_quotes && is_record) {
-                        file_line_string += file_char;
-                    }
+                    if (is_quotes && is_record) 
+                        file_line_string.concat(file_char);
                     break;
                 case '\n':
-                    if (max_column_size <= current_column_size) {
-                        max_column_size = current_column_size;
-                        max_column_strings = current_column_strings;
+                    if (max_column_strings->length() <= current_column_strings.length()) {
+                        delete max_column_strings;
+                        max_column_strings = current_column_strings.clone();
                     }
                     current_column_strings.clear();
-                    current_column_size = 0;
                     num_lines++;
                     break;
                 case '\"':
                     if (is_record) {
                         is_quotes = !is_quotes;
-                        file_line_string += file_char;
+                        file_line_string.concat(file_char);
                     }
                     break;
                 case '<':
@@ -240,8 +215,7 @@ class SoR {
                     // I put this check here to make sure we have a pair of <>, to avoid the 
                     // case of "> dude >", which in our case will completely ignore it
                     if (is_record) {
-                        current_column_size++;
-                        current_column_strings.push_back(file_line_string);
+                        current_column_strings.push(&file_line_string);
 
                         is_record = false;
                         file_line_string.clear(); 
@@ -249,9 +223,8 @@ class SoR {
                     is_quotes = false;
                     break;
                 default:
-                    if (is_record) {
-                        file_line_string += file_char;
-                    }
+                    if (is_record)
+                        file_line_string.concat(file_char);
             }
         }
         return max_column_strings;
@@ -269,8 +242,9 @@ class SoR {
         column_types = nullptr;
         
         if (in_file.is_open()) {
-            vector<string> max_column_strings = get_max_column_strings(in_file);
+            StringArray* max_column_strings = get_max_column_strings(in_file);
             column_types = convert_strings_to_column_types(max_column_strings);
+            delete max_column_strings;
             in_file.close(); 
         }
         else {
@@ -285,36 +259,34 @@ class SoR {
         size_t end_byte = from + len;
         while(!in_file.eof() && end_byte > in_file.tellg()) {
             in_file >> noskipws >> file_char;
-            if (file_char == '\n') {
+            if (file_char == '\n')
                 return;
-            }
         }
     }
 
     void parse_and_add_file(ifstream& in_file, size_t from, size_t len) {
-        string file_line_string;
+        String file_line_string("");
         char file_char;
         bool is_record = false;
         bool is_quotes = false;
         size_t end_byte = from + len;
-        vector<string> current_line;
+        StringArray current_line;
 
         while(!in_file.eof() && end_byte > in_file.tellg()) {
             in_file >> noskipws >> file_char;
             switch (file_char) {
                 case ' ':
-                    if (is_quotes && is_record) {
-                        file_line_string += file_char;
-                    }
+                    if (is_quotes && is_record)
+                        file_line_string.concat(file_char);
                     break;
                 case '\n':
-                    add_line(current_line);
+                    add_line(&current_line);
                     current_line.clear();
                     break;
                 case '\"':
                     if (is_record) {
                         is_quotes = !is_quotes;
-                        file_line_string += file_char;
+                        file_line_string.concat(file_char);
                     }
                     break;
                 case '<':
@@ -325,14 +297,14 @@ class SoR {
                     // case of "> dude >", which in our case will completely ignore it
                     if (is_record) {
                         is_record = false;
-                        current_line.push_back(file_line_string);
+                        current_line.push(&file_line_string);
                         file_line_string.clear();
                     }
                     is_quotes = false;
                     break;
                 default:
                     if (is_record) {
-                        file_line_string += file_char;
+                        file_line_string.concat(file_char);
                     }
             }
         }
@@ -378,9 +350,7 @@ class SoR {
     SoR(char* file_path, size_t from, size_t len, String* name, KV_Store* kv) {
         // get column types of the first 500 lines (using max column)
         cols_types_ = get_column_types(file_path);    
-
         df_builder_ = new DataFrameBuilder(cols_types_, name, kv);
-
         // parse again to add each element
         parse_and_add(file_path, from, len);
     }
