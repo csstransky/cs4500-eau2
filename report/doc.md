@@ -97,7 +97,7 @@ class CreateDataframe : public Application {
 ## Status
 All of our *test* code valgrinds and run properly. We were running into a couple of issues with completely inconsistent errors. The first error was having TCP race conditions for normal messages and the message and wait, where a socket to a client would end up closing before the wait could properly continue (with receiving a value from the kv_store). Example: `wait_and_get[127.0.0.1]` on socket 7, and then `put[127.0.0.1]` on socket 7 would complete, closing the previous socket, causing the previous `wait_and_get` to return nothing because ofthe closed socket. Of course this error didn't happen consistently. 
 
-We also plan to add a "get" cache to the column class to reduce network calls when a "get()" is called on the Column. For example, getting the first 100 elements in a Column, we can simply make 1 network call to grab and cache the array of elements from a remote kv_store, and then grab the next 99 elements locally, rather than making 100 network calls.
+The second error had to do with strange behaviors with the large data set. We have a feeling that our get cache, or possibly even the messages were being sent too early (node 1 would jump the gun, causing a seg fault).
 
 Steps to run our code:
 1. builds the needed directory of executables  
