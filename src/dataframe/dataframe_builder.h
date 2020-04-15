@@ -62,6 +62,8 @@ class DataFrameBuilder {
 			Array* array = static_cast<Array*>(buffers_.get(ii));
 			if (array->length() > 0) {
 				Key* key = generate_key_(ii);
+				// TODO
+				printf("Key: %s - %zu\n", key->get_key()->c_str(), key->get_node_index());
 				df_->get_column(ii)->push_back(array, key);
 				delete key;
 				array->clear();
@@ -86,8 +88,11 @@ class DataFrameBuilder {
                 case 'S': static_cast<StringArray*>(buffers_.get(ii))->push(row.get_string(ii)); break;
             }
 		}
-		if (is_buffer_full_()) 
+		if (is_buffer_full_()) {
+			// TODO
+			printf("BUFFER FULL, PUSHING!\n");
 			add_to_column_();
+		}
 		df_->get_schema().add_row();
 	}	
 

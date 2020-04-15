@@ -69,13 +69,14 @@ class Node : public Server {
 
     // NOTE: timeout -1 runs forever
     void thread_run_server_(int timeout) {
-        timeval timeout_val = {timeout, 0};
-        timeval* timeout_pointer = (timeout < 0) ? nullptr : &timeout_val;
-        while (wait_for_activty_(timeout_pointer) && !kill_) {
+        // TODO: Kaylin or Cristian, make this prettier, and put timeout_point inside of wait_for_activity
+        while (wait_for_activity_(timeout) && !kill_) {
             check_for_connections_();
             check_for_client_messages_();
             check_server_messages_();
         }
+        // TODO
+        printf("timeout reached %d. kill: %d\n", timeout, kill_);
     }
 
     void register_with_server_(size_t local_node_index) {
@@ -133,17 +134,30 @@ class Node : public Server {
     }
 
     void send_message_to_node(Message* message) {
+        // TODO
+        printf("Start of send message to node: %zu\n", message->serial_len());
         String* node_ip = message->get_target();
         // Create socket and connect to node
         int socket = get_new_socket_();
+        // TODO
+        printf("socket1 %d\n", socket);
         sockaddr_in address = get_new_sockaddr_(node_ip->c_str(), PORT);
+        // TODO
+        printf("socket2 %d\n", socket);
         if (connect(socket, (struct sockaddr *)&address, sizeof(address)) < 0) { 
             printf("\nConnection Failed \n"); 
             assert(0);
         }
+        printf("socket3 %d\n", socket);
 
         send_message(socket, message);
 
+        // printf("I SHOULD NEVER JUST BE SENDING NODES, I PROMISE! %s -> %s: socket %d\n", my_ip_->cstr_, node_ip->cstr_, socket);
+        // for (int ii = 0; ii < client_sockets_->length(); ii++) {
+        //     printf("%d |", client_sockets_->get(ii));
+        // }
+        // printf("\n");
+        
         // Close connections
         close(socket);
     }
@@ -158,13 +172,25 @@ class Node : public Server {
             printf("\nConnection Failed \n"); 
             assert(0);
         }
+        // printf("Send Message: %s -> %s\n", message->sender_->cstr_, message->target_->cstr_);
+        // printf("msgkind: %zu\n", static_cast<size_t>(message->kind_));
+
+        // size_t client_socket_index = client_sockets_->push(socket);
+        // connected_client_ips_->replace(client_socket_index, node_ip);
 
         send_message(socket, message);
-
+        // printf("WAIT!!!!\n");
         Message* m = receive_message_(socket);
+
+        // printf("I BRING THE PROBLEMS, MUWAHAHAH! %s -> %s: socket %d\n", my_ip_->cstr_, node_ip->cstr_, socket);
+        // for (int ii = 0; ii < client_sockets_->length(); ii++) {
+        //     printf("%d |", client_sockets_->get(ii));
+        // }
+        // printf("\n");
 
         // Close connections
         close(socket);
+        // remove_client_(client_socket_index);
 
         return m;
     }
@@ -181,7 +207,6 @@ class Node : public Server {
                 printf("Server disconnected\n");
                 assert(0);
             }
-            
         }
     }
 };

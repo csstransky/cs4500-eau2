@@ -131,18 +131,28 @@ class KV_Store : public Node {
             int_array.push(socket_descriptor);
             get_queue_->put(key_name, &int_array);
         }
+        // TODO
+        printf("pushing into get queue\n");
     }
 
     Serializer* wait_for_local_map_value_(Key* key) {
         put_socket_into_queue_(key->get_key(), LOCAL_SOCKET_DESCRIPTOR);
         std::unique_lock<std::mutex> lock(kv_map_mutex_);
+
+        // TODO
+        printf("%s unlocked\n", key->key_->c_str());
         cv_.wait(lock);
         lock.unlock();
         return get_map_(key->get_key());
     }
 
     char* wait_get_value_serial(Key* key) {
+
+        // TODO
+        printf("wait_get_value_serial(%s)\n", key->key_->c_str());
         if (key->get_node_index() == local_node_index_) {
+            // TODO
+            printf("local wait_get_value\n");
             Serializer* map_serial = get_map_(key->get_key());
 
             if (!map_serial) {
