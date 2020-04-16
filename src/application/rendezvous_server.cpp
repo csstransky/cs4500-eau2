@@ -3,13 +3,14 @@
 #include "../../src/networks/rendezvous_server.h"
 #include "arguments.h"
 
-int TIMEOUT = 60 * 30; // 30 minutes might actually be a tad too much
+// TODO: Make a final decision if we really want a TIMEOUT or not later
+int TIMEOUT = 60 * 60 * 24; // 24 hours now, this thing really shouldn't die
 
 int main(int argc, char const *argv[]) 
 {     
     const char* ip_address = get_input_client_ip_address(argc, argv);
     RServer* server = new RServer(ip_address); 
-    server->run_server(TIMEOUT);
+    server->run_server();
     server->wait_for_shutdown();
     delete server;
     return 0;
