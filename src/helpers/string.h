@@ -119,10 +119,9 @@ public:
 
     void concat(String* other) { concat(other->cstr_); }
 
+    // TODO: Test this Cristian please
     void clear() {
         size_ = 0;
-        delete[] cstr_;
-        cstr_ = new char[size_ + 1];
         cstr_[size_] = 0;
     }
 
