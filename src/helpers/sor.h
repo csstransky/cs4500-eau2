@@ -178,21 +178,23 @@ class SoR {
         return column_types;
     }
 
-    StringArray* get_max_column_strings(ifstream& in_file) {
-        String file_line_string("");
+    StringArray* get_max_column_strings() {
         char file_char;
-        bool is_record = false;
-        bool is_quotes = false;
         StringArray* max_column_strings = new StringArray();
         StringArray current_column_strings;
         int num_lines = 0;
+        size_t buf_index = 0;
 
-        while(!in_file.eof() && num_lines < MAX_SCHEMA_READ) {
-            in_file >> noskipws >> file_char;
+        while(num_lines < MAX_SCHEMA_READ) {
+            if (buf_index == buf_end_index_) {
+                if (feof(file_)) { ++buf_index;  break; }
+                buf_index = buf_end_index_ - string_start_;
+                fillBuffer_();
+            }
+            file_char = buf_[buf_index];
             switch (file_char) {
                 case ' ':
-                    if (is_quotes && is_record) 
-                        file_line_string.concat(file_char);
+                    string_start_++;
                     break;
                 case '\n':
                     if (max_column_strings->length() <= current_column_strings.length()) {
@@ -201,163 +203,133 @@ class SoR {
                     }
                     current_column_strings.clear();
                     num_lines++;
-                    break;
-                case '\"':
-                    if (is_record) {
-                        is_quotes = !is_quotes;
-                        file_line_string.concat(file_char);
-                    }
+                    string_start_++;
                     break;
                 case '<':
-                    is_record = true;
+                    string_start_++;
                     break;
-                case '>':
-                    // I put this check here to make sure we have a pair of <>, to avoid the 
-                    // case of "> dude >", which in our case will completely ignore it
-                    if (is_record) {
-                        current_column_strings.push(&file_line_string);
-
-                        is_record = false;
-                        file_line_string.clear(); 
+                case '>': {
+                    size_t bytes = buf_index - string_start_;
+                    if (buf_[string_start_] == '\"') {
+                        string_start_++;
+                        bytes -= 2;
                     }
-                    is_quotes = false;
+                    String file_line_string(buf_ + string_start_, bytes);
+                    string_start_ = buf_index + 1;
+                    current_column_strings.push(&file_line_string);
                     break;
+                }
                 default:
-                    if (is_record)
-                        file_line_string.concat(file_char);
+                    break;
+                    // no nothing
             }
+            buf_index++;
         }
         return max_column_strings;
     }
 
-    char* get_column_types(char* file_path) {
+    char* get_column_types() {
         // This function determines the column types by the FIRST INSTANCE of the largest column,
         // example:
         // <dello> <dog>
         // <12> <23>
         // output = <STRING> <STRING>
         char* column_types;
-        ifstream in_file;
-        in_file.open(file_path);
         column_types = nullptr;
         
-        if (in_file.is_open()) {
-            StringArray* max_column_strings = get_max_column_strings(in_file);
-            column_types = convert_strings_to_column_types(max_column_strings);
-            delete max_column_strings;
-            in_file.close(); 
-        }
-        else {
-            cout << "~ERROR: FILE NOT FOUND~\n";
-        }
+        StringArray* max_column_strings = get_max_column_strings();
+        column_types = convert_strings_to_column_types(max_column_strings);
+        delete max_column_strings;
         return column_types;
     }
 
-    void move_file_index_next_line(ifstream& in_file, size_t from, size_t len) {
-        // move until new line
+    void parse_and_add_file() {
         char file_char;
-        size_t end_byte = from + len;
-        while(!in_file.eof() && end_byte > in_file.tellg()) {
-            in_file >> noskipws >> file_char;
-            if (file_char == '\n')
-                return;
-        }
-    }
-
-    void parse_and_add_file(ifstream& in_file, size_t from, size_t len) {
-        String file_line_string("");
-        char file_char;
-        bool is_record = false;
-        bool is_quotes = false;
-        size_t end_byte = from + len;
         StringArray current_line;
+        size_t buf_index = 0;
 
-        while(!in_file.eof() && end_byte > in_file.tellg()) {
-            in_file >> noskipws >> file_char;
+        while(true) {
+            if (buf_index == buf_end_index_) {
+                if (feof(file_)) { ++buf_index;  break; }
+                buf_index = buf_end_index_ - string_start_;
+                fillBuffer_();
+            }
+            file_char = buf_[buf_index];
             switch (file_char) {
                 case ' ':
-                    if (is_quotes && is_record)
-                        file_line_string.concat(file_char);
+                    string_start_++;
                     break;
                 case '\n':
                     add_line(&current_line);
                     current_line.clear();
-                    break;
-                case '\"':
-                    if (is_record) {
-                        is_quotes = !is_quotes;
-                        file_line_string.concat(file_char);
-                    }
+                    string_start_++;
                     break;
                 case '<':
-                    is_record = true;
+                    string_start_++;
                     break;
-                case '>':
-                    // I put this check here to make sure we have a pair of <>, to avoid the 
-                    // case of "> dude >", which in our case will completely ignore it
-                    if (is_record) {
-                        is_record = false;
-                        current_line.push(&file_line_string);
-                        file_line_string.clear();
+                case '>': {
+                    size_t bytes = buf_index - string_start_;
+                    if (buf_[string_start_] == '\"') {
+                        string_start_++;
+                        bytes -= 2;
                     }
-                    is_quotes = false;
+                    String file_line_string(buf_ + string_start_, bytes);
+                    string_start_ = buf_index + 1;
+                    current_line.push(&file_line_string);               
                     break;
+                }
                 default:
-                    if (is_record) {
-                        file_line_string.concat(file_char);
-                    }
+                    break;
+                    // do nothing
             }
+            buf_index++;
         }
     }
 
-    void parse_and_add(char* file_path, size_t from, size_t len) {
-        // Build the data structure using "from" and "len"
-        ifstream in_file;
-        in_file.open(file_path);
-        if (in_file.is_open()) {
-            // move to from position
-            in_file.seekg(from, ios_base::beg);
-            if (from > 0) {
-                move_file_index_next_line(in_file, from, len);
-            }
-
-            parse_and_add_file(in_file, from, len); 
-            in_file.close(); 
+    /** Reads more data from the file. */
+    void fillBuffer_() {
+        size_t start = 0;
+        // compact unprocessed stream
+        if (string_start_ != buf_end_index_) {
+            start = buf_end_index_ - string_start_;
+            memcpy(buf_, buf_ + string_start_, start);
         }
-        else {
-            cout << "~ERROR: FILE NOT FOUND~\n";
-        }
-    }
-
-    size_t get_file_size(char* path) {
-        FILE* file = fopen(path, "rb");
-        size_t file_size = 0;
-        if (file) {
-            fseek(file, 0L, SEEK_END); // goes to the end of the file
-            file_size = ftell(file); // gets the size
-            fclose(file); 
-        }
-        return file_size;
+        // read more contents
+        buf_end_index_ = start + fread(buf_+start, sizeof(char), BUFSIZE - start, file_);
+        string_start_ = 0;
     }
 
     public:
-
+    static const size_t BUFSIZE = 1096;
+    char* buf_;
+    FILE* file_;
+    size_t string_start_ = 0;
+    size_t buf_end_index_ = 0;
     DataFrameBuilder* df_builder_;
     char* cols_types_;
 
-    SoR(char* file_path, String* name, KV_Store* kv) : SoR(file_path, 0, get_file_size(file_path), name, kv) { }
-
-    SoR(char* file_path, size_t from, size_t len, String* name, KV_Store* kv) {
+    SoR(char* file_path, String* name, KV_Store* kv) {
+        file_ = fopen(file_path, "r");
+        if (file_ == nullptr) {
+            printf("Cannot open file %s\n", file_path);
+            assert(0);
+        }
+        buf_ = new char[BUFSIZE + 1]; //  null terminator
         // get column types of the first 500 lines (using max column)
-        cols_types_ = get_column_types(file_path);    
+        cols_types_ = get_column_types();    
         df_builder_ = new DataFrameBuilder(cols_types_, name, kv);
         // parse again to add each element
-        parse_and_add(file_path, from, len);
+        fseek(file_, 0, SEEK_SET);
+        string_start_ = 0;
+        buf_end_index_ = 0;
+        parse_and_add_file();
     }
 
     ~SoR() {
         delete df_builder_;
         delete[] cols_types_;
+        fclose(file_);
+        delete[] buf_;
     }
 
     /**
