@@ -1,5 +1,7 @@
 #include <sys/wait.h>
 
+#define TEST
+
 #include "../src/networks/node.h"
 #include "../src/networks/rendezvous_server.h"
 

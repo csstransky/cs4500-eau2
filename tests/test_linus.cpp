@@ -1,5 +1,7 @@
 #include <sys/wait.h>
 
+#define TEST
+
 #include "../src/dataframe/dataframe.h"
 #include "../src/application/application.h"
 #include "../src/application/linus_rowers.h"

@@ -1,5 +1,7 @@
 // Made by Kaylin Devchand and Cristian Stransky
 
+#define TEST
+
 #include "../src/helpers/sor.h"
 #include <assert.h>
 

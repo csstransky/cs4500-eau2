@@ -1,5 +1,7 @@
 #include <sys/wait.h>
 
+#define TEST
+
 #include "../src/kv_store/kd_store.h"
 #include "../src/networks/rendezvous_server.h"
 

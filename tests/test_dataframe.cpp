@@ -1,9 +1,12 @@
 #include <sys/wait.h>
 
+#define TEST
+
 #include "../src/dataframe/dataframe.h" 
 #include "../src/kv_store/kd_store.h"
 #include "../src/application/word_count_rowers.h"
 #include "../src/networks/rendezvous_server.h"
+#include "../src/dataframe/column.h"
 
 #define GT_TRUE(a)   assert(a)
 #define GT_FALSE(a)  assert(!a)
