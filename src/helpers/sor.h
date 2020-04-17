@@ -300,7 +300,7 @@ class SoR {
     }
 
     public:
-    static const size_t BUFSIZE = 1096;
+    static const size_t BUFSIZE = 4096;
     char* buf_;
     FILE* file_;
     size_t string_start_ = 0;
