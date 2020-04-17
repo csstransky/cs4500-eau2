@@ -96,14 +96,7 @@ class Server {
         return strcmp(s->c_str(), IP_DEFAULT);
     }
 
-    virtual void thread_run_server_(int timeout) {
-        timeval timeout_val = {timeout, 0};
-        timeval* timeout_pointer = (timeout < 0) ? nullptr : &timeout_val;
-        while (wait_for_activty_(timeout_pointer)) {
-            check_for_connections_();
-            check_for_client_messages_();
-        }
-    }
+    virtual void thread_run_server_(int timeout) = 0;
 
     // NOTE: -1 runs forever
     void run_server(int timeout) {
@@ -146,13 +139,15 @@ class Server {
         return max_sd;  
     }
 
-    int wait_for_activty_(timeval* timeout) {
+    int wait_for_activity_(int timeout) {
+        timeval timeout_val = {timeout, 0};
+        timeval* timeout_pointer = (timeout < 0) ? nullptr : &timeout_val;
         // Update socket list with active connections, max is the max file descriptor
         int max_sd = set_socket_set_();
         //wait for an activity on one of the sockets , timeout is NULL ,  
         //so wait indefinitely
         // first argument is the highest-numbered file descriptor plus 1 (from man page) 
-        return select( max_sd + 1 , &readfds_ , NULL , NULL , timeout); 
+        return select( max_sd + 1 , &readfds_ , NULL , NULL , timeout_pointer); 
     }
 
     bool is_socket_in_set_(int socket) {
