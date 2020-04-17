@@ -298,15 +298,33 @@ void concat_string_test() {
 
 
 void basic_columnarray_test() {
-  Column int_col('I');
-  int_col.push_back(3);
-  Column double_col('D');
-  double_col.push_back(232.3);
-  Column bool_col('B');
-  bool_col.push_back(true);
-  Column string_col('S');
+  KV_Store kv(0);
+
+  Column int_col('I', &kv);
+  IntArray int_array;
+  int_array.push(3);
+  Key i_key("i", 0);
+  int_col.push_back(&int_array, &i_key);
+
+  Column double_col('D', &kv);
+  DoubleArray d_array;
+  d_array.push(232.3);
+  Key d_key("d", 0);
+  double_col.push_back(&d_array, &d_key);
+
+  Column bool_col('B', &kv);
+  BoolArray b_array;
+  b_array.push(true);
+  Key b_key("b", 0);
+  bool_col.push_back(&b_array, &b_key);
+
+  Column string_col('S', &kv);
+  StringArray s_array;
   String str("hell");
-  string_col.push_back(&str);
+  s_array.push(&str);
+  Key s_key("s", 0);
+  string_col.push_back(&s_array, &s_key);
+  
   ColumnArray arr(10);
   arr.push(&int_col);
   arr.push(&double_col);

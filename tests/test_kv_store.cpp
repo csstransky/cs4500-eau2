@@ -420,7 +420,7 @@ void test_wait_get() {
         array->push(1);
 
         assert(kv->get_queue_->size() == 1);
-        assert(kv->get_queue_->get(key->get_key()) > 0);
+        assert(kv->get_queue_->get(key->get_key()) != nullptr);
 
         kv->put(key, array);
 

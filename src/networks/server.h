@@ -215,16 +215,20 @@ class Server {
         int valread;
 
         // Check if it was for closing or incomming message
+        valread = read(sd, &message_size, sizeof(int));
         // read returns 0 if fd was closed
-        if ((valread = read(sd, &message_size, sizeof(int))) == 0)   
-        {  
+        if (valread == 0) {
             return nullptr;   
-                    
-        } else { 
+        }
+        else if (valread == -1) {
+            printf("RECEIVE MESSAGE FAILED, CONNECTION CLOSED BY PEER!\n%s: socket %d closed!\n", 
+                my_ip_->c_str(), sd);
+            assert(0);
+        }
+        else { 
             // Read message from client
             char buff[message_size];
             valread = read(sd, &buff, message_size);
-
             Message* m = Message::deserialize_message(buff);
             return m;
         }   
@@ -247,7 +251,6 @@ class Server {
     }
 
     virtual void remove_client_(int index) {
-
         // Close the socket and remove from arrays
         close(client_sockets_->remove(index));
         String* removed = connected_client_ips_->remove(index);   
@@ -279,11 +282,8 @@ class Server {
     void send_message(int fd, Message* message) {
         char* serial_message = message->serialize();
         int length = message->serial_len();
-        
         send(fd, &length, sizeof(int), 0);
-        
         send(fd, serial_message, length, 0);
-
         delete[] serial_message;
     }
 

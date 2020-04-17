@@ -25,6 +25,11 @@ wordcount: build
 	(build/src/word_count -ip 127.0.0.3 -s 127.0.0.1 -o data/more_words.txt -n 1)&
 	build/src/word_count -ip 127.0.0.4 -s 127.0.0.1 -o data/more_words.txt -n 2
 
+linus: build
+	(build/src/rserver -ip 127.0.0.1)&
+	@sleep 1
+	(build/src/linus -ip 127.0.0.2 -s 127.0.0.1 -n 0)
+
 test: build
 	build/tests/test_serial
 	build/tests/test_sorer
@@ -36,6 +41,7 @@ test: build
 	build/tests/test_application
 	build/tests/test_networking
 	build/tests/test_word_count
+	build/tests/test_linus
 
 valgrind: build
 	valgrind build/tests/test_serial
@@ -48,6 +54,7 @@ valgrind: build
 	valgrind build/tests/test_dataframe
 	valgrind build/tests/test_networking
 	valgrind build/tests/test_word_count
+	valgrind build/tests/test_linus
 
 clean:
 	rm -rf build

@@ -172,7 +172,9 @@ void testSIMap() {
     for (size_t i = 0; i < size; i++) {
         snprintf(buf, 20, "k_%zu", i);
         String s(buf);
-        assert(map.remove(&s)->value == i);
+        Num* n = map.remove(&s);
+        assert(n->value == i);
+        delete n;
     }
 
     assert(map.size() == 0);
