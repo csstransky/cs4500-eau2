@@ -2,7 +2,7 @@
 #include "../src/networks/rendezvous_server.h"
 #include <sys/wait.h>
 
-/** NOTE: Time before refactor was 9m30s after 1m40s*/
+/** NOTE: Time before refactor was 9m30s after 45s*/
 void test_large_sor() {
     char* file = const_cast<char*>("data/users.ltgt");
 
@@ -33,14 +33,14 @@ void test_large_sor() {
                 dataframe = kd->wait_and_get(k);
             }
 
-            printf("%d: got dataframe\n", i);
-
             assert(dataframe->ncols() == 2);
-            printf("%d: nrows %zu\n", i, dataframe->nrows());
             assert(dataframe->nrows() == 32411734); 
 
+            for (size_t ii = 0; ii < dataframe->nrows(); ii++) {
+                assert(dataframe->get_int(0, ii) == ii);
+            }
+
             kd->application_complete();   
-            printf("%d: done\n", i);    
 
             delete k;
             delete kd;
@@ -53,7 +53,6 @@ void test_large_sor() {
     // In parent process
     server->run_server();
     server->wait_for_shutdown();
-    printf("server done\n");
 
     // wait for child to finish
     for (int i = 0; i < 3; i++) {
