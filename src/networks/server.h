@@ -285,11 +285,11 @@ class Server {
         int length = message->serial_len();
         send(fd, &length, sizeof(int), 0);
         int offset = 0;
-        int rv = 0;
+        int sent_bytes = 0;
         while (offset < length) {
-            rv = send(fd, serial_message + offset, length - offset, 0);
-            if (rv == -1) printf("errno: %d\n", errno);
-            offset += rv;
+            sent_bytes = send(fd, serial_message + offset, length - offset, 0);
+            if (sent_bytes == -1) printf("errno: %d\n", errno);
+            offset += sent_bytes;
         } 
         delete[] serial_message;
     }
