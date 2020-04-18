@@ -2,9 +2,12 @@
 #include "../src/networks/rendezvous_server.h"
 #include <sys/wait.h>
 
+
 /** NOTE: Time before refactor was 9m30s after 45s*/
 void test_large_sor() {
     char* file = const_cast<char*>("data/users.ltgt");
+    int file_rows = 32411734;
+    int file_cols = 2;
 
     int cpid[3];
     const char* server_ip = "127.0.0.1";
@@ -33,8 +36,8 @@ void test_large_sor() {
                 dataframe = kd->wait_and_get(k);
             }
 
-            assert(dataframe->ncols() == 2);
-            assert(dataframe->nrows() == 32411734); 
+            assert(dataframe->ncols() == file_cols);
+            assert(dataframe->nrows() == file_rows); 
 
             for (size_t ii = 0; ii < dataframe->nrows(); ii++) {
                 assert(dataframe->get_int(0, ii) == ii);
