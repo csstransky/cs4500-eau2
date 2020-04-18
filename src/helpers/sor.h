@@ -24,14 +24,14 @@ size_t MAX_SCHEMA_READ = 500;
 // NOTE: The DataFrame is NOT deleted, and must be grabbed and deleted independently
 class SoR {
     private:
-    String* get_string_from_line(StringArray* line, size_t index) {
+    String* get_string_from_line_(StringArray* line, size_t index) {
         if (index < line->length())
             return line->get(index);
         else
             return &DEFAULT_STRING_VALUE;
     }
 
-    double get_double_from_line(StringArray* line, size_t index) {
+    double get_double_from_line_(StringArray* line, size_t index) {
         if (index < line->length()) {
             String* element = line->get(index);
             return stof(element->c_str());
@@ -40,7 +40,7 @@ class SoR {
             return DEFAULT_DOUBLE_VALUE;
     }
 
-    int get_int_from_line(StringArray* line, size_t index) {
+    int get_int_from_line_(StringArray* line, size_t index) {
         if (index < line->length()) {
             String* element = line->get(index);
             return atoi(element->c_str());
@@ -49,20 +49,20 @@ class SoR {
             return DEFAULT_INT_VALUE;
     }
 
-    bool get_bool(String* element) {
+    bool get_bool_(String* element) {
         return element->size() != 0 && element->at(0) != '0' && element->at(0) != 0;
     }
 
-    bool get_bool_from_line(StringArray* line, size_t index) {
+    bool get_bool_from_line_(StringArray* line, size_t index) {
         if (index < line->length()) {
             String* element = line->get(index);
-            return get_bool(element);
+            return get_bool_(element);
         }
         else
             return DEFAULT_BOOL_VALUE;
     }
 
-    void add_line(StringArray* line) {
+    void add_line_(StringArray* line) {
         Schema schema(cols_types_);
         Row row(schema);
         for (int i = 0; i < schema.width(); i++) {
@@ -76,27 +76,27 @@ class SoR {
             // row[2] = hihi, 0
             switch (type) {
                 case 'S': {
-                    String* string_value = get_string_from_line(line, i);
+                    String* string_value = get_string_from_line_(line, i);
                     row.set(i, string_value);
                     break;
                 }
                 case 'D': {
-                    double double_value = get_double_from_line(line, i);
+                    double double_value = get_double_from_line_(line, i);
                     row.set(i, double_value);
                     break;
                 }
                 case 'I': {
-                    int int_value = get_int_from_line(line, i);
+                    int int_value = get_int_from_line_(line, i);
                     row.set(i, int_value);
                     break;
                 }
                 case 'B': {
-                    bool bool_value = get_bool_from_line(line, i);
+                    bool bool_value = get_bool_from_line_(line, i);
                     row.set(i, bool_value);
                     break;
                 }
                 default: {
-                    // This should never be reached since the get_column_types() should never have
+                    // This should never be reached since the get_column_types_() should never have
                     // a character other than "SFIB"
                     assert(0);
                 }
@@ -105,17 +105,17 @@ class SoR {
         df_builder_->add_row(row);
     }
 
-    bool is_file_boolean(String* line_string) {
+    bool is_file_boolean_(String* line_string) {
         return strcmp(line_string->c_str(), "0") == 0 || strcmp(line_string->c_str(), "1") == 0;
     }
 
-    bool is_first_char_numeric(String* line_string) {
+    bool is_first_char_numeric_(String* line_string) {
         // Ints and doubles can start with a + or - character, like "-2" or "+30"
         return line_string->size() > 0 && (line_string->at(0) == '+' || line_string->at(0) == '-' || isdigit(line_string->at(0)));
     }
 
-    bool is_file_double(String* line_string) {
-        if (!is_first_char_numeric(line_string)) 
+    bool is_file_double_(String* line_string) {
+        if (!is_first_char_numeric_(line_string)) 
             return false;
 
         // We only consider a double to have ONE dot, ex: "12.2" = True, "1.1.1" = False, "13" = False
@@ -129,8 +129,8 @@ class SoR {
         return has_dot;
     }
 
-    bool is_file_int(String* line_string) {
-        if (!is_first_char_numeric(line_string)) 
+    bool is_file_int_(String* line_string) {
+        if (!is_first_char_numeric_(line_string)) 
             return false;
 
         for (size_t ii = 1; ii < line_string->size(); ii++) {
@@ -140,7 +140,7 @@ class SoR {
         return true;
     }
 
-    bool is_file_string(String* line_string) {
+    bool is_file_string_(String* line_string) {
         // A file_string can NOT have spaces, UNLESS they are spaces within quotes, ex: '  hu ' = False, '"hi there"' = True
         // A string with nothing is not considered a string either, ex: '' = False, '""' = True
         if (line_string->size() <= 0) 
@@ -156,40 +156,40 @@ class SoR {
         return true;
     }
 
-    char get_column_char(String* line_string) {
+    char get_column_char_(String* line_string) {
         // NOTE: Order of these if else statements is important!
-        if (is_file_double(line_string)) return 'D';
+        if (is_file_double_(line_string)) return 'D';
         // NOTE: Because of this, a "1" and "0" integer is NOT possible
-        else if (is_file_boolean(line_string)) return 'B';
-        else if (is_file_int(line_string)) return 'I';
-        else if (is_file_string(line_string)) return 'S';
+        else if (is_file_boolean_(line_string)) return 'B';
+        else if (is_file_int_(line_string)) return 'I';
+        else if (is_file_string_(line_string)) return 'S';
         // If a file input cannot match into any category, they will be considred a Bool
         else return 'B';
     }
 
-    char* convert_strings_to_column_types(StringArray* column_strings) {
+    char* convert_strings_to_column_types_(StringArray* column_strings) {
         char* column_types = new char[column_strings->length() + 1];
 
         for (size_t ii = 0; ii < column_strings->length(); ii++) {
-            char col_enum = get_column_char(column_strings->get(ii));
+            char col_enum = get_column_char_(column_strings->get(ii));
             column_types[ii] = col_enum;
         }
         column_types[column_strings->length()] = '\0';
         return column_types;
     }
 
-    StringArray* get_max_column_strings() {
+    StringArray* get_max_column_strings_() {
         char file_char;
         StringArray* max_column_strings = new StringArray();
         StringArray current_column_strings;
         int num_lines = 0;
         size_t buf_index = 0;
-
+        
         while(num_lines < MAX_SCHEMA_READ) {
             if (buf_index == buf_end_index_) {
-                if (feof(file_)) { ++buf_index;  break; }
+                if (feof(file_)) break;
                 buf_index = buf_end_index_ - string_start_;
-                fillBuffer_();
+                fill_buffer_();
             }
             file_char = buf_[buf_index];
             switch (file_char) {
@@ -228,7 +228,7 @@ class SoR {
         return max_column_strings;
     }
 
-    char* get_column_types() {
+    char* get_column_types_() {
         // This function determines the column types by the FIRST INSTANCE of the largest column,
         // example:
         // <dello> <dog>
@@ -237,30 +237,31 @@ class SoR {
         char* column_types;
         column_types = nullptr;
         
-        StringArray* max_column_strings = get_max_column_strings();
-        column_types = convert_strings_to_column_types(max_column_strings);
+        StringArray* max_column_strings = get_max_column_strings_();
+        column_types = convert_strings_to_column_types_(max_column_strings);
         delete max_column_strings;
         return column_types;
     }
 
-    void parse_and_add_file() {
+    void parse_and_add_file_() {
         char file_char;
         StringArray current_line;
         size_t buf_index = 0;
 
         while(true) {
             if (buf_index == buf_end_index_) {
-                if (feof(file_)) { ++buf_index;  break; }
+                if (feof(file_))  break; 
                 buf_index = buf_end_index_ - string_start_;
-                fillBuffer_();
+                fill_buffer_();
             }
             file_char = buf_[buf_index];
+            // TODO: abstract this away because we are only changing how we handle new lines for both switch cases
             switch (file_char) {
                 case ' ':
                     string_start_++;
                     break;
                 case '\n':
-                    add_line(&current_line);
+                    add_line_(&current_line);
                     current_line.clear();
                     string_start_++;
                     break;
@@ -287,16 +288,26 @@ class SoR {
     }
 
     /** Reads more data from the file. */
-    void fillBuffer_() {
-        size_t start = 0;
+    void fill_buffer_() {
+        size_t buf_start = 0;
         // compact unprocessed stream
+        // FILE: <12> <1> <hi>
+        // after if: [<12> <1> <h] -> [h]
         if (string_start_ != buf_end_index_) {
-            start = buf_end_index_ - string_start_;
-            memcpy(buf_, buf_ + string_start_, start);
+            buf_start = buf_end_index_ - string_start_;
+            memcpy(buf_, buf_ + string_start_, buf_start);
         }
         // read more contents
-        buf_end_index_ = start + fread(buf_+start, sizeof(char), BUFSIZE - start, file_);
+        // [hi>]
+        buf_end_index_ = buf_start + fread(buf_+buf_start, sizeof(char), BUFSIZE-buf_start, file_);
         string_start_ = 0;
+    }
+
+    /* Brings the index back to the beginning of the file, allows for the file to stay open. */
+    void reset_file_() {
+        fseek(file_, 0, SEEK_SET);
+        string_start_ = 0;
+        buf_end_index_ = 0;
     }
 
     public:
@@ -316,13 +327,11 @@ class SoR {
         }
         buf_ = new char[BUFSIZE + 1]; //  null terminator
         // get column types of the first 500 lines (using max column)
-        cols_types_ = get_column_types();    
+        cols_types_ = get_column_types_();    
         df_builder_ = new DataFrameBuilder(cols_types_, name, kv);
         // parse again to add each element
-        fseek(file_, 0, SEEK_SET);
-        string_start_ = 0;
-        buf_end_index_ = 0;
-        parse_and_add_file();
+        reset_file_();
+        parse_and_add_file_();
     }
 
     ~SoR() {
