@@ -210,20 +210,26 @@ class Server {
         int valread;
 
         // Check if it was for closing or incomming message
-        valread = read(sd, &message_size, sizeof(int));
+        valread = recv(sd, &message_size, sizeof(int), 0);
         // read returns 0 if fd was closed
         if (valread == 0) {
             return nullptr;   
         }
         else if (valread == -1) {
-            printf("RECEIVE MESSAGE FAILED, CONNECTION CLOSED BY PEER!\n%s: socket %d closed!\n", 
-                my_ip_->c_str(), sd);
+            printf("errno %d, RECEIVE MESSAGE FAILED, CONNECTION CLOSED BY PEER!\n%s: socket %d closed!\n", 
+                errno, my_ip_->c_str(), sd);
             assert(0);
         }
         else { 
             // Read message from client
             char buff[message_size];
-            valread = read(sd, &buff, message_size);
+            int offset = 0;
+            while (offset < message_size) {
+                valread = recv(sd, &buff[offset], message_size - offset, 0);
+                if (valread == -1) printf("errno: %d\n", errno);
+                offset += valread;
+            } 
+
             Message* m = Message::deserialize_message(buff);
             return m;
         }   
@@ -278,7 +284,13 @@ class Server {
         char* serial_message = message->serialize();
         int length = message->serial_len();
         send(fd, &length, sizeof(int), 0);
-        send(fd, serial_message, length, 0);
+        int offset = 0;
+        int rv = 0;
+        while (offset < length) {
+            rv = send(fd, serial_message + offset, length - offset, 0);
+            if (rv == -1) printf("errno: %d\n", errno);
+            offset += rv;
+        } 
         delete[] serial_message;
     }
 

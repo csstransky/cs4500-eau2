@@ -1,5 +1,7 @@
 // Made by Kaylin Devchand and Cristian Stransky
 
+#define TEST
+
 #include <stdio.h> 
 #include <sys/socket.h> 
 #include <arpa/inet.h> 

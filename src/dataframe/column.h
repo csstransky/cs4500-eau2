@@ -7,7 +7,12 @@
 // Number of elements each array in the array of arrays in Column have
 // TODO: Now we know a 10GB is our average file size, we should mess with ELEMENT_ARRAY_SIZE until
 // we get a number that's optimal. Jan does say 100 is too small though.
+#ifdef TEST
 const int ELEMENT_ARRAY_SIZE = 100; 
+#else
+const int ELEMENT_ARRAY_SIZE = 10000; 
+#endif
+
 const int DEFAULT_INT_VALUE = 0;
 const double DEFAULT_DOUBLE_VALUE = 0;
 const bool DEFAULT_BOOL_VALUE = 0;
