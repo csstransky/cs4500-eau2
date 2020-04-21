@@ -29,9 +29,11 @@ The KVStore class stores its data in an String to Object map. It has a put metho
 The KVStore class also has a get queue, which is a String to IntArray map. This data structure is used to queue up wait and get requests. The get queue maps the key name to an array of socket descriptors waiting for the Value. Every time a put operation occurs, the get queue is checked for the key and the value is distributed to the nodes that requested it. Wait and get operations follow the same steps as the get operations except in the fact that it interacts with the get queue.
 
 ### Dataframe Layer
-The DataFrame layer consists of the DataFrame class and supporting classes. The implementation of the Dataframe class is the same as previous assignments with row and column names stripped. The column classes contain an additional field that points to the KVStore. The data in the Column classes is represented as distributed arrays. The column classes contain a list of keys where each key maps to a Value blob of 1000 elements. The Value blobs can be on any KVStore in the network. To retrieve data, the get method of the KVStore is called with the key. 
+The DataFrame layer consists of the DataFrame class and supporting classes. The implementation of the Dataframe class is the same as previous assignments with row and column names stripped. The column classes contain an additional field that points to the KVStore. The data in the Column classes is represented as distributed arrays. The column classes contain a list of keys where each key maps to a Value blob of ELEMENT_ARRAY_SIZE elements. The Value blobs can be on any KVStore in the network. To retrieve data, the get method of the KVStore is called with the key. The Column class also contains a cache of size 1 to reduce network calls.
 
-A DataFrame is constructed using the DataFrame builder class.
+A DataFrame is constructed using the DataFrameBuilder class. The DataFrameBuilder feeds data in ELEMENT_ARRAY_SIZE chunks to the columns with a generated key. The column is responsible for interacting with the KVStore to distribute the chunk.
+
+The DataFrame layer also contains the KDStore class which is a wrapper for KVStore. This class allows for dataframe to be sent and received directly by the application without casting.
 
 Example:
 ```
@@ -65,8 +67,6 @@ kv_map_ = {
 }
 ```
 
-
-
 ### Application Layer
 The Application class contains the KDStore of the node as a field. It also has the ability to retrieve the node id from the KDStore. The Application also contains a run method to run the application. This method is not implemented in Application and is to be implemented by subclasses of Application. To create a specific Application, a subclass of Application is created and the run method and helper methods are implemented. On deconstruction of the Application, the shutdown server method is called. That is a blocking call that waits for the kill message from the RServer before joining the networking thread and application thread and closing everything down. The same application can run on different nodes or different applications can be created. No application runs on the RServer.
 
@@ -95,9 +95,7 @@ class CreateDataframe : public Application {
 + We don't remember where exactly you answered us, but what is the optimal size of chunks to put inside the kv_store? 100 elements? 10,000 elements? 100,000 elements?
 
 ## Status
-All of our *test* code valgrinds and run properly. We were running into a couple of issues with completely inconsistent errors. The first error was having TCP race conditions for normal messages and the message and wait, where a socket to a client would end up closing before the wait could properly continue (with receiving a value from the kv_store). Example: `wait_and_get[127.0.0.1]` on socket 7, and then `put[127.0.0.1]` on socket 7 would complete, closing the previous socket, causing the previous `wait_and_get` to return nothing because ofthe closed socket. Of course this error didn't happen consistently. 
-
-The second error had to do with strange behaviors with the large data set. We have a feeling that our get cache, or possibly even the messages were being sent too early (node 1 would jump the gun, causing a seg fault).
+All of our *test* code valgrinds and run properly. The linus program works.
 
 Steps to run our code:
 1. builds the needed directory of executables  
@@ -116,7 +114,7 @@ make demo
 ```
 make wordcount
 ```
-5. runs the linus application for Milestone 5
+5. runs the linus application for Milestone 5. The three data files should be placed in the data directory.
 ```
 make linus
 ```
