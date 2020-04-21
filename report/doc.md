@@ -31,7 +31,7 @@ The KVStore class also has a get queue, which is a String to IntArray map. This 
 ### Dataframe Layer
 The DataFrame layer consists of the DataFrame class and supporting classes. The implementation of the Dataframe class is the same as previous assignments with row and column names stripped. The column classes contain an additional field that points to the KVStore. The data in the Column classes is represented as distributed arrays. The column classes contain a list of keys where each key maps to a Value blob of ELEMENT_ARRAY_SIZE elements. The Value blobs can be on any KVStore in the network. To retrieve data, the get method of the KVStore is called with the key. The Column class also contains a cache of size 1 to reduce network calls.
 
-A DataFrame is constructed using the DataFrameBuilder class. The DataFrameBuilder feeds data in ELEMENT_ARRAY_SIZE chunks to the columns with a generated key. The column is responsible for interacting with the KVStore to distribute the chunk.
+A DataFrame is constructed using the DataFrameBuilder class. The DataFrameBuilder feeds data in ELEMENT_ARRAY_SIZE chunks to the columns with a generated key. The column is responsible for interacting with the KVStore to distribute the chunk. This DataFrameBuilder was created to enforce the separation between creating the DataFrame and enforcing read-only operations on the DataFrame. Once the DataFrame is created as an object, no elements can be written into the DataFrame.
 
 The DataFrame layer also contains the KDStore class which is a wrapper for KVStore. This class allows for dataframe to be sent and received directly by the application without casting.
 
@@ -45,24 +45,25 @@ type_ = 'I'
 kv_ = kv_store1
 dataframe_name_ = "Main"
 column_index_ = 12
-size_ = 30
-keys_ = [Key("Main_12_0", 2), Key("Main_12_1", 2), Key("Main_12_2", 2)]
+size_ = 34
+keys_ = [Key("Main_12_0", 1), Key("Main_12_1", 0), Key("Main_12_2", 1), Key("Main_12_3", 0)]
 
 kv_store1
 -----
-local_node_index_ = 1
+local_node_index_ = 0
 kv_map_ = {
     // The actual IntColumn class is serialized in here with the DataFrame
     "Main" : Serializer('DataFrame Object')
+    "Main_12_1" : Serializer([11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
+    "Main_12_3" : Serializer([31, 32, 33, 34])
 }
 
 kv_store2
 -----
-local_node_index_ = 2
+local_node_index_ = 1
 kv_map_ = {
     // The contents of IntColumn are serialized elsewhere
     "Main_12_0" : Serializer([ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10])
-    "Main_12_1" : Serializer([11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
     "Main_12_2" : Serializer([21, 22, 23, 24, 25, 26, 27, 28, 29, 30])
 }
 ```
@@ -74,6 +75,7 @@ The Application class contains the KDStore of the node as a field. It also has t
 The use case below creates a dataframe from a SoR file.
 
 ```
+TODO: Add use case with dataframe builder
 class CreateDataframe : public Application {
     public:
         char* filename_;
