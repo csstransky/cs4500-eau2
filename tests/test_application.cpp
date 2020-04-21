@@ -125,16 +125,17 @@ void test_trivial() {
 }
 
 void test_demo() {
-  int cpid[3];
+  int num_nodes = 3;
+  int cpid[num_nodes];
   const char* server_ip = "127.0.0.1";
-  const char** client_ips = new const char*[3];
+  const char** client_ips = new const char*[num_nodes];
   client_ips[0] = "127.0.0.2";
   client_ips[1] = "127.0.0.3";
   client_ips[2] = "127.0.0.4";
 
   RServer* server = new RServer(server_ip); 
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < num_nodes; i++) {
     if ((cpid[i] = fork())) {
       // parent, do nothing now
     } else {
@@ -153,7 +154,7 @@ void test_demo() {
   server->wait_for_shutdown();
 
   // wait for child to finish
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < num_nodes; i++) {
     int st;
     waitpid(cpid[i], &st, 0);
   }
