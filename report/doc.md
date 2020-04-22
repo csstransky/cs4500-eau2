@@ -11,6 +11,53 @@ The DataFrame is still represented as a list of columns. The columns of the data
 
 The application can create a Dataframe through reading SoR files or generating elements for the Dataframe. The application contains a reference to the KDStore and Dataframes can be added to it. Dataframes can also be retrieved from the KDStore.
 
+```
+        +-------------+
+        |             |
+        |   Linus     |
+        |             |
+        +-------------+
+        |             |
+        | Application |
+        |             |
+        +-----+-------+                    Application Layer
+              ^
++-----------------------------------------------------------+
+              |
+              |                  +------------+   +------------------+
+              |                  |            |   |                  |
+              |                  |  DataFrame +-->+ DataFrameBuilder |
+              |                  |            |   |                  |
+              |                  +-----+------+   +------------------+
+              |                        ^
+        +-----+-------+                |
+        |             |          +-----+------+
+        |   KDStore   |          |            |
+        |             |          |  Column    |
+        +------+------+          |            |
+               ^                 +--+---------+
+               +------------+       ^          DataFrame Layer
+                            |       |
+ +----------------------------------------------------------+
+                            |       |
+                            |       |
+                        +---+-------+-+
+                        |             |
+                        |   KVStore   |
+                        |             |
+    +-------------+     +-------------+
+    |             |     |             |
+    |   RServer   |     |    Node     |
+    |             |     |             |
+    +-------------+-----+-------------+
+    |                                 |
+    |             Server              |
+    |                                 |         Network Layer
+    +---------------------------------+
+
+```
+
+
 ## Implementation
 
 ### Networking Layer
