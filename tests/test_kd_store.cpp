@@ -317,12 +317,12 @@ void test_wait_get() {
             array[i] = i+1;
         }
 
-        assert(kd->kv_->get_queue_->size() == 1);
-        assert(kd->kv_->get_queue_->get(key->get_key()) != nullptr);
+        assert(kd->kv_->get_and_wait_queue_->size() == 1);
+        assert(kd->kv_->get_and_wait_queue_->get(key->get_key()) != nullptr);
 
         DataFrame* df = DataFrame::from_array(key, kd, 10, array);
 
-        assert(kd->kv_->get_queue_->size() == 0);
+        assert(kd->kv_->get_and_wait_queue_->size() == 0);
 
         kd->application_complete();
 
@@ -421,7 +421,7 @@ void test_wait_local_get() {
 
         DataFrame* df = DataFrame::from_array(key, kd, 10, array);
 
-        assert(kd->kv_->get_queue_->size() == 0);
+        assert(kd->kv_->get_and_wait_queue_->size() == 0);
 
         kd->application_complete();
 

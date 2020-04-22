@@ -6,7 +6,7 @@
 #include "key.h"
 #include "../networks/node.h"
 
-// This is a pseudo value that's used to recognize when an expected value in the get_queue_ is 
+// This is a pseudo value that's used to recognize when an expected value in the get_and_wait_queue_ is 
 // actually meant for the local kv_store, and not a remote kv_store.
 // NOTE: file descriptor 0 is stdin so this shouldn't be a socket descriptor, choosing other values
 // for this variable can cause unexpected behavior (it's possible for a remote kv_store to have a 
@@ -16,28 +16,28 @@ const int LOCAL_SOCKET_DESCRIPTOR = 0;
 class KV_Store : public Node {
     public:
     Map* kv_map_; // String* -> Serializer* 
-    Map* get_queue_;
+    Map* get_and_wait_queue_; // TODO: refactor to wait_and_get_and_wait_queue_
     size_t local_node_index_;
     std::mutex kv_map_mutex_;
-    std::mutex get_queue_mutex_;
-    std::condition_variable cv_;
+    std::mutex get_and_wait_queue_mutex_; // maps string_key -> array of sockets
+    std::condition_variable condition_variable_; // TODO: refactor
     
     KV_Store(const char* client_ip_address, const char* server_ip_address, size_t local_node_index) 
         : Node(client_ip_address, server_ip_address) {
         kv_map_ = new Map();
-        get_queue_ = new Map();
+        get_and_wait_queue_ = new Map();
         local_node_index_ = local_node_index;
     }
 
     KV_Store(size_t local_node_index) : Node() {
         kv_map_ = new Map();
-        get_queue_ = new Map();
+        get_and_wait_queue_ = new Map();
         local_node_index_ = local_node_index;
     }
 
     ~KV_Store() {
         delete kv_map_;
-        delete get_queue_;
+        delete get_and_wait_queue_;
     }
 
     void distribute_value_(IntArray* sockets, Serializer* value) {
@@ -50,7 +50,7 @@ class KV_Store : public Node {
                 Value value_message(my_ip_, &no_ip, value);
                 send_message(socket, &value_message);
             } else if (socket == LOCAL_SOCKET_DESCRIPTOR) {
-                cv_.notify_one();
+                condition_variable_.notify_one();
             }
         }
     }
@@ -63,8 +63,8 @@ class KV_Store : public Node {
         delete old;
         kv_lock.unlock();
 
-        std::unique_lock<std::mutex> get_lock(get_queue_mutex_);
-        IntArray* sockets = dynamic_cast<IntArray*>(get_queue_->remove(key_name));
+        std::unique_lock<std::mutex> get_lock(get_and_wait_queue_mutex_);
+        IntArray* sockets = dynamic_cast<IntArray*>(get_and_wait_queue_->remove(key_name));
         get_lock.unlock();
         
         if (sockets) {
@@ -77,8 +77,8 @@ class KV_Store : public Node {
         return dynamic_cast<Serializer*>(kv_map_->get(key_name));
     }
 
-    void put_get_queue_(String* key_name, int socket) {
-        std::unique_lock<std::mutex> lock(get_queue_mutex_);
+    void put_get_and_wait_queue_(String* key_name, int socket) {
+        std::unique_lock<std::mutex> lock(get_and_wait_queue_mutex_);
         put_socket_into_queue_(key_name, socket);
     }
 
@@ -123,20 +123,20 @@ class KV_Store : public Node {
     }
 
     void put_socket_into_queue_(String* key_name, int socket_descriptor) {
-        IntArray* sockets = dynamic_cast<IntArray*>(get_queue_->get(key_name));
+        IntArray* sockets = dynamic_cast<IntArray*>(get_and_wait_queue_->get(key_name));
         if (sockets) {
             sockets->push(socket_descriptor);
         } else {
             IntArray int_array(1);
             int_array.push(socket_descriptor);
-            get_queue_->put(key_name, &int_array);
+            get_and_wait_queue_->put(key_name, &int_array);
         }
     }
 
     Serializer* wait_for_local_map_value_(Key* key) {
         put_socket_into_queue_(key->get_key(), LOCAL_SOCKET_DESCRIPTOR);
         std::unique_lock<std::mutex> lock(kv_map_mutex_);
-        cv_.wait(lock);
+        condition_variable_.wait(lock);
         lock.unlock();
         return get_map_(key->get_key());
     }
@@ -201,7 +201,7 @@ class KV_Store : public Node {
                     Value value_message(my_ip_, get_message->get_sender(), value);
                     send_message(client_sockets_->get(client), &value_message);
                 } else {
-                    put_get_queue_(get_message->get_key_name(), client_sockets_->get(client));
+                    put_get_and_wait_queue_(get_message->get_key_name(), client_sockets_->get(client));
                 }
                 return 1;
             }   

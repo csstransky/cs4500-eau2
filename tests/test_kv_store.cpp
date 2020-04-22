@@ -421,12 +421,12 @@ void test_wait_get() {
         IntArray* array = new IntArray(1);
         array->push(1);
 
-        assert(kv->get_queue_->size() == 1);
-        assert(kv->get_queue_->get(key->get_key()) != nullptr);
+        assert(kv->get_and_wait_queue_->size() == 1);
+        assert(kv->get_and_wait_queue_->get(key->get_key()) != nullptr);
 
         kv->put(key, array);
 
-        assert(kv->get_queue_->size() == 0);
+        assert(kv->get_and_wait_queue_->size() == 0);
 
         kv->wait_for_shutdown();
 
@@ -527,7 +527,7 @@ void test_wait_local_get() {
 
         kv->put(key, array);
 
-        assert(kv->get_queue_->size() == 0);
+        assert(kv->get_and_wait_queue_->size() == 0);
 
         kv->wait_for_shutdown();
 
