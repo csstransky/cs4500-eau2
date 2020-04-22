@@ -18,11 +18,8 @@
 #include "../helpers/string.h"
 
 const int PORT = 8080;
-const int MAX_REQUEST_QUEUE = 3;
 const int MAX_CLIENTS = 10;
 const int OPT = 1;
-const int TIME_OUT = 60;// time out at 60 sec
-const int ACK_TIMEOUT = 5;
 const char* IP_DEFAULT = "Not registered";
 
 class Server {
