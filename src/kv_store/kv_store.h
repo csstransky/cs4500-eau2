@@ -6,13 +6,6 @@
 #include "key.h"
 #include "../networks/node.h"
 
-// This is a pseudo value that's used to recognize when an expected value in the get_and_wait_queue_ is 
-// actually meant for the local kv_store, and not a remote kv_store.
-// NOTE: file descriptor 0 is stdin so this shouldn't be a socket descriptor, choosing other values
-// for this variable can cause unexpected behavior (it's possible for a remote kv_store to have a 
-// node_index of 6, so making this variable 6 will cause all values to be sent to the remote).
-const int LOCAL_SOCKET_DESCRIPTOR = 0;
-
 class KV_Store : public Node {
     public:
     Map* kv_map_; // String* -> Serializer* 
@@ -43,14 +36,14 @@ class KV_Store : public Node {
     void distribute_value_(IntArray* sockets, Serializer* value) {
         for (int i = 0; i < sockets->length(); i++) {
             int socket = sockets->get(i);
-            if (socket > LOCAL_SOCKET_DESCRIPTOR) {
+            if (socket == local_node_index_) {
+                condition_variable_.notify_one();
+            } else {
                 // TODO: We will need to find a way to actually grab the target IP from the socket
                 // and the socket descriptor some time in the future. Low priority though, no needed
                 String no_ip("NO TARGET IP");
                 Value value_message(my_ip_, &no_ip, value);
                 send_message(socket, &value_message);
-            } else if (socket == LOCAL_SOCKET_DESCRIPTOR) {
-                condition_variable_.notify_one();
             }
         }
     }
@@ -134,7 +127,7 @@ class KV_Store : public Node {
     }
 
     Serializer* wait_for_local_map_value_(Key* key) {
-        put_socket_into_queue_(key->get_key(), LOCAL_SOCKET_DESCRIPTOR);
+        put_socket_into_queue_(key->get_key(), local_node_index_);
         std::unique_lock<std::mutex> lock(kv_map_mutex_);
         condition_variable_.wait(lock);
         lock.unlock();
@@ -144,10 +137,8 @@ class KV_Store : public Node {
     char* wait_get_value_serial(Key* key) {
         if (key->get_node_index() == local_node_index_) {
             Serializer* map_serial = get_map_(key->get_key());
-
-            if (!map_serial) {
+            if (!map_serial)
                 map_serial = wait_for_local_map_value_(key); 
-            } 
             return map_serial->get_serial();
         }
         else {
