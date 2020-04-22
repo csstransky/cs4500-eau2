@@ -4,7 +4,7 @@
 #include "../helpers/sor.h"
 #include "../dataframe/dataframe_builder.h"
 
-class KD_Store : public Object {
+class KD_Store {
     public:
     KV_Store* kv_;
 
