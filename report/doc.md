@@ -122,7 +122,6 @@ The Application class contains the KDStore of the node as a field. It also has t
 The use case below creates a dataframe from a SoR file.
 
 ```
-TODO: Add use case with dataframe builder
 class CreateDataframe : public Application {
     public:
         char* filename_;
@@ -140,8 +139,65 @@ class CreateDataframe : public Application {
 }
 ```
 
-## Open questions
-+ We don't remember where exactly you answered us, but what is the optimal size of chunks to put inside the kv_store? 100 elements? 10,000 elements? 100,000 elements?
+The use case below shows the example of an application that creates a DataFrame from a Schema with a DataFrameBuilder in its constructor (normally this will occur inside a kd_store.h static DataFrame* function), then it will read every element from the read-only DataFrame in the run_() function.
+```
+class UseDataframeBuilder : public Application {
+    public:
+        DataFrame* df_;
+
+        UseDataframeBuilder(Schema& schema, size_t count, Key* key) : Application(key->get_node_index()) {
+            KD_Store kd_(key->get_node_index());
+            DataFrameBuilder df_b_(schema, key->get_key(), kd_.get_kv());
+            Row row(schema);
+            for (size_t ii = 0; ii < count; ii++) {
+                for (size_t jj = 0; jj < schema.width(); jj++) {
+                    switch(schema.col_type(jj)) {
+                        case 'I': row.set(jj, (int)ii); break;
+                        case 'D': row.set(jj, (double)ii); break;
+                        case 'B': row.set(jj, true); break;
+                        case 'S': {
+                            String temp_string("");
+                            temp_string.concat(jj);
+                            row.set(jj, &temp_string);
+                            break;
+                        }
+                    }
+                }
+                df_b_.add_row(row);
+            }
+            DataFrame* df_ = df_b_.done();
+        }
+        void run_() override {
+            Schema schema = df_->get_schema();
+            for (size_t ii = 0; ii < schema.length(); ii++) {
+                for (size_t jj = 0; jj < schema.width(); jj++) {
+                    switch(schema.col_type(jj)) {
+                        case 'I': {
+                            int df_int = df_->get_int(jj, ii);
+                            ...
+                            break;
+                        }
+                        case 'D': {
+                            double df_double = df_->get_double(jj, ii);
+                            ...
+                            break;
+                        }
+                        case 'B': {
+                            bool df_bool = df_->get_bool(jj, ii);
+
+                            break;   
+                        }
+                        case 'S': {
+                            String* df_string = df_->get_string(jj, ii);
+                            ...
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+}
+```
 
 ## Status
 All of our *test* code valgrinds and run properly. The linus program works.
