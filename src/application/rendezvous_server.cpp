@@ -3,7 +3,7 @@
 #include "../../src/networks/rendezvous_server.h"
 #include "arguments.h"
 
-int TIMEOUT = 60 * 30; // 30 minutes might actually be a tad too much
+int TIMEOUT = 60 * 60 * 24; // 24 hours for a server to die
 
 int main(int argc, char const *argv[]) 
 {     

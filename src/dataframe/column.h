@@ -10,7 +10,7 @@
 #ifdef TEST
 const int ELEMENT_ARRAY_SIZE = 100; 
 #else
-const int ELEMENT_ARRAY_SIZE = 10000; 
+const int ELEMENT_ARRAY_SIZE = 200000; 
 #endif
 
 const int DEFAULT_INT_VALUE = 0;
