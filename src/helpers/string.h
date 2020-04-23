@@ -119,6 +119,13 @@ public:
 
     void concat(String* other) { concat(other->cstr_); }
 
+    void clear() {
+        size_ = 0;
+        delete[] cstr_;
+        cstr_ = new char[size_ + 1];
+        cstr_[size_] = 0;
+    }
+
     size_t serial_len() {
         // Includes the seial length, size of the string, and the char array itself
         return sizeof(size_t) + sizeof(char) * (size_ + 1);

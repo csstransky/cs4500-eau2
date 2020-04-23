@@ -1,5 +1,7 @@
 #include <sys/wait.h>
 
+#define TEST
+
 #include "../src/networks/node.h"
 #include "../src/networks/rendezvous_server.h"
 
@@ -121,9 +123,10 @@ void test_kill() {
 }
 
 void test_multiple_nodes() {
-    int cpid[3];
+    int num_nodes = 3;
+    int cpid[num_nodes];
     String* server_ip = new String("127.0.0.1");
-    String** client_ips = new String*[3];
+    String** client_ips = new String*[num_nodes];
     client_ips[0] = new String("127.0.0.2");
     client_ips[1] = new String("127.0.0.3");
     client_ips[2] = new String("127.0.0.4");
@@ -133,7 +136,7 @@ void test_multiple_nodes() {
     // Start server
     RServer* server = new RServer(server_ip->c_str()); 
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < num_nodes; i++) {
         if ((cpid[i] = fork())) {
             // do nothing now
         } else {
@@ -147,13 +150,13 @@ void test_multiple_nodes() {
             sleep(1);
 
             // check for list of nodes
-            assert(node->other_nodes_->length() == 3);
-            assert(node->other_node_indexes_->length() == 3);
+            assert(node->other_nodes_->length() == num_nodes);
+            assert(node->other_node_indexes_->length() == num_nodes);
             node->wait_for_shutdown();
 
             delete node;
             delete server_ip;
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < num_nodes; i++) {
                 delete client_ips[i];
             }
             delete[] client_ips;
@@ -168,19 +171,19 @@ void test_multiple_nodes() {
     sleep(2);
 
     // check for registered client
-    assert(server->client_sockets_->length() == 3);
-    assert(server->connected_client_ips_->length() == 3);
-    assert(server->node_indexes_->length() == 3);
+    assert(server->client_sockets_->length() == num_nodes);
+    assert(server->connected_client_ips_->length() == num_nodes);
+    assert(server->node_indexes_->length() == num_nodes);
     server->wait_for_shutdown();
     
     // wait for children to finish
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < num_nodes; i++) {
         int st;
         waitpid(cpid[i], &st, 0);
     }
 
     delete server;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < num_nodes; i++) {
         delete client_ips[i];
     }
     delete[] client_ips;
@@ -190,16 +193,17 @@ void test_multiple_nodes() {
 }
 
 void test_completion() {
-    int cpid[3];
+    int num_nodes = 3;
+    int cpid[num_nodes];
     String* server_ip = new String("127.0.0.1");
-    String** client_ips = new String*[3];
+    String** client_ips = new String*[num_nodes];
     client_ips[0] = new String("127.0.0.2");
     client_ips[1] = new String("127.0.0.3");
     client_ips[2] = new String("127.0.0.4");
         // Start server
     RServer* server = new RServer(server_ip->c_str()); 
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < num_nodes; i++) {
         if ((cpid[i] = fork())) {
             // do nothing now
         } else {
@@ -215,15 +219,15 @@ void test_completion() {
             sleep(i + 1);
 
             // check for list of nodes
-            assert(node->other_nodes_->length() == 3);
-            assert(node->other_node_indexes_->length() == 3);
+            assert(node->other_nodes_->length() == num_nodes);
+            assert(node->other_node_indexes_->length() == num_nodes);
             assert(!node->kill_);
             node->wait_for_shutdown();
             assert(node->kill_);
 
             delete node;
             delete server_ip;
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < num_nodes; i++) {
                 delete client_ips[i];
             }
             delete[] client_ips;
@@ -237,13 +241,13 @@ void test_completion() {
     server->wait_for_shutdown();
 
     // wait for children to finish
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < num_nodes; i++) {
         int st;
         waitpid(cpid[i], &st, 0);
     }
 
     delete server;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < num_nodes; i++) {
         delete client_ips[i];
     }
     delete[] client_ips;

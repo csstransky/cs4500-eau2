@@ -37,9 +37,7 @@ class RServer : public Server {
     }
 
     void thread_run_server_(int timeout) {
-        timeval timeout_val = {timeout, 0};
-        timeval* timeout_pointer = (timeout < 0) ? nullptr : &timeout_val;
-        while (!are_nodes_complete() && wait_for_activty_(timeout_pointer)) {
+        while (!are_nodes_complete() && wait_for_activity_(timeout)) {
             check_for_connections_();
             check_for_client_messages_();
         }

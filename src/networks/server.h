@@ -18,11 +18,8 @@
 #include "../helpers/string.h"
 
 const int PORT = 8080;
-const int MAX_REQUEST_QUEUE = 3;
 const int MAX_CLIENTS = 10;
 const int OPT = 1;
-const int TIME_OUT = 60;// time out at 60 sec
-const int ACK_TIMEOUT = 5;
 const char* IP_DEFAULT = "Not registered";
 
 class Server {
@@ -96,14 +93,7 @@ class Server {
         return strcmp(s->c_str(), IP_DEFAULT);
     }
 
-    virtual void thread_run_server_(int timeout) {
-        timeval timeout_val = {timeout, 0};
-        timeval* timeout_pointer = (timeout < 0) ? nullptr : &timeout_val;
-        while (wait_for_activty_(timeout_pointer)) {
-            check_for_connections_();
-            check_for_client_messages_();
-        }
-    }
+    virtual void thread_run_server_(int timeout) = 0;
 
     // NOTE: -1 runs forever
     void run_server(int timeout) {
@@ -146,13 +136,15 @@ class Server {
         return max_sd;  
     }
 
-    int wait_for_activty_(timeval* timeout) {
+    int wait_for_activity_(int timeout) {
+        timeval timeout_val = {timeout, 0};
+        timeval* timeout_pointer = (timeout < 0) ? nullptr : &timeout_val;
         // Update socket list with active connections, max is the max file descriptor
         int max_sd = set_socket_set_();
         //wait for an activity on one of the sockets , timeout is NULL ,  
         //so wait indefinitely
         // first argument is the highest-numbered file descriptor plus 1 (from man page) 
-        return select( max_sd + 1 , &readfds_ , NULL , NULL , timeout); 
+        return select( max_sd + 1 , &readfds_ , NULL , NULL , timeout_pointer); 
     }
 
     bool is_socket_in_set_(int socket) {
@@ -215,20 +207,26 @@ class Server {
         int valread;
 
         // Check if it was for closing or incomming message
-        valread = read(sd, &message_size, sizeof(int));
+        valread = recv(sd, &message_size, sizeof(int), 0);
         // read returns 0 if fd was closed
         if (valread == 0) {
             return nullptr;   
         }
         else if (valread == -1) {
-            printf("RECEIVE MESSAGE FAILED, CONNECTION CLOSED BY PEER!\n%s: socket %d closed!\n", 
-                my_ip_->c_str(), sd);
+            printf("errno %d, RECEIVE MESSAGE FAILED, CONNECTION CLOSED BY PEER!\n%s: socket %d closed!\n", 
+                errno, my_ip_->c_str(), sd);
             assert(0);
         }
         else { 
             // Read message from client
             char buff[message_size];
-            valread = read(sd, &buff, message_size);
+            int offset = 0;
+            while (offset < message_size) {
+                valread = recv(sd, &buff[offset], message_size - offset, 0);
+                if (valread == -1) printf("errno: %d\n", errno);
+                offset += valread;
+            } 
+
             Message* m = Message::deserialize_message(buff);
             return m;
         }   
@@ -283,7 +281,13 @@ class Server {
         char* serial_message = message->serialize();
         int length = message->serial_len();
         send(fd, &length, sizeof(int), 0);
-        send(fd, serial_message, length, 0);
+        int offset = 0;
+        int sent_bytes = 0;
+        while (offset < length) {
+            sent_bytes = send(fd, serial_message + offset, length - offset, 0);
+            if (sent_bytes == -1) printf("errno: %d\n", errno);
+            offset += sent_bytes;
+        } 
         delete[] serial_message;
     }
 

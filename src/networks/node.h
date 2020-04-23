@@ -69,9 +69,7 @@ class Node : public Server {
 
     // NOTE: timeout -1 runs forever
     void thread_run_server_(int timeout) {
-        timeval timeout_val = {timeout, 0};
-        timeval* timeout_pointer = (timeout < 0) ? nullptr : &timeout_val;
-        while (wait_for_activty_(timeout_pointer) && !kill_) {
+        while (wait_for_activity_(timeout) && !kill_) {
             check_for_connections_();
             check_for_client_messages_();
             check_server_messages_();
@@ -145,7 +143,8 @@ class Node : public Server {
         send_message(socket, message);
 
         // Close connections
-        close(socket);
+        int rv = close(socket);
+        assert(rv == 0);
     }
 
     // sends a message to a node and waits for a message back from that node
