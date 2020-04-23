@@ -14,7 +14,7 @@ The application can create a Dataframe through reading SoR files or generating e
 ```
         +-------------+
         |             |
-        |   Linus     |
+        |    Linus    |
         |             |
         +-------------+
         |             |
@@ -33,7 +33,7 @@ The application can create a Dataframe through reading SoR files or generating e
         +-----+-------+                |
         |             |          +-----+------+
         |   KDStore   |          |            |
-        |             |          |  Column    |
+        |             |          |   Column   |
         +------+------+          |            |
                ^                 +--+---------+
                +------------+       ^          DataFrame Layer
